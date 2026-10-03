@@ -1,0 +1,63 @@
+# ===== OS =====
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# ===== Editors =====
+.vscode/
+.idea/
+*.sublime-*
+*.code-workspace
+
+# ===== Python / Django (backend) =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv/
+clearance/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Django specifics
+*.log
+db.sqlite3
+db.sqlite3-journal
+/media/
+/staticfiles/
+local_settings.py
+
+# Environment files (secrets!)
+.env
+.env.*
+!.env.example
+
+# ===== Node / Frontend =====
+node_modules/
+dist/
+build/
+.vite/
+.next/
+out/
+.cache/
+coverage/
+
+# Frontend env (keep .env.example only)
+clerance_frontend/.env
+!clerance_frontend/.env.example
+
+# Bun
+.bun/
+
+# ===== Secrets / keys =====
+*.pem
+*.key
+secrets.json
+credentials.json
