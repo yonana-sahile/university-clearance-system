@@ -29,8 +29,8 @@ export default function AboutPage() {
       >
         <div style={{ textAlign: 'center' }}>
           <img
-            src="/images/MAU.jpg"
-            alt="MAU"
+            src="/mau_logo.jpg"
+            alt="Mekdela Amba University"
             style={{
               width: 90,
               height: 90,
