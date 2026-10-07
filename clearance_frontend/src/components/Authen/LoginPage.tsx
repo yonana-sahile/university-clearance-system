@@ -123,8 +123,8 @@ export default function LoginPage() {
       >
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <img
-            src="/images/MAU.jpg"
-            alt="MAU Logo"
+            src="/mau_logo.jpg"
+            alt="Mekdela Amba University Logo"
             style={{
               width: 70,
               height: 70,
