@@ -14,7 +14,7 @@ import {
 import confetti from 'canvas-confetti';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiFetch, getSession } from '../../utils/api';
-import { ClearanceForm, FormStatus } from '../../types';
+import type { ClearanceForm, FormStatus } from '../../types';
 import ClearanceFormSubmission from '../Forms/ClearanceForm';
 import ChatRooms from '../Chat/ChatRooms';
 import ChatSystem from '../Chat/ChatSystem';

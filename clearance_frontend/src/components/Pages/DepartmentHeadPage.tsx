@@ -6,7 +6,7 @@ import {
   CheckOutlined, CloseOutlined, SearchOutlined, DownloadOutlined, MessageOutlined, FileTextOutlined
 } from '@ant-design/icons';
 import { apiFetch, getStoredForms, setStoredForms } from '../../utils/api';
-import { ClearanceForm } from '../../types';
+import type { ClearanceForm } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
 
 const { Title, Text, Paragraph } = Typography;

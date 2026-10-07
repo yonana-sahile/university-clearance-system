@@ -1,7 +1,3 @@
-/* ============================================================
-   Header.css
-   ============================================================ */
-
 .header {
   position: sticky;
   top: 0;
@@ -34,18 +30,14 @@ body[data-theme='dark'] .header {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  flex-wrap: nowrap;
 }
 
-/* ---------- Brand ---------- */
 .header-logo {
   display: flex;
   align-items: center;
   gap: 0.9rem;
   text-decoration: none;
   transition: transform 0.25s ease;
-  flex-shrink: 0;
-  white-space: nowrap;
 }
 
 .header-logo:hover {
@@ -62,7 +54,6 @@ body[data-theme='dark'] .header {
   border: 2px solid #f59e0b;
   box-shadow: 0 2px 12px rgba(245, 158, 11, 0.35);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  flex-shrink: 0;
 }
 
 .header-logo:hover .logo-img {
@@ -73,7 +64,6 @@ body[data-theme='dark'] .header {
 .logo-text-wrapper {
   display: flex;
   flex-direction: column;
-  white-space: nowrap;
 }
 
 .logo-title {
@@ -82,16 +72,13 @@ body[data-theme='dark'] .header {
   letter-spacing: -0.02em;
   background: linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #4f46e5 100%);
   -webkit-background-clip: text;
-  background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1.2;
-  white-space: nowrap;
 }
 
 body[data-theme='dark'] .logo-title {
   background: linear-gradient(135deg, #38bdf8 0%, #60a5fa 50%, #a78bfa 100%);
   -webkit-background-clip: text;
-  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -101,21 +88,16 @@ body[data-theme='dark'] .logo-title {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #64748b;
-  white-space: nowrap;
 }
 
 body[data-theme='dark'] .logo-subtitle {
   color: #94a3b8;
 }
 
-/* ---------- Nav ---------- */
 .nav {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  flex: 1 1 auto;
-  min-width: 0;
-  flex-wrap: nowrap;
 }
 
 .nav-link {
@@ -132,7 +114,6 @@ body[data-theme='dark'] .logo-subtitle {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -146,6 +127,7 @@ body[data-theme='dark'] .nav-link:hover {
   color: #fbbf24;
 }
 
+/* Active navigation link indicator - warm amber/gold bottom glowing underline */
 .nav-link::after {
   content: '';
   position: absolute;
@@ -197,7 +179,6 @@ body[data-theme='dark'] .nav-link.active::after {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  white-space: nowrap;
 }
 
 .nav-link-icon {
@@ -206,7 +187,6 @@ body[data-theme='dark'] .nav-link.active::after {
   justify-content: center;
   opacity: 0.85;
   transition: opacity 0.2s ease, transform 0.25s ease;
-  flex-shrink: 0;
 }
 
 .nav-link:hover .nav-link-icon,
@@ -215,17 +195,6 @@ body[data-theme='dark'] .nav-link.active::after {
   transform: scale(1.1);
 }
 
-/* ---------- Right-side action cluster ---------- */
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-}
-
-/* ---------- Mobile backdrop ---------- */
 .mobile-backdrop {
   position: fixed;
   top: 66px;
@@ -247,7 +216,6 @@ body[data-theme='dark'] .nav-link.active::after {
   }
 }
 
-/* ---------- Burger ---------- */
 .menu-btn {
   display: none;
   background: none;
@@ -273,7 +241,7 @@ body[data-theme='dark'] .menu-btn:hover {
 }
 
 /* ==========================================================================
-   MOBILE DROPDOWN MENU
+   MOBILE DROPDOWN MENU - ENHANCED RESPONSIVE DRAWER
    ========================================================================== */
 @media (max-width: 992px) {
   .menu-btn {
@@ -298,8 +266,6 @@ body[data-theme='dark'] .menu-btn:hover {
     z-index: 1001;
     max-height: calc(100vh - 75px);
     overflow-y: auto;
-    flex: none;
-    flex-wrap: nowrap;
   }
 
   body[data-theme='dark'] .nav {
@@ -363,10 +329,12 @@ body[data-theme='dark'] .menu-btn:hover {
     justify-content: space-between;
   }
 
+  /* Disable desktop bottom underline in vertical mobile menu */
   .nav-link::after {
     display: none !important;
   }
 
+  /* Use warm amber/gold left accent bar for active item on mobile phone */
   .nav-link.active {
     background: rgba(245, 158, 11, 0.12) !important;
     border-left: 4px solid #f59e0b;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Tag, Button, Modal, Typography, Input, Space, message, Select, Badge } from 'antd';
 import { CheckOutlined, CloseOutlined, EyeOutlined, SearchOutlined, DollarOutlined } from '@ant-design/icons';
 import { apiFetch } from '../../utils/api';
-import { PaymentRecord } from '../../types';
+import type { PaymentRecord } from '../../types';
 
 const { Title, Text, Paragraph } = Typography;
 

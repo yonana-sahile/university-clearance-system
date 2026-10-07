@@ -6,7 +6,7 @@ import {
   DollarOutlined, CopyOutlined, UploadOutlined, CheckCircleOutlined, ClockCircleOutlined, CreditCardOutlined
 } from '@ant-design/icons';
 import { apiFetch, getSession, getStoredPaymentMethods } from '../../utils/api';
-import { PaymentMethod, PaymentRecord } from '../../types';
+import type { PaymentMethod, PaymentRecord } from '../../types';
 
 const { Title, Text, Paragraph } = Typography;
 

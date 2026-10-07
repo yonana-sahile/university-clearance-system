@@ -1,111 +1,93 @@
+@import "tailwindcss";
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --canvas-bg: #f8fafc;
+  --canvas-pattern:
+    radial-gradient(1200px 520px at 50% -80px, rgba(30, 58, 138, 0.08), transparent 75%),
+    radial-gradient(900px 450px at 95% 15%, rgba(245, 158, 11, 0.045), transparent 60%),
+    radial-gradient(700px 350px at 5% 35%, rgba(14, 165, 233, 0.04), transparent 50%),
+    linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  --canvas-pattern-size: 100% 100%, 100% 100%, 100% 100%, 36px 36px, 36px 36px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --surface-card: #ffffff;
+  --surface-border: #e2e8f0;
+  --text-main: #0f172a;
+  --text-secondary: #475569;
+}
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+body[data-theme='dark'] {
+  --canvas-bg: #0b0f19;
+  --canvas-pattern:
+    radial-gradient(1200px 520px at 50% -80px, rgba(37, 99, 235, 0.16), transparent 75%),
+    radial-gradient(900px 450px at 95% 15%, rgba(245, 158, 11, 0.07), transparent 60%),
+    radial-gradient(700px 350px at 5% 35%, rgba(14, 165, 233, 0.06), transparent 50%),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  --canvas-pattern-size: 100% 100%, 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+
+  --surface-card: #111827;
+  --surface-border: rgba(255, 255, 255, 0.08);
+  --text-main: #f8fafc;
+  --text-secondary: #94a3b8;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--canvas-bg);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+/* Master application background canvas */
+.app-main-content {
+  background-color: var(--canvas-bg);
+  background-image: var(--canvas-pattern);
+  background-size: var(--canvas-pattern-size);
+  background-attachment: fixed;
+  min-height: calc(100vh - 130px);
+  transition: background-color 0.3s ease;
+  position: relative;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
+/* Subtle ambient architectural glow */
+.app-main-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 420px;
+  background: radial-gradient(ellipse 1000px 380px at 50% -60px, rgba(30, 58, 138, 0.07), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body[data-theme='dark'] .app-main-content::before {
+  background: radial-gradient(ellipse 1000px 380px at 50% -60px, rgba(37, 99, 235, 0.14), transparent 70%);
+}
+
+.app-main-content > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Auth pages focused backdrop */
+.auth-page-canvas {
+  min-height: calc(100vh - 120px);
   display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  position: relative;
+  background: radial-gradient(ellipse 700px 450px at 50% 45%, rgba(30, 58, 138, 0.07), transparent 70%);
 }
 
-body {
-  margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+body[data-theme='dark'] .auth-page-canvas {
+  background: radial-gradient(ellipse 700px 450px at 50% 45%, rgba(37, 99, 235, 0.14), transparent 70%);
 }

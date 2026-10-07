@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Tag, Button, Input, Modal, Typography, Space, Row, Col, Statistic, message, Tabs, Form } from 'antd';
 import { CheckOutlined, CloseOutlined, SearchOutlined, BookOutlined, DollarOutlined, PlusOutlined } from '@ant-design/icons';
 import { apiFetch, getStoredForms, setStoredForms, getStoredDues, setStoredDues } from '../../utils/api';
-import { ClearanceForm, DueRecord } from '../../types';
+import type { ClearanceForm, DueRecord } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
 
 const { Title, Text, Paragraph } = Typography;

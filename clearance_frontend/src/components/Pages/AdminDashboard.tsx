@@ -6,7 +6,7 @@ import {
   UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined, SearchOutlined, UserOutlined, SafetyCertificateOutlined, CodeOutlined
 } from '@ant-design/icons';
 import { apiFetch, getStoredValidStudents, setStoredValidStudents } from '../../utils/api';
-import { ValidStudentCSV } from '../../types';
+import type { ValidStudentCSV } from '../../types';
 
 const { Title, Text, Paragraph } = Typography;
 
