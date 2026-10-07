@@ -18,8 +18,8 @@ export default function Footer() {
         <div className="footer-block">
           <div className="brand-mini">
             <img
-              src="/images/MAU.jpg"
-              alt="MAU"
+              src="/mau_logo.jpg"
+              alt="Mekdela Amba University"
               className="brand-icon"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
@@ -79,7 +79,7 @@ export default function Footer() {
             </div>
             <div className="mini-contact-item">
               <Phone size={14} />
-              <a href="tel:+251921459991">+251 967 00 50 77</a>
+              <a href="tel:+251967005077">+251 967 00 50 77</a>
             </div>
             <div className="mini-contact-item">
               <MapPin size={14} />
