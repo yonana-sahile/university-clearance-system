@@ -59,7 +59,6 @@ export default function Header() {
 
   const user = getSession();
 
-  // DEV-only admin gate stub. Wire to real backend later.
   const handleAdminAuthSubmit = async () => {
     const enteredUser = adminUsernameInput.trim();
     if (!enteredUser || !adminPasswordInput) {
@@ -118,7 +117,6 @@ export default function Header() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  // DEV-only demo role switcher. Disabled in production builds.
   const handleRoleSwitch = (role: UserRole) => {
     if (!import.meta.env.DEV) return;
     const isStudent = role === "student";
@@ -273,8 +271,8 @@ export default function Header() {
         <Link to="/" onClick={handleLinkClick} className="header-logo">
           <img
             className="logo-img"
-            src="/images/MAU.jpg"
-            alt="University Logo"
+            src="/mau_logo.jpg"
+            alt="Mekdela Amba University Logo"
             onError={(e) => {
               (e.target as HTMLImageElement).src =
                 "https://via.placeholder.com/80x80/2563eb/ffffff?text=MAU";
@@ -308,7 +306,7 @@ export default function Header() {
               }}
             >
               <img
-                src="/images/MAU.jpg"
+                src="/mau_logo.jpg"
                 alt="MAU Logo"
                 style={{
                   width: 38,

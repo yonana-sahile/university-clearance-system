@@ -79,7 +79,7 @@ export default function Footer() {
             </div>
             <div className="mini-contact-item">
               <Phone size={14} />
-              <a href="tel:+251921459991">+251 921 459 991</a>
+              <a href="tel:+251921459991">+251 967 00 50 77</a>
             </div>
             <div className="mini-contact-item">
               <MapPin size={14} />
