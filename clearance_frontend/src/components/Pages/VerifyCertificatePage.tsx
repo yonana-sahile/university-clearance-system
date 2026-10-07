@@ -1,11 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Card, Input, Button, Typography, Space, Tag, Alert, Result, Spin, Divider } from 'antd';
-import { SearchOutlined, CheckCircleFilled, SafetyCertificateOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import {
+  Card,
+  Input,
+  Button,
+  Typography,
+  Space,
+  Tag,
+  Alert,
+  Result,
+  Spin,
+  Divider,
+} from 'antd';
+import {
+  SearchOutlined,
+  CheckCircleFilled,
+  SafetyCertificateOutlined,
+  ArrowLeftOutlined,
+} from '@ant-design/icons';
 import { getStoredForms } from '../../utils/api';
-import { ClearanceForm } from '../../types';
+import type { ClearanceForm } from '../../types';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 export const VerifyCertificatePage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -20,6 +36,7 @@ export const VerifyCertificatePage: React.FC = () => {
     if (certIdParam) {
       handleSearch(certIdParam);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [certIdParam]);
 
   const handleSearch = (codeToSearch: string) => {
@@ -29,15 +46,19 @@ export const VerifyCertificatePage: React.FC = () => {
 
     setTimeout(() => {
       const forms = getStoredForms();
-      // Match by certificate ref format or numeric ID
       const cleaned = codeToSearch.replace(/[^0-9]/g, '');
-      const match = forms.find(f =>
-        codeToSearch.toLowerCase().includes(f.id.toString()) ||
-        f.id.toString() === cleaned ||
-        f.id_number.toLowerCase() === codeToSearch.toLowerCase()
+      const match = forms.find(
+        (f) =>
+          codeToSearch.toLowerCase().includes(f.id.toString()) ||
+          f.id.toString() === cleaned ||
+          f.id_number.toLowerCase() === codeToSearch.toLowerCase()
       );
 
-      if (match && (match.status === 'Cleared by Registrar' || match.status.includes('approved'))) {
+      if (
+        match &&
+        (match.status === 'Cleared by Registrar' ||
+          match.status.includes('approved'))
+      ) {
         setFoundForm(match);
       } else {
         setFoundForm(null);
@@ -48,7 +69,17 @@ export const VerifyCertificatePage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 800, margin: '40px auto', padding: '0 16px' }}>
-      <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20, color: '#2563eb', fontWeight: 600 }}>
+      <Link
+        to="/"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          marginBottom: 20,
+          color: '#2563eb',
+          fontWeight: 600,
+        }}
+      >
         <ArrowLeftOutlined /> Back to Home
       </Link>
 
@@ -57,12 +88,15 @@ export const VerifyCertificatePage: React.FC = () => {
         styles={{ body: { padding: 32 } }}
       >
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <SafetyCertificateOutlined style={{ fontSize: 44, color: '#2563eb', marginBottom: 12 }} />
+          <SafetyCertificateOutlined
+            style={{ fontSize: 44, color: '#2563eb', marginBottom: 12 }}
+          />
           <Title level={2} style={{ margin: 0, fontWeight: 800 }}>
             Official Clearance Verification Portal
           </Title>
           <Text type="secondary" style={{ fontSize: 14 }}>
-            Verify the cryptographic validity of Mekdela Amba University student digital clearance certificates.
+            Verify the cryptographic validity of Mekdela Amba University
+            student digital clearance certificates.
           </Text>
         </div>
 
@@ -71,7 +105,7 @@ export const VerifyCertificatePage: React.FC = () => {
             size="large"
             placeholder="Enter Certificate Reference ID (e.g. MAU-CLR-2026-00001 or Student ID)..."
             value={inputCode}
-            onChange={e => setInputCode(e.target.value)}
+            onChange={(e) => setInputCode(e.target.value)}
             onPressEnter={() => handleSearch(inputCode)}
             prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             style={{ borderRadius: '10px 0 0 10px' }}
@@ -81,7 +115,11 @@ export const VerifyCertificatePage: React.FC = () => {
             size="large"
             onClick={() => handleSearch(inputCode)}
             loading={loading}
-            style={{ borderRadius: '0 10px 10px 0', background: '#2563eb', fontWeight: 700 }}
+            style={{
+              borderRadius: '0 10px 10px 0',
+              background: '#2563eb',
+              fontWeight: 700,
+            }}
           >
             Verify Authenticity
           </Button>
@@ -90,19 +128,41 @@ export const VerifyCertificatePage: React.FC = () => {
         {loading && (
           <div style={{ textAlign: 'center', padding: 40 }}>
             <Spin size="large" />
-            <Text type="secondary" style={{ display: 'block', marginTop: 12 }}>Checking university cryptographic registrar logs...</Text>
+            <Text type="secondary" style={{ display: 'block', marginTop: 12 }}>
+              Checking university cryptographic registrar logs...
+            </Text>
           </div>
         )}
 
         {!loading && searched && foundForm && (
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 16, padding: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <div
+            style={{
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                marginBottom: 16,
+              }}
+            >
               <CheckCircleFilled style={{ fontSize: 28, color: '#16a34a' }} />
               <div>
-                <Tag color="success" style={{ fontSize: 12, fontWeight: 700, padding: '2px 10px' }}>
+                <Tag
+                  color="success"
+                  style={{ fontSize: 12, fontWeight: 700, padding: '2px 10px' }}
+                >
                   AUTHENTIC & VALIDATED
                 </Tag>
-                <Title level={4} style={{ margin: 0, color: '#14532d', fontWeight: 800 }}>
+                <Title
+                  level={4}
+                  style={{ margin: 0, color: '#14532d', fontWeight: 800 }}
+                >
                   Official Clearance Certificate Record
                 </Title>
               </div>
@@ -110,30 +170,65 @@ export const VerifyCertificatePage: React.FC = () => {
 
             <Divider style={{ borderColor: '#cbd5e1', margin: '12px 0' }} />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, fontSize: 14 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 16,
+                fontSize: 14,
+              }}
+            >
               <div>
-                <Text type="secondary" style={{ fontSize: 12 }}>STUDENT FULL NAME</Text>
-                <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>{foundForm.full_name}</div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  STUDENT FULL NAME
+                </Text>
+                <div
+                  style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}
+                >
+                  {foundForm.full_name}
+                </div>
               </div>
               <div>
-                <Text type="secondary" style={{ fontSize: 12 }}>ID NUMBER</Text>
-                <div style={{ fontWeight: 800, color: '#2563eb', fontSize: 16 }}>{foundForm.id_number}</div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  ID NUMBER
+                </Text>
+                <div
+                  style={{ fontWeight: 800, color: '#2563eb', fontSize: 16 }}
+                >
+                  {foundForm.id_number}
+                </div>
               </div>
               <div>
-                <Text type="secondary" style={{ fontSize: 12 }}>COLLEGE</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  COLLEGE
+                </Text>
                 <div style={{ fontWeight: 600 }}>{foundForm.college}</div>
               </div>
               <div>
-                <Text type="secondary" style={{ fontSize: 12 }}>DEPARTMENT</Text>
-                <div style={{ fontWeight: 600 }}>{foundForm.department_name}</div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  DEPARTMENT
+                </Text>
+                <div style={{ fontWeight: 600 }}>
+                  {foundForm.department_name}
+                </div>
               </div>
               <div>
-                <Text type="secondary" style={{ fontSize: 12 }}>PROGRAM LEVEL</Text>
-                <div style={{ fontWeight: 600 }}>{foundForm.program_level} ({foundForm.enrollment_type})</div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  PROGRAM LEVEL
+                </Text>
+                <div style={{ fontWeight: 600 }}>
+                  {foundForm.program_level} ({foundForm.enrollment_type})
+                </div>
               </div>
               <div>
-                <Text type="secondary" style={{ fontSize: 12 }}>REGISTRAR CLEARANCE DATE</Text>
-                <div style={{ fontWeight: 600 }}>{new Date(foundForm.updated_at || Date.now()).toLocaleDateString()}</div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  REGISTRAR CLEARANCE DATE
+                </Text>
+                <div style={{ fontWeight: 600 }}>
+                  {new Date(
+                    foundForm.updated_at || Date.now()
+                  ).toLocaleDateString()}
+                </div>
               </div>
             </div>
 
