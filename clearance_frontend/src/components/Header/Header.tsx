@@ -1,16 +1,44 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Button, Dropdown, MenuProps, Tag, Space, Avatar, Tooltip, Badge, Modal, Input, Alert } from "antd";
 import {
-  Sun, Moon, User, LogOut, ShieldAlert,
-  GraduationCap, Building2, BookOpen, Coffee,
-  Home, Shield, Scale, ArrowRightLeft, Sparkles, Bell, Globe, MapPin, CheckCircle
+  Button,
+  Dropdown,
+  Tag,
+  Space,
+  Avatar,
+  Tooltip,
+  Badge,
+  Modal,
+  Input,
+  Alert,
+} from "antd";
+import type { MenuProps } from "antd";
+import {
+  Sun,
+  Moon,
+  User,
+  LogOut,
+  ShieldAlert,
+  GraduationCap,
+  Building2,
+  BookOpen,
+  Coffee,
+  Home,
+  Shield,
+  Scale,
+  ArrowRightLeft,
+  Sparkles,
+  Bell,
+  Globe,
+  MapPin,
+  CheckCircle,
 } from "lucide-react";
 import { clearSession, getSession, setSession } from "../../utils/api";
 import { useTheme } from "../../App";
 import { useLanguage } from "../../context/LanguageContext";
-import { UserRole } from "../../types";
-import NotificationDrawer, { NotificationItem } from "./NotificationDrawer";
+import type { UserRole } from "../../types";
+import NotificationDrawer from "./NotificationDrawer";
+import type { NotificationItem } from "./NotificationDrawer";
 import OfficeDirectoryModal from "../Pages/OfficeDirectoryModal";
 import "./Header.css";
 
@@ -19,9 +47,9 @@ export default function Header() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [officeOpen, setOfficeOpen] = useState(false);
   const [adminAuthOpen, setAdminAuthOpen] = useState(false);
-  const [adminUsernameInput, setAdminUsernameInput] = useState('');
-  const [adminPasswordInput, setAdminPasswordInput] = useState('');
-  const [adminAuthError, setAdminAuthError] = useState('');
+  const [adminUsernameInput, setAdminUsernameInput] = useState("");
+  const [adminPasswordInput, setAdminPasswordInput] = useState("");
+  const [adminAuthError, setAdminAuthError] = useState("");
 
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
@@ -31,62 +59,47 @@ export default function Header() {
 
   const user = getSession();
 
-  const handleAdminAuthSubmit = () => {
-    const enteredUser = adminUsernameInput.trim().toLowerCase();
-    const validUsernames = ['admin', 'administrator', 'mau_admin', 'registrar', 'staff', 'root', 'superadmin'];
-    const isUserValid = validUsernames.includes(enteredUser) || enteredUser.length >= 3;
-
-    if (!enteredUser) {
-      setAdminAuthError('Please enter an admin username (e.g. "admin").');
+  // DEV-only admin gate stub. Wire to real backend later.
+  const handleAdminAuthSubmit = async () => {
+    const enteredUser = adminUsernameInput.trim();
+    if (!enteredUser || !adminPasswordInput) {
+      setAdminAuthError("Please enter both username and password.");
       return;
     }
-
-    if (
-      isUserValid &&
-      (adminPasswordInput === 'admin123' ||
-        adminPasswordInput === 'mau2026' ||
-        adminPasswordInput === 'admin')
-    ) {
-      sessionStorage.setItem('mau_admin_unlocked', 'true');
-      sessionStorage.setItem('mau_admin_username', adminUsernameInput.trim() || 'Admin');
-      setAdminAuthOpen(false);
-      setAdminUsernameInput('');
-      setAdminPasswordInput('');
-      setAdminAuthError('');
-      navigate('/admin');
-    } else {
-      setAdminAuthError('Incorrect username or password. Try Username: "admin" and Password: "admin123"');
-    }
+    setAdminAuthError(
+      "Real admin authentication is not yet wired to the backend."
+    );
   };
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([
     {
       id: 1,
-      title: 'Library Clearance Approved',
-      message: 'Mulugeta Yilma (Main Library) approved your textbook clearance.',
-      type: 'success',
-      time: '10 mins ago',
-      read: false
+      title: "Library Clearance Approved",
+      message: "Mulugeta Yilma (Main Library) approved your textbook clearance.",
+      type: "success",
+      time: "10 mins ago",
+      read: false,
     },
     {
       id: 2,
-      title: 'Payment Receipt Verified',
-      message: 'Telebirr 350 ETB payment for cafeteria dues has been verified.',
-      type: 'success',
-      time: '1 hour ago',
-      read: false
+      title: "Payment Receipt Verified",
+      message: "Telebirr 350 ETB payment for cafeteria dues has been verified.",
+      type: "success",
+      time: "1 hour ago",
+      read: false,
     },
     {
       id: 3,
-      title: 'System Notice',
-      message: 'Registrar digital seals are now cryptographically signed and downloadable.',
-      type: 'info',
-      time: '3 hours ago',
-      read: true
-    }
+      title: "System Notice",
+      message:
+        "Registrar digital seals are now cryptographically signed and downloadable.",
+      type: "info",
+      time: "3 hours ago",
+      read: true,
+    },
   ]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const handleLogout = () => {
     clearSession();
@@ -99,30 +112,28 @@ export default function Header() {
     localStorage.setItem("theme", newTheme);
   };
 
-  const handleLinkClick = () => {
-    setMobileOpen(false);
-  };
+  const handleLinkClick = () => setMobileOpen(false);
 
   const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  // Switch role test helper
+  // DEV-only demo role switcher. Disabled in production builds.
   const handleRoleSwitch = (role: UserRole) => {
-    const isStudent = role === 'student';
+    if (!import.meta.env.DEV) return;
+    const isStudent = role === "student";
     const demoUser = {
       id: isStudent ? 101 : 99,
-      username: isStudent ? 'AAA1234' : `${role}_demo`,
-      email: isStudent ? 'yonassahile8@gmail.com' : `${role}@mau.edu.et`,
-      first_name: isStudent ? 'Yonas' : (role.charAt(0).toUpperCase() + role.slice(1)),
-      last_name: isStudent ? 'Sahile' : 'Staff',
-      full_name: isStudent ? 'Yonas Sahile' : `${role.toUpperCase()} Officer`,
-      role: role,
+      username: isStudent ? "AAA1234" : `${role}_demo`,
+      email: `${role}@mau.edu.et`,
+      first_name: isStudent ? "Demo" : role,
+      last_name: isStudent ? "Student" : "Officer",
+      full_name: isStudent ? "Demo Student" : `${role.toUpperCase()} Officer`,
+      role,
       token: `demo_token_${role}`,
-      id_number: isStudent ? 'AAA1234' : undefined,
-      department_name: 'Software Engineering'
+      id_number: isStudent ? "AAA1234" : undefined,
+      department_name: "Software Engineering",
     };
-
     setSession(demoUser);
 
     const routes: Record<string, string> = {
@@ -138,53 +149,74 @@ export default function Header() {
       studentaffairs: "/studentaffairs",
       dormitory: "/dormitory",
       registrar: "/registrar",
-      admin: "/admin"
+      admin: "/admin",
     };
-
     navigate(routes[role] || "/");
   };
 
-  const roleMenuItems: MenuProps['items'] = [
+  const roleMenuItems: MenuProps["items"] = [
     {
-      key: 'header-role-title',
-      label: <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#888' }}>DEMO ROLE SWITCHER</span>,
-      disabled: true
+      key: "header-role-title",
+      label: (
+        <span style={{ fontWeight: "bold", fontSize: "11px", color: "#888" }}>
+          DEMO ROLE SWITCHER
+        </span>
+      ),
+      disabled: true,
     },
-    { type: 'divider' },
-    { key: 'student', label: '🎓 Student Portal', onClick: () => handleRoleSwitch('student') },
-    { key: 'departmenthead', label: '🏢 Dept. Head Portal', onClick: () => handleRoleSwitch('departmenthead') },
-    { key: 'librarian', label: '📚 Librarian Portal', onClick: () => handleRoleSwitch('librarian') },
-    { key: 'cafeteria', label: '🍽️ Cafeteria Portal', onClick: () => handleRoleSwitch('cafeteria') },
-    { key: 'dormitory', label: '🏠 Dormitory Portal', onClick: () => handleRoleSwitch('dormitory') },
-    { key: 'registrar', label: '🎓 Registrar Portal', onClick: () => handleRoleSwitch('registrar') },
-    { key: 'admin', label: '⚙️ Admin Dashboard', onClick: () => handleRoleSwitch('admin') },
+    { type: "divider" },
+    {
+      key: "student",
+      label: "🎓 Student Portal",
+      onClick: () => handleRoleSwitch("student"),
+    },
+    {
+      key: "departmenthead",
+      label: "🏢 Dept. Head Portal",
+      onClick: () => handleRoleSwitch("departmenthead"),
+    },
+    {
+      key: "librarian",
+      label: "📚 Librarian Portal",
+      onClick: () => handleRoleSwitch("librarian"),
+    },
+    {
+      key: "cafeteria",
+      label: "🍽️ Cafeteria Portal",
+      onClick: () => handleRoleSwitch("cafeteria"),
+    },
+    {
+      key: "dormitory",
+      label: "🏠 Dormitory Portal",
+      onClick: () => handleRoleSwitch("dormitory"),
+    },
+    {
+      key: "registrar",
+      label: "🎓 Registrar Portal",
+      onClick: () => handleRoleSwitch("registrar"),
+    },
+    {
+      key: "admin",
+      label: "⚙️ Admin Dashboard",
+      onClick: () => handleRoleSwitch("admin"),
+    },
   ];
 
-  const langMenuItems: MenuProps['items'] = [
-    {
-      key: 'en',
-      label: '🇬🇧 English',
-      onClick: () => setLanguage('en')
-    },
-    {
-      key: 'am',
-      label: '🇪🇹 አማርኛ (Amharic)',
-      onClick: () => setLanguage('am')
-    }
+  const langMenuItems: MenuProps["items"] = [
+    { key: "en", label: "🇬🇧 English", onClick: () => setLanguage("en") },
+    { key: "am", label: "🇪🇹 አማርኛ (Amharic)", onClick: () => setLanguage("am") },
   ];
 
   const isPathActive = (path: string) => {
-    if (path === '/') {
-      return currentPath === '/';
-    }
-    return currentPath === path || currentPath.startsWith(path + '/');
+    if (path === "/") return currentPath === "/";
+    return currentPath === path || currentPath.startsWith(path + "/");
   };
 
   const NavLinkItem = ({
     to,
     label,
     icon,
-    highlight
+    highlight,
   }: {
     to: string;
     label: React.ReactNode;
@@ -196,7 +228,7 @@ export default function Header() {
       <Link
         to={to}
         onClick={handleLinkClick}
-        className={`nav-link ${active ? 'active' : ''}`}
+        className={`nav-link ${active ? "active" : ""}`}
         style={highlight ? { fontWeight: 700 } : undefined}
       >
         <span className="nav-link-content">
@@ -208,25 +240,25 @@ export default function Header() {
   };
 
   const renderAdminLink = () => {
-    const active = currentPath === '/admin';
+    const active = currentPath === "/admin";
     return (
       <a
         href="#admin"
         onClick={(e) => {
           e.preventDefault();
           handleLinkClick();
-          if (user?.role === 'admin' || sessionStorage.getItem('mau_admin_unlocked') === 'true') {
-            navigate('/admin');
+          if (user?.role === "admin") {
+            navigate("/admin");
           } else {
             setAdminAuthOpen(true);
           }
         }}
-        className={`nav-link ${active ? 'active' : ''}`}
+        className={`nav-link ${active ? "active" : ""}`}
         style={{ fontWeight: 700 }}
       >
         <span className="nav-link-content">
           <span className="nav-link-icon">
-            <Shield size={15} style={{ color: '#f59e0b' }} />
+            <Shield size={15} style={{ color: "#f59e0b" }} />
           </span>
           <span>Admin</span>
         </span>
@@ -249,8 +281,8 @@ export default function Header() {
             }}
           />
           <div className="logo-text-wrapper">
-            <span className="logo-title">{t('system_title')}</span>
-            <span className="logo-subtitle">{t('system_subtitle')}</span>
+            <span className="logo-title">{t("system_title")}</span>
+            <span className="logo-subtitle">{t("system_subtitle")}</span>
           </div>
         </Link>
 
@@ -267,101 +299,257 @@ export default function Header() {
         <nav className={`nav ${mobileOpen ? "open" : ""}`}>
           {/* MOBILE ONLY MENU HEADER */}
           <div className="mobile-menu-header mobile-only">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 8,
+              }}
+            >
               <img
                 src="/images/MAU.jpg"
                 alt="MAU Logo"
-                style={{ width: 38, height: 38, borderRadius: 10, border: '2px solid #f59e0b', objectFit: 'contain', background: '#ffffff', padding: 2 }}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  border: "2px solid #f59e0b",
+                  objectFit: "contain",
+                  background: "#ffffff",
+                  padding: 2,
+                }}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://via.placeholder.com/38x38/2563eb/ffffff?text=MAU";
+                  (e.target as HTMLImageElement).src =
+                    "https://via.placeholder.com/38x38/2563eb/ffffff?text=MAU";
                 }}
               />
               <div>
                 <div className="mobile-menu-title">University Navigation</div>
-                <div className="mobile-menu-subtitle">{t('system_title')}</div>
+                <div className="mobile-menu-subtitle">{t("system_title")}</div>
               </div>
             </div>
             {user && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(37, 99, 235, 0.08)', borderRadius: 8, marginTop: 4 }}>
-                <Avatar size="small" icon={<User size={14} />} src={user.profile_picture_url} />
-                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{user.first_name || user.username}</span>
-                <Tag color="blue" style={{ margin: 0, fontSize: 10 }}>{user.role}</Tag>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "6px 10px",
+                  background: "rgba(37, 99, 235, 0.08)",
+                  borderRadius: 8,
+                  marginTop: 4,
+                }}
+              >
+                <Avatar
+                  size="small"
+                  icon={<User size={14} />}
+                  src={user.profile_picture_url}
+                />
+                <span style={{ fontWeight: 600, fontSize: "0.85rem" }}>
+                  {user.first_name || user.username}
+                </span>
+                <Tag color="blue" style={{ margin: 0, fontSize: 10 }}>
+                  {user.role}
+                </Tag>
               </div>
             )}
           </div>
 
           {!user && (
             <>
-              <NavLinkItem to="/" label={t('home')} icon={<Home size={15} />} />
-              <NavLinkItem to="/about" label={t('about')} icon={<Building2 size={15} />} />
-              <NavLinkItem to="/learn-more" label={t('learn_more')} icon={<BookOpen size={15} />} />
-              <NavLinkItem to="/verify-certificate" label="Verify Clearance" icon={<CheckCircle size={15} />} />
+              <NavLinkItem to="/" label={t("home")} icon={<Home size={15} />} />
+              <NavLinkItem
+                to="/about"
+                label={t("about")}
+                icon={<Building2 size={15} />}
+              />
+              <NavLinkItem
+                to="/learn-more"
+                label={t("learn_more")}
+                icon={<BookOpen size={15} />}
+              />
+              <NavLinkItem
+                to="/verify-certificate"
+                label="Verify Clearance"
+                icon={<CheckCircle size={15} />}
+              />
               {renderAdminLink()}
-              <NavLinkItem to="/register" label={t('register')} icon={<User size={15} />} />
-              <NavLinkItem to="/login" label={t('sign_in')} icon={<ArrowRightLeft size={15} />} highlight />
+              <NavLinkItem
+                to="/register"
+                label={t("register")}
+                icon={<User size={15} />}
+              />
+              <NavLinkItem
+                to="/login"
+                label={t("sign_in")}
+                icon={<ArrowRightLeft size={15} />}
+                highlight
+              />
             </>
           )}
 
-          {user && user.role !== 'admin' && renderAdminLink()}
+          {user && user.role !== "admin" && renderAdminLink()}
 
           {user?.role === "student" && (
             <>
-              <NavLinkItem to="/student" label={t('dashboard')} icon={<GraduationCap size={15} />} />
-              <NavLinkItem to="/payment" label={t('payments')} icon={<Scale size={15} />} />
-              <NavLinkItem to="/clearance-form" label={t('apply_clearance')} icon={<CheckCircle size={15} />} />
-              <NavLinkItem to="/verify-certificate" label="Verify Certificate" icon={<CheckCircle size={15} />} />
+              <NavLinkItem
+                to="/student"
+                label={t("dashboard")}
+                icon={<GraduationCap size={15} />}
+              />
+              <NavLinkItem
+                to="/payment"
+                label={t("payments")}
+                icon={<Scale size={15} />}
+              />
+              <NavLinkItem
+                to="/clearance-form"
+                label={t("apply_clearance")}
+                icon={<CheckCircle size={15} />}
+              />
+              <NavLinkItem
+                to="/verify-certificate"
+                label="Verify Certificate"
+                icon={<CheckCircle size={15} />}
+              />
             </>
           )}
 
-          {user?.role === "departmenthead" && <NavLinkItem to="/departmenthead" label="Dept Head Dashboard" icon={<Building2 size={15} />} />}
-          {user?.role === "librarian" && <NavLinkItem to="/librarian" label="Library Portal" icon={<BookOpen size={15} />} />}
-          {user?.role === "cafeteria" && <NavLinkItem to="/cafeteria" label="Cafeteria Portal" icon={<Coffee size={15} />} />}
-          {user?.role === "dormitory" && <NavLinkItem to="/dormitory" label="Dormitory Portal" icon={<Home size={15} />} />}
-          {user?.role === "psychology" && <NavLinkItem to="/psychology" label="Psychology Portal" icon={<User size={15} />} />}
-          {user?.role === "sportmaster" && <NavLinkItem to="/sportmaster" label="Sport Portal" icon={<Sparkles size={15} />} />}
-          {user?.role === "campuspolice" && <NavLinkItem to="/campuspolice" label="Police Portal" icon={<ShieldAlert size={15} />} />}
-          {user?.role === "cooperationsharing" && <NavLinkItem to="/cooperationsharing" label="Cooperation Portal" icon={<Globe size={15} />} />}
-          {user?.role === "dopcordinator" && <NavLinkItem to="/dopcordinator" label="DOP Portal" icon={<CheckCircle size={15} />} />}
-          {user?.role === "studentaffairs" && <NavLinkItem to="/studentaffairs" label="Affairs Portal" icon={<GraduationCap size={15} />} />}
-          {user?.role === "registrar" && <NavLinkItem to="/registrar" label="Registrar Portal" icon={<GraduationCap size={15} />} />}
-          {user?.role === "admin" && <NavLinkItem to="/admin" label="Admin Portal" icon={<Shield size={15} />} />}
+          {user?.role === "departmenthead" && (
+            <NavLinkItem
+              to="/departmenthead"
+              label="Dept Head Dashboard"
+              icon={<Building2 size={15} />}
+            />
+          )}
+          {user?.role === "librarian" && (
+            <NavLinkItem
+              to="/librarian"
+              label="Library Portal"
+              icon={<BookOpen size={15} />}
+            />
+          )}
+          {user?.role === "cafeteria" && (
+            <NavLinkItem
+              to="/cafeteria"
+              label="Cafeteria Portal"
+              icon={<Coffee size={15} />}
+            />
+          )}
+          {user?.role === "dormitory" && (
+            <NavLinkItem
+              to="/dormitory"
+              label="Dormitory Portal"
+              icon={<Home size={15} />}
+            />
+          )}
+          {user?.role === "psychology" && (
+            <NavLinkItem
+              to="/psychology"
+              label="Psychology Portal"
+              icon={<User size={15} />}
+            />
+          )}
+          {user?.role === "sportmaster" && (
+            <NavLinkItem
+              to="/sportmaster"
+              label="Sport Portal"
+              icon={<Sparkles size={15} />}
+            />
+          )}
+          {user?.role === "campuspolice" && (
+            <NavLinkItem
+              to="/campuspolice"
+              label="Police Portal"
+              icon={<ShieldAlert size={15} />}
+            />
+          )}
+          {user?.role === "cooperationsharing" && (
+            <NavLinkItem
+              to="/cooperationsharing"
+              label="Cooperation Portal"
+              icon={<Globe size={15} />}
+            />
+          )}
+          {user?.role === "dopcordinator" && (
+            <NavLinkItem
+              to="/dopcordinator"
+              label="DOP Portal"
+              icon={<CheckCircle size={15} />}
+            />
+          )}
+          {user?.role === "studentaffairs" && (
+            <NavLinkItem
+              to="/studentaffairs"
+              label="Affairs Portal"
+              icon={<GraduationCap size={15} />}
+            />
+          )}
+          {user?.role === "registrar" && (
+            <NavLinkItem
+              to="/registrar"
+              label="Registrar Portal"
+              icon={<GraduationCap size={15} />}
+            />
+          )}
+          {user?.role === "admin" && (
+            <NavLinkItem
+              to="/admin"
+              label="Admin Portal"
+              icon={<Shield size={15} />}
+            />
+          )}
 
-          {/* MOBILE ONLY FOOTER ACTION BAR INSIDE MENU */}
+          {/* MOBILE ONLY FOOTER ACTION BAR */}
           <div className="mobile-nav-divider mobile-only" />
           <div className="mobile-action-bar mobile-only">
-            <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+            <div style={{ display: "flex", gap: 8, width: "100%" }}>
               <Button
                 size="middle"
-                icon={<MapPin size={15} style={{ color: '#0284c7' }} />}
-                onClick={() => { setMobileOpen(false); setOfficeOpen(true); }}
+                icon={<MapPin size={15} style={{ color: "#0284c7" }} />}
+                onClick={() => {
+                  setMobileOpen(false);
+                  setOfficeOpen(true);
+                }}
                 style={{ flex: 1, borderRadius: 10, fontWeight: 600 }}
               >
                 Offices Directory
               </Button>
               <Button
                 size="middle"
-                icon={<Globe size={15} style={{ color: '#2563eb' }} />}
-                onClick={() => setLanguage(language === 'en' ? 'am' : 'en')}
+                icon={<Globe size={15} style={{ color: "#2563eb" }} />}
+                onClick={() => setLanguage(language === "en" ? "am" : "en")}
                 style={{ flex: 1, borderRadius: 10, fontWeight: 600 }}
               >
-                {language === 'en' ? '🇪🇹 አማርኛ' : '🇬🇧 English'}
+                {language === "en" ? "🇪🇹 አማርኛ" : "🇬🇧 English"}
               </Button>
             </div>
-            <div style={{ display: 'flex', gap: 8, width: '100%', marginTop: 4 }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                width: "100%",
+                marginTop: 4,
+              }}
+            >
               <Button
                 size="middle"
                 icon={theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
                 onClick={toggleTheme}
                 style={{ flex: 1, borderRadius: 10, fontWeight: 600 }}
               >
-                {theme === 'light' ? 'Dark Theme' : 'Light Theme'}
+                {theme === "light" ? "Dark Theme" : "Light Theme"}
               </Button>
               {user ? (
                 <Button
                   size="middle"
                   danger
                   icon={<LogOut size={15} />}
-                  onClick={() => { setMobileOpen(false); handleLogout(); }}
+                  onClick={() => {
+                    setMobileOpen(false);
+                    handleLogout();
+                  }}
                   style={{ flex: 1, borderRadius: 10, fontWeight: 600 }}
                 >
                   Sign Out
@@ -370,8 +558,17 @@ export default function Header() {
                 <Button
                   type="primary"
                   size="middle"
-                  onClick={() => { setMobileOpen(false); navigate('/login'); }}
-                  style={{ flex: 1, borderRadius: 10, fontWeight: 600, background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                  onClick={() => {
+                    setMobileOpen(false);
+                    navigate("/login");
+                  }}
+                  style={{
+                    flex: 1,
+                    borderRadius: 10,
+                    fontWeight: 600,
+                    background:
+                      "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                  }}
                 >
                   Sign In
                 </Button>
@@ -382,11 +579,10 @@ export default function Header() {
 
         {/* RIGHT ACTION BUTTONS */}
         <div className="header-right">
-          {/* OFFICE DIRECTORY HELPLINE */}
           <Tooltip title="Clearance Offices Directory">
             <Button
               size="small"
-              icon={<MapPin size={15} style={{ color: '#0284c7' }} />}
+              icon={<MapPin size={15} style={{ color: "#0284c7" }} />}
               onClick={() => setOfficeOpen(true)}
               style={{ borderRadius: 20, fontSize: 12, fontWeight: 600 }}
               className="desktop-only"
@@ -395,56 +591,59 @@ export default function Header() {
             </Button>
           </Tooltip>
 
-          {/* LANGUAGE SELECTOR */}
           <Dropdown menu={{ items: langMenuItems }} placement="bottomRight">
             <Button
               size="small"
-              icon={<Globe size={15} style={{ color: '#2563eb' }} />}
+              icon={<Globe size={15} style={{ color: "#2563eb" }} />}
               style={{ borderRadius: 20, fontSize: 12, fontWeight: 600 }}
             >
-              {language === 'en' ? 'EN' : 'አማ'}
+              {language === "en" ? "EN" : "አማ"}
             </Button>
           </Dropdown>
 
-          {/* NOTIFICATION BELL */}
           <Tooltip title="Clearance Notifications">
             <Badge count={unreadCount} size="small" offset={[-2, 2]}>
               <Button
                 type="text"
                 shape="circle"
-                icon={<Bell size={18} style={{ color: '#475569' }} />}
+                icon={<Bell size={18} style={{ color: "#475569" }} />}
                 onClick={() => setNotifOpen(true)}
               />
             </Badge>
           </Tooltip>
 
-          {/* DEMO ROLE SWITCHER DROPDOWN */}
           <Dropdown menu={{ items: roleMenuItems }} placement="bottomRight">
             <Button
               size="small"
-              icon={<Sparkles size={14} style={{ color: '#8b5cf6' }} />}
+              icon={<Sparkles size={14} style={{ color: "#8b5cf6" }} />}
               style={{
                 borderRadius: 20,
                 fontSize: 12,
                 fontWeight: 600,
-                borderColor: '#c084fc'
+                borderColor: "#c084fc",
               }}
             >
               Demo Roles
             </Button>
           </Dropdown>
 
-          {/* USER PROFILE & LOGOUT */}
           {user ? (
             <Space>
               <Button
                 type="text"
-                onClick={() => navigate('/profile')}
-                style={{ padding: '0 8px', height: 'auto' }}
+                onClick={() => navigate("/profile")}
+                style={{ padding: "0 8px", height: "auto" }}
               >
                 <Space size={6}>
-                  <Avatar size="small" icon={<User size={14} />} src={user.profile_picture_url} />
-                  <span style={{ fontWeight: 600, fontSize: 13 }} className="desktop-only">
+                  <Avatar
+                    size="small"
+                    icon={<User size={14} />}
+                    src={user.profile_picture_url}
+                  />
+                  <span
+                    style={{ fontWeight: 600, fontSize: 13 }}
+                    className="desktop-only"
+                  >
                     {user.first_name || user.username}
                   </span>
                   <Tag color="blue" style={{ fontSize: 10, margin: 0 }}>
@@ -468,8 +667,9 @@ export default function Header() {
                 type="primary"
                 style={{
                   borderRadius: 20,
-                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                  fontWeight: 600
+                  background:
+                    "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                  fontWeight: 600,
                 }}
               >
                 Sign In
@@ -477,8 +677,11 @@ export default function Header() {
             </Link>
           )}
 
-          {/* THEME TOGGLE */}
-          <button className="theme-toggle-btn" onClick={toggleTheme} aria-label="Toggle Theme">
+          <button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            aria-label="Toggle Theme"
+          >
             {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
           </button>
         </div>
@@ -510,45 +713,60 @@ export default function Header() {
       <Modal
         title={
           <Space>
-            <ShieldAlert size={20} style={{ color: '#2563eb' }} />
+            <ShieldAlert size={20} style={{ color: "#2563eb" }} />
             <span>University Admin Security Gate</span>
           </Space>
         }
         open={adminAuthOpen}
         onCancel={() => {
           setAdminAuthOpen(false);
-          setAdminAuthError('');
-          setAdminUsernameInput('');
-          setAdminPasswordInput('');
+          setAdminAuthError("");
+          setAdminUsernameInput("");
+          setAdminPasswordInput("");
         }}
         onOk={handleAdminAuthSubmit}
-        okText="Unlock Admin & API Portal"
-        okButtonProps={{ style: { background: '#2563eb', borderRadius: 8, fontWeight: 700 } }}
+        okText="Unlock Admin Portal"
+        okButtonProps={{
+          style: {
+            background: "#2563eb",
+            borderRadius: 8,
+            fontWeight: 700,
+          },
+        }}
         cancelButtonProps={{ style: { borderRadius: 8 } }}
       >
-        <div style={{ padding: '12px 0' }}>
-          <p style={{ color: '#475569', marginBottom: 16 }}>
-            Please enter your administrator username and password to access the University Admin Console and Developer API Portal.
+        <div style={{ padding: "12px 0" }}>
+          <p style={{ color: "#475569", marginBottom: 16 }}>
+            Enter your administrator credentials to access the University
+            Admin Console.
           </p>
           <Input
-            placeholder="Enter Admin Username (e.g. admin)"
+            placeholder="Admin username"
             value={adminUsernameInput}
             onChange={(e) => {
               setAdminUsernameInput(e.target.value);
-              setAdminAuthError('');
+              setAdminAuthError("");
             }}
             onPressEnter={handleAdminAuthSubmit}
-            style={{ borderRadius: 8, marginBottom: 12, padding: '8px 12px' }}
+            style={{
+              borderRadius: 8,
+              marginBottom: 12,
+              padding: "8px 12px",
+            }}
           />
           <Input.Password
-            placeholder="Enter Admin Password (e.g. admin123)"
+            placeholder="Admin password"
             value={adminPasswordInput}
             onChange={(e) => {
               setAdminPasswordInput(e.target.value);
-              setAdminAuthError('');
+              setAdminAuthError("");
             }}
             onPressEnter={handleAdminAuthSubmit}
-            style={{ borderRadius: 8, marginBottom: 12, padding: '8px 12px' }}
+            style={{
+              borderRadius: 8,
+              marginBottom: 12,
+              padding: "8px 12px",
+            }}
           />
           {adminAuthError && (
             <Alert
@@ -560,8 +778,8 @@ export default function Header() {
           )}
           <Alert
             type="info"
-            message="Demo Access Hint"
-            description="Use Username: admin and Password: admin123 (or mau2026 / admin) to unlock the Admin Console and Developer API Portal."
+            message="Backend not yet wired"
+            description="Admin authentication will be performed server-side once the Django backend is running."
             showIcon
             style={{ borderRadius: 8 }}
           />
@@ -570,4 +788,3 @@ export default function Header() {
     </header>
   );
 }
-
