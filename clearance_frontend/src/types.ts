@@ -1,3 +1,9 @@
+// ============================================================
+// src/types.ts
+// Central domain types for the MAU Online Clearance System
+// ============================================================
+
+// ---------- User & Role ----------
 export type UserRole =
   | 'student'
   | 'departmenthead'
@@ -34,6 +40,7 @@ export interface User {
   building_name?: string;
 }
 
+// ---------- Clearance workflow ----------
 export type FormStatus =
   | 'pending_department'
   | 'approved_department'
@@ -71,8 +78,8 @@ export interface ClearanceForm {
   updated_at: string;
   can_resubmit?: boolean;
 
-  // Department feedback notes
-  note?: string; // Department head note
+  // Department feedback notes (one pair per office)
+  note?: string;
   department_note?: string;
   department_approved_by?: string;
   library_note?: string;
@@ -104,6 +111,7 @@ export interface ClearanceForm {
   };
 }
 
+// ---------- Payments ----------
 export interface PaymentMethod {
   id: number;
   name: string;
@@ -167,6 +175,7 @@ export interface DueRecord {
   resolution_date?: string;
 }
 
+// ---------- Chat ----------
 export interface ChatMessage {
   id: number | string;
   room_id: number | string;
@@ -213,6 +222,7 @@ export interface ChatRoom {
   };
 }
 
+// ---------- Admin / Reference data ----------
 export interface ValidStudentCSV {
   id: number | string;
   first_name: string;
