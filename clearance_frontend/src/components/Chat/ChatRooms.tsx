@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, List, Avatar, Badge, Tag, Typography, Button, Spin, Input } from 'antd';
+import { Card, Avatar, Badge, Typography, Spin, Input } from 'antd';
 import { MessageOutlined, UserOutlined, SearchOutlined } from '@ant-design/icons';
 import { apiFetch, getSession } from '../../utils/api';
-import { ChatRoom } from '../../types';
+import type { ChatRoom } from '../../types';
 
 const { Text } = Typography;
 
@@ -19,7 +19,8 @@ export default function ChatRooms({ onSelectRoom, selectedRoomId }: Props) {
 
   useEffect(() => {
     loadRooms();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const loadRooms = async () => {
     setLoading(true);
@@ -33,10 +34,11 @@ export default function ChatRooms({ onSelectRoom, selectedRoomId }: Props) {
     }
   };
 
-  const filtered = rooms.filter(r =>
-    (r.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (r.student_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (r.staff_name || '').toLowerCase().includes(search.toLowerCase())
+  const filtered = rooms.filter(
+    (r) =>
+      (r.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.student_name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.staff_name || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -54,12 +56,14 @@ export default function ChatRooms({ onSelectRoom, selectedRoomId }: Props) {
         prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
         placeholder="Search conversation..."
         value={search}
-        onChange={e => setSearch(e.target.value)}
+        onChange={(e) => setSearch(e.target.value)}
         style={{ marginBottom: 12, borderRadius: 10 }}
       />
 
       {loading ? (
-        <div style={{ padding: 24, textAlign: 'center' }}><Spin /></div>
+        <div style={{ padding: 24, textAlign: 'center' }}>
+          <Spin />
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {filtered.map((room: ChatRoom) => {
@@ -72,27 +76,47 @@ export default function ChatRooms({ onSelectRoom, selectedRoomId }: Props) {
                   padding: '12px 16px',
                   borderRadius: 12,
                   cursor: 'pointer',
-                  background: isSelected ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+                  background: isSelected
+                    ? 'rgba(37, 99, 235, 0.08)'
+                    : 'transparent',
                   borderLeft: isSelected ? '4px solid #2563eb' : 'none',
                   transition: 'background 0.2s',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12
+                  gap: 12,
                 }}
               >
                 <Badge count={room.unread_count}>
-                  <Avatar icon={<UserOutlined />} style={{ background: '#2563eb' }} />
+                  <Avatar
+                    icon={<UserOutlined />}
+                    style={{ background: '#2563eb' }}
+                  />
                 </Badge>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text strong style={{ fontSize: 13 }}>{room.name || room.staff_name || room.student_name}</Text>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text strong style={{ fontSize: 13 }}>
+                      {room.name || room.staff_name || room.student_name}
+                    </Text>
                     {room.last_message_time && (
                       <Text type="secondary" style={{ fontSize: 10 }}>
-                        {new Date(room.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(room.last_message_time).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </Text>
                     )}
                   </div>
-                  <Text type="secondary" ellipsis style={{ fontSize: 12, display: 'block' }}>
+                  <Text
+                    type="secondary"
+                    ellipsis
+                    style={{ fontSize: 12, display: 'block' }}
+                  >
                     {room.last_message || 'Start messaging...'}
                   </Text>
                 </div>

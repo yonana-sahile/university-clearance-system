@@ -1,9 +1,4 @@
-// ============================================================
-// src/types.ts
-// Central domain types for the MAU Online Clearance System
-// ============================================================
 
-// ---------- User & Role ----------
 export type UserRole =
   | 'student'
   | 'departmenthead'

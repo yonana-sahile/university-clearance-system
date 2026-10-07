@@ -365,4 +365,4 @@ export const CostSharingContractSection: React.FC<CostSharingProps> = ({ user, f
   );
 };
 
-export default CostSharingContractSection;
+export default CostSharingContractSection
