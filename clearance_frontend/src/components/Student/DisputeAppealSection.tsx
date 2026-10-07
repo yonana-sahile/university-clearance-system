@@ -1,15 +1,31 @@
 import React, { useState } from 'react';
 import {
-  Card, Table, Tag, Button, Typography, Space, Modal, Form, Input,
-  Select, Alert, Row, Col, Timeline, message, Steps, Tooltip
+  Card,
+  Table,
+  Tag,
+  Button,
+  Typography,
+  Space,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Alert,
+  Row,
+  Col,
+  Timeline,
+  message,
+  Tooltip,
 } from 'antd';
 import {
-  ExclamationCircleOutlined, PlusOutlined, FileTextOutlined,
-  CheckCircleFilled, ClockCircleOutlined, CloseCircleFilled,
-  AuditOutlined, ThunderboltOutlined, SafetyCertificateOutlined
+  PlusOutlined,
+  CheckCircleFilled,
+  ClockCircleOutlined,
+  CloseCircleFilled,
+  AuditOutlined,
 } from '@ant-design/icons';
-import { User, ClearanceForm } from '../../types';
-import { apiFetch, getStoredForms, setStoredForms } from '../../utils/api';
+import type { User, ClearanceForm } from '../../types';
+import { getStoredForms, setStoredForms } from '../../utils/api';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -33,18 +49,23 @@ interface DisputeRecord {
   reviewedBy?: string;
 }
 
-export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form, onFormUpdated }) => {
+export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({
+  user,
+  form,
+  onFormUpdated,
+}) => {
   const [appeals, setAppeals] = useState<DisputeRecord[]>([
     {
       id: 'APP-2026-081',
       department: 'Main Library',
       category: 'Unreturned Book Dispute',
-      reason: 'I returned the Advanced Software Engineering textbook to Counter 2 on June 15th before finals. Assistant librarian signed my manual return notebook.',
+      reason:
+        'I returned the Advanced Software Engineering textbook to Counter 2 on June 15th before finals. Assistant librarian signed my manual return notebook.',
       evidence: 'Library manual return stamp slip #LB-4421 attached.',
       status: 'Under Review',
       submittedDate: '2026-07-27',
-      resolutionNote: 'Awaiting circulation desk inventory cross-check.'
-    }
+      resolutionNote: 'Awaiting circulation desk inventory cross-check.',
+    },
   ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -63,28 +84,34 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
         evidence: values.evidence || 'Self-declaration with student witness.',
         status: 'Under Review',
         submittedDate: new Date().toISOString().split('T')[0],
-        resolutionNote: 'Assigned to Dean of Students & Department Audit Committee'
+        resolutionNote:
+          'Assigned to Dean of Students & Department Audit Committee',
       };
 
       setAppeals([newAppeal, ...appeals]);
       setIsModalOpen(false);
       formInstance.resetFields();
       setSubmitting(false);
-      message.success('Clearance dispute appeal formally logged! Audit tracking ID assigned.');
+      message.success(
+        'Clearance dispute appeal formally logged! Audit tracking ID assigned.'
+      );
     }, 600);
   };
 
-  // Demo action: Fast-track simulate resolution
-  const handleSimulateResolution = (appealId: string, resolution: 'Resolution Granted' | 'Rejected') => {
-    const updated = appeals.map(app => {
+  const handleSimulateResolution = (
+    appealId: string,
+    resolution: 'Resolution Granted' | 'Rejected'
+  ) => {
+    const updated = appeals.map((app) => {
       if (app.id === appealId) {
         return {
           ...app,
           status: resolution,
-          resolutionNote: resolution === 'Resolution Granted'
-            ? 'Appeal upheld by Academic Committee. Department dues waived and clearance stage marked approved.'
-            : 'Appeal rejected after second inventory check. Outstanding balance remains due.',
-          reviewedBy: 'Dr. Mengistu Haile (Student Grievance Chairperson)'
+          resolutionNote:
+            resolution === 'Resolution Granted'
+              ? 'Appeal upheld by Academic Committee. Department dues waived and clearance stage marked approved.'
+              : 'Appeal rejected after second inventory check. Outstanding balance remains due.',
+          reviewedBy: 'Dr. Mengistu Haile (Student Grievance Chairperson)',
         };
       }
       return app;
@@ -93,14 +120,21 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
     setAppeals(updated);
 
     if (resolution === 'Resolution Granted') {
-      message.success('Appeal granted! Department hold has been resolved and stage approved.');
-      // If resolving library dispute, waive dues in local forms
+      message.success(
+        'Appeal granted! Department hold has been resolved and stage approved.'
+      );
       const allForms = getStoredForms();
-      const myForm = allForms.find(f => f.student_id === user?.id || f.student_email === user?.email || f.id_number === user?.id_number);
+      const myForm = allForms.find(
+        (f) =>
+          f.student_id === user?.id ||
+          f.student_email === user?.email ||
+          f.id_number === user?.id_number
+      );
       if (myForm) {
         if (myForm.status === 'requires_library_payment') {
           myForm.status = 'approved_library';
-          myForm.library_note = 'Library dues waived following Appeal APP-2026-081 resolution.';
+          myForm.library_note =
+            'Library dues waived following Appeal APP-2026-081 resolution.';
         }
         setStoredForms(allForms);
         onFormUpdated();
@@ -117,23 +151,23 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
       key: 'id',
       render: (text: string) => (
         <span style={{ fontWeight: 700, color: '#f59e0b' }}>{text}</span>
-      )
+      ),
     },
     {
       title: 'Target Department',
       dataIndex: 'department',
       key: 'department',
-      render: (dept: string) => <Tag color="blue">{dept}</Tag>
+      render: (dept: string) => <Tag color="blue">{dept}</Tag>,
     },
     {
       title: 'Category',
       dataIndex: 'category',
-      key: 'category'
+      key: 'category',
     },
     {
       title: 'Date Logged',
       dataIndex: 'submittedDate',
-      key: 'submittedDate'
+      key: 'submittedDate',
     },
     {
       title: 'Review Status',
@@ -154,7 +188,7 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
             {status}
           </Tag>
         );
-      }
+      },
     },
     {
       title: 'Action / Review',
@@ -173,16 +207,22 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
               <Button
                 size="small"
                 type="primary"
-                onClick={() => handleSimulateResolution(record.id, 'Resolution Granted')}
-                style={{ borderRadius: 6, background: '#10b981', borderColor: '#10b981' }}
+                onClick={() =>
+                  handleSimulateResolution(record.id, 'Resolution Granted')
+                }
+                style={{
+                  borderRadius: 6,
+                  background: '#10b981',
+                  borderColor: '#10b981',
+                }}
               >
                 Grant Appeal (Demo)
               </Button>
             </Tooltip>
           )}
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -192,24 +232,26 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
           borderRadius: 20,
           border: '1px solid #e2e8f0',
           boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-          marginBottom: 24
+          marginBottom: 24,
         }}
         styles={{ body: { padding: 24 } }}
       >
         <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
           <Col xs={24} sm={16}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: 'rgba(245, 158, 11, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#d97706',
-                fontSize: 22
-              }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#d97706',
+                  fontSize: 22,
+                }}
+              >
                 <AuditOutlined />
               </div>
               <div>
@@ -217,7 +259,8 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
                   Clearance Dispute & Grievance Appeals
                 </Title>
                 <Text type="secondary" style={{ fontSize: 13 }}>
-                  File an official appeal if you encounter mistaken dues, missing return slips, or inventory discrepancies.
+                  File an official appeal if you encounter mistaken dues,
+                  missing return slips, or inventory discrepancies.
                 </Text>
               </div>
             </div>
@@ -231,7 +274,7 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
                 borderRadius: 10,
                 background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                 border: 'none',
-                fontWeight: 700
+                fontWeight: 700,
               }}
             >
               File New Dispute Appeal
@@ -276,7 +319,7 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
           onFinish={handleCreateAppeal}
           initialValues={{
             department: 'Main Library',
-            category: 'Unreturned Book Dispute'
+            category: 'Unreturned Book Dispute',
           }}
           style={{ marginTop: 16 }}
         >
@@ -288,10 +331,14 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
                 rules={[{ required: true, message: 'Please select department' }]}
               >
                 <Select size="large" style={{ borderRadius: 8 }}>
-                  <Option value="Software Engineering Dept">Software Engineering Dept Head</Option>
+                  <Option value="Software Engineering Dept">
+                    Software Engineering Dept Head
+                  </Option>
                   <Option value="Main Library">Main Library Circulation</Option>
                   <Option value="Student Cafeteria">Student Cafeteria</Option>
-                  <Option value="Dormitory Service">Dormitory Service & Proctor</Option>
+                  <Option value="Dormitory Service">
+                    Dormitory Service & Proctor
+                  </Option>
                   <Option value="Sport Master">Sport Master & Gymnasium</Option>
                   <Option value="Campus Police">Campus Police & Security</Option>
                   <Option value="Cost Sharing Bureau">Cost Sharing Agency</Option>
@@ -306,12 +353,24 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
                 rules={[{ required: true, message: 'Please select category' }]}
               >
                 <Select size="large" style={{ borderRadius: 8 }}>
-                  <Option value="Unreturned Book Dispute">Book / Material Already Returned</Option>
-                  <Option value="Cafeteria Meal Charge Dispute">Cafeteria Punch / Utensil Discrepancy</Option>
-                  <Option value="Dormitory Key / Inventory Error">Dorm Key / Room Inventory Assessment</Option>
-                  <Option value="Disciplinary Record Recheck">Campus Conduct / Security Clearance</Option>
-                  <Option value="Fee Waiver Request">Financial Hardship / Scholarship Waiver</Option>
-                  <Option value="Other Administrative Issue">Other Administrative Error</Option>
+                  <Option value="Unreturned Book Dispute">
+                    Book / Material Already Returned
+                  </Option>
+                  <Option value="Cafeteria Meal Charge Dispute">
+                    Cafeteria Punch / Utensil Discrepancy
+                  </Option>
+                  <Option value="Dormitory Key / Inventory Error">
+                    Dorm Key / Room Inventory Assessment
+                  </Option>
+                  <Option value="Disciplinary Record Recheck">
+                    Campus Conduct / Security Clearance
+                  </Option>
+                  <Option value="Fee Waiver Request">
+                    Financial Hardship / Scholarship Waiver
+                  </Option>
+                  <Option value="Other Administrative Issue">
+                    Other Administrative Error
+                  </Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -342,8 +401,18 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
             />
           </Form.Item>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
-            <Button onClick={() => setIsModalOpen(false)} style={{ borderRadius: 8 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 10,
+              marginTop: 24,
+            }}
+          >
+            <Button
+              onClick={() => setIsModalOpen(false)}
+              style={{ borderRadius: 8 }}
+            >
               Cancel
             </Button>
             <Button
@@ -354,7 +423,7 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
                 borderRadius: 8,
                 background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                 border: 'none',
-                fontWeight: 700
+                fontWeight: 700,
               }}
             >
               Submit Official Appeal
@@ -369,27 +438,58 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
         open={!!selectedAppeal}
         onCancel={() => setSelectedAppeal(null)}
         footer={[
-          <Button key="close" type="primary" onClick={() => setSelectedAppeal(null)} style={{ borderRadius: 8 }}>
+          <Button
+            key="close"
+            type="primary"
+            onClick={() => setSelectedAppeal(null)}
+            style={{ borderRadius: 8 }}
+          >
             Close
-          </Button>
+          </Button>,
         ]}
         width={600}
       >
         {selectedAppeal && (
           <div style={{ padding: '8px 0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 16,
+              }}
+            >
               <div>
-                <Text strong style={{ fontSize: 16, color: '#0f172a' }}>{selectedAppeal.id}</Text>
-                <div style={{ fontSize: 13, color: '#64748b' }}>Target: {selectedAppeal.department}</div>
+                <Text strong style={{ fontSize: 16, color: '#0f172a' }}>
+                  {selectedAppeal.id}
+                </Text>
+                <div style={{ fontSize: 13, color: '#64748b' }}>
+                  Target: {selectedAppeal.department}
+                </div>
               </div>
-              <Tag color={selectedAppeal.status === 'Resolution Granted' ? 'green' : 'gold'} style={{ borderRadius: 10 }}>
+              <Tag
+                color={
+                  selectedAppeal.status === 'Resolution Granted' ? 'green' : 'gold'
+                }
+                style={{ borderRadius: 10 }}
+              >
                 {selectedAppeal.status}
               </Tag>
             </div>
 
-            <Card size="small" style={{ background: '#f8fafc', borderRadius: 10, marginBottom: 16 }}>
-              <Text strong style={{ display: 'block', fontSize: 12, color: '#64748b' }}>STUDENT STATEMENT</Text>
-              <Paragraph style={{ margin: '6px 0 0', fontSize: 13 }}>{selectedAppeal.reason}</Paragraph>
+            <Card
+              size="small"
+              style={{ background: '#f8fafc', borderRadius: 10, marginBottom: 16 }}
+            >
+              <Text
+                strong
+                style={{ display: 'block', fontSize: 12, color: '#64748b' }}
+              >
+                STUDENT STATEMENT
+              </Text>
+              <Paragraph style={{ margin: '6px 0 0', fontSize: 13 }}>
+                {selectedAppeal.reason}
+              </Paragraph>
               <div style={{ marginTop: 8, fontSize: 12, color: '#334155' }}>
                 <strong>Evidence:</strong> {selectedAppeal.evidence}
               </div>
@@ -400,25 +500,41 @@ export const DisputeAppealSection: React.FC<DisputeAppealProps> = ({ user, form,
               items={[
                 {
                   color: 'green',
-                  children: `Appeal filed by ${user?.full_name || 'Yonas Sahile'} on ${selectedAppeal.submittedDate}`
+                  children: `Appeal filed by ${
+                    user?.full_name || 'Student'
+                  } on ${selectedAppeal.submittedDate}`,
                 },
                 {
-                  color: selectedAppeal.status === 'Under Review' ? 'blue' : 'green',
-                  children: 'Assigned to Dean of Students Standing Grievance Committee'
+                  color:
+                    selectedAppeal.status === 'Under Review' ? 'blue' : 'green',
+                  children:
+                    'Assigned to Dean of Students Standing Grievance Committee',
                 },
                 {
-                  color: selectedAppeal.status === 'Resolution Granted' ? 'green' : (selectedAppeal.status === 'Rejected' ? 'red' : 'gray'),
+                  color:
+                    selectedAppeal.status === 'Resolution Granted'
+                      ? 'green'
+                      : selectedAppeal.status === 'Rejected'
+                      ? 'red'
+                      : 'gray',
                   children: (
                     <div>
-                      <strong>Committee Finding:</strong> {selectedAppeal.resolutionNote}
+                      <strong>Committee Finding:</strong>{' '}
+                      {selectedAppeal.resolutionNote}
                       {selectedAppeal.reviewedBy && (
-                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: '#64748b',
+                            marginTop: 2,
+                          }}
+                        >
                           Signed: {selectedAppeal.reviewedBy}
                         </div>
                       )}
                     </div>
-                  )
-                }
+                  ),
+                },
               ]}
             />
           </div>
