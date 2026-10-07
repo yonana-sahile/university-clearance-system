@@ -4,7 +4,7 @@ import { MessageOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons'
 import ChatRooms from './ChatRooms';
 import ChatSystem from './ChatSystem';
 import AIChatAssistant from './AIChatAssistant';
-import { ChatRoom } from '../../types';
+import type { ChatRoom } from '../../types';
 
 export default function ChatButton() {
   const [open, setOpen] = useState(false);
@@ -24,7 +24,7 @@ export default function ChatButton() {
                 AI Assistant
               </span>
             ),
-            children: <AIChatAssistant />
+            children: <AIChatAssistant />,
           },
           {
             key: 'staff',
@@ -36,15 +36,20 @@ export default function ChatButton() {
             ),
             children: selectedRoom ? (
               <div style={{ height: 420 }}>
-                <Button type="link" size="small" onClick={() => setSelectedRoom(null)} style={{ padding: 0, marginBottom: 8 }}>
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => setSelectedRoom(null)}
+                  style={{ padding: 0, marginBottom: 8 }}
+                >
                   ← Back to Chat Rooms
                 </Button>
                 <ChatSystem room={selectedRoom} />
               </div>
             ) : (
               <ChatRooms onSelectRoom={(room) => setSelectedRoom(room)} />
-            )
-          }
+            ),
+          },
         ]}
       />
     </div>
@@ -73,11 +78,10 @@ export default function ChatButton() {
             height: 58,
             boxShadow: '0 8px 24px rgba(37, 99, 235, 0.4)',
             background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-            border: 'none'
+            border: 'none',
           }}
         />
       </Badge>
     </Popover>
   );
 }
-
