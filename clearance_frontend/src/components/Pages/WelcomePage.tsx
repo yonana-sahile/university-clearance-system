@@ -159,8 +159,8 @@ export default function WelcomePage() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <img
-              src="/images/MAU.jpg"
-              alt="MAU Logo"
+              src="/mau_logo.jpg"
+              alt="Mekdela Amba University Logo"
               style={{
                 width: 104,
                 height: 104,
