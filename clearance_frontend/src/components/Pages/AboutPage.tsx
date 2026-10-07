@@ -1,141 +1,169 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Header from './components/Header/Header';
-import Footer from './components/Footer/Footer';
-import ChatButton from './components/Chat/ChatButton';
-import ErrorBoundary from './components/ErrorBoundary';
-import { LanguageProvider } from './context/LanguageContext';
+import React from 'react';
+import { Card, Typography, Row, Col, Divider, Tag, Space } from 'antd';
+import {
+  BankOutlined,
+  SafetyCertificateOutlined,
+  TeamOutlined,
+  GlobalOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  EnvironmentOutlined,
+} from '@ant-design/icons';
 
-// Pages & Components
-import WelcomePage from './components/Pages/WelcomePage';
-import AboutPage from './components/Pages/AboutPage';
-import LearnMorePage from './components/Pages/LearnMorePage';
-import IntroSlides from './components/Pages/IntroSlides';
-import MaintenancePage from './components/Pages/MaintenancePage';
-import ProfilePage from './components/Pages/ProfilePage';
-import ChangeProfile from './components/Pages/ChangeProfile';
-import VerifyCertificatePage from './components/Pages/VerifyCertificatePage';
+const { Title, Text, Paragraph } = Typography;
 
-// Auth Pages
-import AuthPage from './components/Authen/AuthPage';
-import LoginPage from './components/Authen/LoginPage';
-import AdminLogin from './components/Authen/AdminLogin';
-import RegisterPage from './components/Authen/RegisterPage';
-import ForgotPasswordPage from './components/Authen/ForgotPasswordPage';
-import VerifyOTP from './components/Authen/VerifyOTP';
-import ResetPassword from './components/Authen/ResetPassword';
-
-// Dashboards & Portals
-import StudentDashboard from './components/Dashboards/StudentDashboard';
-import ClearanceFormSubmission from './components/Forms/ClearanceForm';
-import StudentPaymentPage from './components/Payments/StudentPaymentPage';
-import DepartmentHeadPage from './components/Pages/DepartmentHeadPage';
-import LibrarianPage from './components/Pages/LibrarianPage';
-import CafeteriaPage from './components/Pages/CafeteriaPage';
-import DormitoryPage from './components/Pages/DormitoryPage';
-import PsychologyPage from './components/Pages/PsychologyPage';
-import SportMasterPage from './components/Pages/SportMasterPage';
-import CampusPolicePage from './components/Pages/CampusPolicePage';
-import CooperationSharingPage from './components/Pages/CooperationSharingPage';
-import DOPCoordinatorPage from './components/Pages/DOPCoordinatorPage';
-import StudentAffairsPage from './components/Pages/StudentAffairsPage';
-import RegistrarPage from './components/Pages/RegistrarPage';
-import AdminDashboard from './components/Pages/AdminDashboard';
-import DeveloperApiPortal from './components/Pages/DeveloperApiPortal';
-
-// Theme Context
-interface ThemeContextType {
-  theme: 'light' | 'dark';
-  setTheme: (theme: 'light' | 'dark') => void;
-}
-
-const ThemeContext = createContext<ThemeContextType>({
-  theme: 'light',
-  setTheme: () => {}
-});
-
-export const useTheme = () => useContext(ThemeContext);
-
-export function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
-  });
-
-  useEffect(() => {
-    document.body.setAttribute('data-theme', theme);
-    if (theme === 'dark') {
-      document.body.classList.add('dark');
-    } else {
-      document.body.classList.remove('dark');
-    }
-  }, [theme]);
-
+export default function AboutPage() {
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      <LanguageProvider>
-        <ErrorBoundary>
-          <BrowserRouter>
-            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-              <Header />
-              <main className="app-main-content" style={{ flex: 1 }}>
-                <Routes>
-                  {/* Public Pages */}
-                  <Route path="/" element={<WelcomePage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/learn-more" element={<LearnMorePage />} />
-                  <Route path="/intro-slides" element={<IntroSlides />} />
-                  <Route path="/maintenance" element={<MaintenancePage />} />
-                  <Route path="/verify-certificate" element={<VerifyCertificatePage />} />
+    <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 16px' }}>
+      {/* HERO */}
+      <Card
+        style={{
+          borderRadius: 24,
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)',
+          color: '#ffffff',
+          border: 'none',
+          marginBottom: 24,
+          boxShadow: '0 20px 40px rgba(15, 23, 42, 0.25)',
+        }}
+        styles={{ body: { padding: 40 } }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <img
+            src="/images/MAU.jpg"
+            alt="MAU"
+            style={{
+              width: 90,
+              height: 90,
+              borderRadius: 20,
+              border: '3px solid #f59e0b',
+              objectFit: 'contain',
+              background: '#ffffff',
+              padding: 4,
+              marginBottom: 16,
+            }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src =
+                'https://via.placeholder.com/90x90/2563eb/ffffff?text=MAU';
+            }}
+          />
+          <Title level={1} style={{ color: '#ffffff', margin: 0, fontWeight: 900 }}>
+            Mekdela Amba University
+          </Title>
+          <Text style={{ color: '#cbd5e1', fontSize: 16, display: 'block', marginTop: 8 }}>
+            Online Clearance System — About the Platform
+          </Text>
+        </div>
+      </Card>
 
-                  {/* Authentication Routes */}
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/admin-login" element={<AdminLogin />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/verify-otp" element={<VerifyOTP />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
+      {/* ABOUT THE UNIVERSITY */}
+      <Card style={{ borderRadius: 20, marginBottom: 24 }} styles={{ body: { padding: 32 } }}>
+        <Title level={3} style={{ marginTop: 0 }}>
+          <BankOutlined style={{ color: '#2563eb', marginRight: 10 }} />
+          About the University
+        </Title>
+        <Paragraph style={{ fontSize: 15, lineHeight: 1.8, color: '#334155' }}>
+          Mekdela Amba University is a public higher education institution located in Tulu
+          Awulia, Amhara Region, Ethiopia. Established to serve the growing demand for
+          accessible higher education in the region, the university offers undergraduate and
+          postgraduate programs across multiple colleges including Computing & Informatics,
+          Engineering & Technology, Natural Sciences, Business & Economics, and Social
+          Sciences & Humanities.
+        </Paragraph>
 
-                  {/* User Profile */}
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/change-profile" element={<ChangeProfile />} />
-
-                  {/* Portals & Dashboards */}
-                  <Route path="/student" element={<StudentDashboard />} />
-                  <Route path="/clearance-form" element={
-                    <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 16px' }}>
-                      <ClearanceFormSubmission />
-                    </div>
-                  } />
-                  <Route path="/payment" element={<StudentPaymentPage />} />
-
-                  <Route path="/departmenthead" element={<DepartmentHeadPage />} />
-                  <Route path="/librarian" element={<LibrarianPage />} />
-                  <Route path="/cafeteria" element={<CafeteriaPage />} />
-                  <Route path="/dormitory" element={<DormitoryPage />} />
-                  <Route path="/psychology" element={<PsychologyPage />} />
-                  <Route path="/sportmaster" element={<SportMasterPage />} />
-                  <Route path="/campuspolice" element={<CampusPolicePage />} />
-                  <Route path="/cooperationsharing" element={<CooperationSharingPage />} />
-                  <Route path="/dopcordinator" element={<DOPCoordinatorPage />} />
-                  <Route path="/studentaffairs" element={<StudentAffairsPage />} />
-                  <Route path="/registrar" element={<RegistrarPage />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/developer-api" element={<DeveloperApiPortal />} />
-
-                  {/* Fallback */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </main>
-              <Footer />
-              <ChatButton />
+        <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
+          <Col xs={24} md={12}>
+            <div style={{ background: '#eff6ff', padding: 20, borderRadius: 14, height: '100%' }}>
+              <Title level={4} style={{ marginTop: 0, color: '#1e3a8a' }}>
+                🎯 Our Mission
+              </Title>
+              <Text style={{ color: '#334155' }}>
+                To provide quality, accessible, and relevant higher education that empowers
+                graduates to contribute meaningfully to national and regional development
+                through teaching, research, and community service.
+              </Text>
             </div>
-          </BrowserRouter>
-        </ErrorBoundary>
-      </LanguageProvider>
-    </ThemeContext.Provider>
+          </Col>
+          <Col xs={24} md={12}>
+            <div style={{ background: '#f0fdf4', padding: 20, borderRadius: 14, height: '100%' }}>
+              <Title level={4} style={{ marginTop: 0, color: '#14532d' }}>
+                🌟 Our Vision
+              </Title>
+              <Text style={{ color: '#334155' }}>
+                To be a leading Ethiopian university recognized for academic excellence,
+                innovative research, and impactful community engagement that transforms
+                lives and drives sustainable development.
+              </Text>
+            </div>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* ABOUT THE CLEARANCE SYSTEM */}
+      <Card style={{ borderRadius: 20, marginBottom: 24 }} styles={{ body: { padding: 32 } }}>
+        <Title level={3} style={{ marginTop: 0 }}>
+          <SafetyCertificateOutlined style={{ color: '#10b981', marginRight: 10 }} />
+          About the Online Clearance System
+        </Title>
+        <Paragraph style={{ fontSize: 15, lineHeight: 1.8, color: '#334155' }}>
+          The Mekdela Amba University Online Clearance System (UCS) is a paperless digital
+          platform that replaces the traditional manual clearance workflow. Graduating
+          students can submit a single digital application which is routed automatically
+          through all 11 campus offices in sequence — from the Department Head and Library
+          to the University Registrar.
+        </Paragraph>
+
+        <Divider />
+
+        <Title level={4}>Key Features</Title>
+        <Row gutter={[16, 16]}>
+          {[
+            { icon: <TeamOutlined style={{ color: '#2563eb', fontSize: 22 }} />, title: '11-Office Integrated Workflow', desc: 'Every clearing office connected in one sequence.' },
+            { icon: <SafetyCertificateOutlined style={{ color: '#10b981', fontSize: 22 }} />, title: 'QR-Verified Certificates', desc: 'Tamper-proof digital certificate with QR authenticity check.' },
+            { icon: <GlobalOutlined style={{ color: '#8b5cf6', fontSize: 22 }} />, title: 'Real-Time Tracking', desc: 'Watch your clearance progress update live at every stage.' },
+            { icon: <BankOutlined style={{ color: '#d97706', fontSize: 22 }} />, title: 'Digital Payments', desc: 'Settle fines via Telebirr or CBE Birr with receipt upload.' },
+          ].map((feature, idx) => (
+            <Col xs={24} sm={12} key={idx}>
+              <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: 14, background: '#f8fafc', borderRadius: 12 }}>
+                <div>{feature.icon}</div>
+                <div>
+                  <Text strong style={{ display: 'block', color: '#0f172a' }}>{feature.title}</Text>
+                  <Text style={{ fontSize: 13, color: '#64748b' }}>{feature.desc}</Text>
+                </div>
+              </div>
+            </Col>
+          ))}
+        </Row>
+      </Card>
+
+      {/* CONTACT */}
+      <Card style={{ borderRadius: 20 }} styles={{ body: { padding: 32 } }}>
+        <Title level={3} style={{ marginTop: 0 }}>
+          <MailOutlined style={{ color: '#2563eb', marginRight: 10 }} />
+          Contact Us
+        </Title>
+        <Space direction="vertical" size={14} style={{ width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <EnvironmentOutlined style={{ color: '#e11d48' }} />
+            <Text>Tulu Awulia, Amhara Region, Ethiopia</Text>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <PhoneOutlined style={{ color: '#16a34a' }} />
+            <Text>+251 58 111 2000</Text>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <MailOutlined style={{ color: '#8b5cf6' }} />
+            <Text>info@mau.edu.et</Text>
+          </div>
+        </Space>
+
+        <Divider />
+
+        <div style={{ textAlign: 'center' }}>
+          <Tag color="blue" style={{ borderRadius: 12, padding: '4px 14px', fontWeight: 700 }}>
+            © {new Date().getFullYear()} Mekdela Amba University
+          </Tag>
+        </div>
+      </Card>
+    </div>
   );
 }
-
-export default App;
-
