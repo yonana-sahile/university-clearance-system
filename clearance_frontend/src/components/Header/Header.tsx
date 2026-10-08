@@ -26,7 +26,6 @@ import {
   Home,
   Shield,
   Scale,
-  ArrowRightLeft,
   Sparkles,
   Bell,
   Globe,
@@ -378,12 +377,7 @@ export default function Header() {
                 label={t("register")}
                 icon={<User size={15} />}
               />
-              <NavLinkItem
-                to="/login"
-                label={t("sign_in")}
-                icon={<ArrowRightLeft size={15} />}
-                highlight
-              />
+              {/* Sign In link removed — duplicate of the blue button on the right */}
             </>
           )}
 
