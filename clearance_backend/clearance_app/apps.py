@@ -2,4 +2,5 @@ from django.apps import AppConfig
 
 
 class ClearanceAppConfig(AppConfig):
-    name = "clearance_app"
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'clearance_app'
