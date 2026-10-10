@@ -9,6 +9,7 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
 
 
 class PaymentRecordSerializer(serializers.ModelSerializer):
+    student_id = serializers.CharField(source='student_number', read_only=True)   # expose as student_id
     payment_method_name = serializers.SerializerMethodField()
     verified_by_name = serializers.SerializerMethodField()
 
