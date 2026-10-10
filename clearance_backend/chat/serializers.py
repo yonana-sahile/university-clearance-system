@@ -1,4 +1,3 @@
-
 from rest_framework import serializers
 from .models import ChatRoom, ChatMessage
 
@@ -27,6 +26,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
+    student_id = serializers.CharField(source='student_number', read_only=True)  # ← expose as student_id
     student = serializers.SerializerMethodField()
     other_participant = serializers.SerializerMethodField()
 
