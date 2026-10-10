@@ -25,7 +25,7 @@ def submit_payment(request):
     record = PaymentRecord.objects.create(
         transaction_id=data.get('transaction_id') or f"PAY-{int(timezone.now().timestamp())}",
         student=request.user,
-        student_id=data.get('student_id') or request.user.id_number or '',
+        student_number=data.get('student_id') or request.user.id_number or '',
         student_name=data.get('student_name') or request.user.full_name(),
         department_type=data.get('department_type', 'library'),
         amount=data.get('amount', 0),
