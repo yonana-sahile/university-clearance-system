@@ -63,8 +63,8 @@ export const DigitalPassCard: React.FC<DigitalPassCardProps> = ({
         <Col>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <img
-              src="/images/MAU.jpg"
-              alt="MAU Emblem"
+              src="/mau_logo.jpg"
+              alt="Mekdela Amba University Emblem"
               style={{
                 width: 48,
                 height: 48,
@@ -73,6 +73,10 @@ export const DigitalPassCard: React.FC<DigitalPassCardProps> = ({
                 objectFit: 'contain',
                 background: '#ffffff',
                 padding: 2,
+              }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src =
+                  'https://via.placeholder.com/48x48/2563eb/ffffff?text=MAU';
               }}
             />
             <div>
