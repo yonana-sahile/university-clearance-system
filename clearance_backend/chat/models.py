@@ -8,7 +8,7 @@ class ChatRoom(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
         related_name='chat_rooms', null=True, blank=True
     )
-    student_id = models.CharField(max_length=32, blank=True)
+    student_number = models.CharField(max_length=32, blank=True)   # ← renamed from student_id
     student_name = models.CharField(max_length=200, blank=True)
     staff_role = models.CharField(max_length=50, blank=True)
     staff_name = models.CharField(max_length=200, blank=True)
