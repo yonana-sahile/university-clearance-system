@@ -26,7 +26,7 @@ class PaymentRecord(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='payments'
     )
-    student_id = models.CharField(max_length=32, db_index=True)
+    student_number = models.CharField(max_length=32, db_index=True)   # renamed
     student_name = models.CharField(max_length=200)
     department_type = models.CharField(max_length=50)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
