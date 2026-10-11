@@ -82,24 +82,42 @@ class RegisterSerializer(serializers.Serializer):
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=False, allow_blank=True)
-    email = serializers.EmailField(required=False, allow_blank=True)
+    # Accept any string for email — the frontend may send a student ID here
+    email = serializers.CharField(required=False, allow_blank=True)
     password = serializers.CharField(write_only=True)
     role = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):
-        username = attrs.get('username') or attrs.get('email')
+        # Accept username OR email OR student ID
+        identifier = attrs.get('username') or attrs.get('email')
         password = attrs.get('password')
-        if not username or not password:
-            raise serializers.ValidationError('Username and password required.')
 
-        user = authenticate(username=username, password=password)
+        if not identifier or not password:
+            raise serializers.ValidationError('Username/email and password required.')
+
+        user = None
+
+        # 1. Try authenticate with username directly
+        user = authenticate(username=identifier, password=password)
+
+        # 2. Try by email
         if not user:
             try:
-                u = User.objects.get(email=username)
+                u = User.objects.get(email__iexact=identifier)
                 user = authenticate(username=u.username, password=password)
             except User.DoesNotExist:
                 user = None
+
+        # 3. Try by id_number (student ID used as username)
+        if not user:
+            try:
+                u = User.objects.get(id_number__iexact=identifier)
+                user = authenticate(username=u.username, password=password)
+            except User.DoesNotExist:
+                user = None
+
         if not user:
             raise serializers.ValidationError('Invalid credentials.')
+
         attrs['user'] = user
         return attrs
