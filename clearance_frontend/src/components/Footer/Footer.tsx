@@ -90,7 +90,7 @@ export default function Footer() {
           <div className="footer-contact-inline">
             <div className="contact-tag">
               <Phone size={12} className="contact-icon" />
-              <a href="tel:+251921459991">+251 921 459 991</a>
+              <a href="tel:+251921459991">+251 967005077</a>
               <Tooltip title="Copy Phone">
                 <button
                   type="button"
