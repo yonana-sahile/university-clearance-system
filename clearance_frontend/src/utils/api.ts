@@ -1,4 +1,3 @@
-
 import type {
   User,
   ClearanceForm,
@@ -43,8 +42,15 @@ export async function apiFetch(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<any> {
-  const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
-  const url = `${API_BASE}${cleanEndpoint}`;
+  // Strip leading slash
+  let cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
+  // Strip query string for normalization, keep it separate
+  const [path, query] = cleanEndpoint.split("?");
+  // Strip trailing slash (Django URLs don't use them)
+  const normalizedPath = path.replace(/\/$/, "");
+  // Rebuild with query string if present
+  const finalEndpoint = query ? `${normalizedPath}?${query}` : normalizedPath;
+  const url = `${API_BASE}${finalEndpoint}`;
 
   const token =
     sessionStorage.getItem("token") || sessionStorage.getItem("ucs_token");
@@ -255,4 +261,13 @@ export function getStoredPaymentRecords(): PaymentRecord[] {
 
 export function setStoredPaymentRecords(list: PaymentRecord[]): void {
   lsWrite(LS_KEYS.paymentRecords, list);
+}
+
+// ---------- Aliases for components that use the old names ----------
+export function getStoredPayments(): PaymentRecord[] {
+  return getStoredPaymentRecords();
+}
+
+export function setStoredPayments(list: PaymentRecord[]): void {
+  setStoredPaymentRecords(list);
 }
