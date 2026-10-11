@@ -28,6 +28,7 @@ export default function AboutPage() {
         styles={{ body: { padding: 40 } }}
       >
         <div style={{ textAlign: 'center' }}>
+          {/* ✅ LOGO — no box, no border, no background */}
           <img
             src="/mau_logo.jpg"
             alt="Mekdela Amba University"
@@ -35,10 +36,7 @@ export default function AboutPage() {
               width: 90,
               height: 90,
               borderRadius: 20,
-              border: '3px solid #f59e0b',
               objectFit: 'contain',
-              background: '#ffffff',
-              padding: 4,
               marginBottom: 16,
             }}
             onError={(e) => {
