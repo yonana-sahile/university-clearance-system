@@ -7,6 +7,7 @@ import {
 import {
   KeyOutlined, PlusOutlined, CopyOutlined, DeleteOutlined,
   StopOutlined, CodeOutlined, ArrowLeftOutlined, SettingOutlined,
+  LockOutlined, LoginOutlined,
 } from '@ant-design/icons';
 import { apiFetch, getSession } from '../../utils/api';
 
@@ -45,8 +46,9 @@ export default function APIKeysPage() {
   };
 
   useEffect(() => {
+    // ✅ No redirect — just skip fetching if not logged in
     if (!user) {
-      navigate('/login');
+      setLoading(false);
       return;
     }
     fetchKeys();
@@ -54,6 +56,10 @@ export default function APIKeysPage() {
   }, []);
 
   const handleCreate = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     if (!newKeyName.trim()) {
       message.warning('Please enter a key name');
       return;
@@ -133,6 +139,33 @@ export default function APIKeysPage() {
         </Space>
       </Card>
 
+      {/* NOT-LOGGED-IN BANNER */}
+      {!user && (
+        <Alert
+          type="warning"
+          showIcon
+          icon={<LockOutlined />}
+          message="Sign in required to generate API keys"
+          description={
+            <div>
+              <Paragraph style={{ marginBottom: 12, marginTop: 4 }}>
+                API keys are personal to each account, so you need to be logged in
+                to create, revoke, or manage them. You can still read the documentation below.
+              </Paragraph>
+              <Button
+                type="primary"
+                icon={<LoginOutlined />}
+                onClick={() => navigate('/login')}
+                style={{ borderRadius: 10, fontWeight: 600 }}
+              >
+                Sign In to Manage Keys
+              </Button>
+            </div>
+          }
+          style={{ marginBottom: 20, borderRadius: 14 }}
+        />
+      )}
+
       {/* HOW-TO ALERT */}
       <Alert
         type="info"
@@ -158,90 +191,102 @@ export default function APIKeysPage() {
         style={{ marginBottom: 20, borderRadius: 14 }}
       />
 
-      {/* KEYS TABLE */}
-      <Card
-        style={{ borderRadius: 20 }}
-        title={
-          <Space>
-            <SettingOutlined />
-            <span>Your API Keys</span>
-          </Space>
-        }
-        extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateOpen(true)}
-            style={{ borderRadius: 10, background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)', border: 'none', fontWeight: 600 }}
-          >
-            Generate New Key
-          </Button>
-        }
-      >
-        <Table
-          dataSource={keys}
-          rowKey="id"
-          loading={loading}
-          pagination={false}
-          locale={{ emptyText: <Empty description="No API keys yet" /> }}
-          columns={[
-            {
-              title: 'Name', dataIndex: 'name', key: 'name',
-              render: (t: string) => <Text strong>{t}</Text>,
-            },
-            {
-              title: 'Key Prefix', dataIndex: 'prefix', key: 'prefix',
-              render: (p: string) => (
-                <code style={{ background: '#f1f5f9', padding: '4px 10px', borderRadius: 6, fontSize: 12 }}>
-                  {p}••••••••
-                </code>
-              ),
-            },
-            {
-              title: 'Status', dataIndex: 'is_active', key: 'is_active',
-              render: (a: boolean) =>
-                a ? <Tag color="green">Active</Tag> : <Tag color="red">Revoked</Tag>,
-            },
-            {
-              title: 'Created', dataIndex: 'created_at', key: 'created_at',
-              render: (d: string) => new Date(d).toLocaleDateString(),
-            },
-            {
-              title: 'Last Used', dataIndex: 'last_used_at', key: 'last_used_at',
-              render: (d: string | null) =>
-                d ? new Date(d).toLocaleString() : <Text type="secondary">Never</Text>,
-            },
-            {
-              title: 'Actions', key: 'actions',
-              render: (_: any, record: APIKey) => (
-                <Space>
-                  {record.is_active && (
+      {/* KEYS TABLE — only when logged in */}
+      {user ? (
+        <Card
+          style={{ borderRadius: 20 }}
+          title={
+            <Space>
+              <SettingOutlined />
+              <span>Your API Keys</span>
+            </Space>
+          }
+          extra={
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateOpen(true)}
+              style={{ borderRadius: 10, background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)', border: 'none', fontWeight: 600 }}
+            >
+              Generate New Key
+            </Button>
+          }
+        >
+          <Table
+            dataSource={keys}
+            rowKey="id"
+            loading={loading}
+            pagination={false}
+            locale={{ emptyText: <Empty description="No API keys yet" /> }}
+            columns={[
+              {
+                title: 'Name', dataIndex: 'name', key: 'name',
+                render: (t: string) => <Text strong>{t}</Text>,
+              },
+              {
+                title: 'Key Prefix', dataIndex: 'prefix', key: 'prefix',
+                render: (p: string) => (
+                  <code style={{ background: '#f1f5f9', padding: '4px 10px', borderRadius: 6, fontSize: 12 }}>
+                    {p}••••••••
+                  </code>
+                ),
+              },
+              {
+                title: 'Status', dataIndex: 'is_active', key: 'is_active',
+                render: (a: boolean) =>
+                  a ? <Tag color="green">Active</Tag> : <Tag color="red">Revoked</Tag>,
+              },
+              {
+                title: 'Created', dataIndex: 'created_at', key: 'created_at',
+                render: (d: string) => new Date(d).toLocaleDateString(),
+              },
+              {
+                title: 'Last Used', dataIndex: 'last_used_at', key: 'last_used_at',
+                render: (d: string | null) =>
+                  d ? new Date(d).toLocaleString() : <Text type="secondary">Never</Text>,
+              },
+              {
+                title: 'Actions', key: 'actions',
+                render: (_: any, record: APIKey) => (
+                  <Space>
+                    {record.is_active && (
+                      <Popconfirm
+                        title="Revoke this key?"
+                        description="The key will stop working immediately."
+                        onConfirm={() => handleRevoke(record.id)}
+                        okText="Revoke" cancelText="Cancel"
+                      >
+                        <Tooltip title="Revoke">
+                          <Button size="small" icon={<StopOutlined />} danger />
+                        </Tooltip>
+                      </Popconfirm>
+                    )}
                     <Popconfirm
-                      title="Revoke this key?"
-                      description="The key will stop working immediately."
-                      onConfirm={() => handleRevoke(record.id)}
-                      okText="Revoke" cancelText="Cancel"
+                      title="Delete permanently?"
+                      onConfirm={() => handleDelete(record.id)}
+                      okText="Delete" cancelText="Cancel"
                     >
-                      <Tooltip title="Revoke">
-                        <Button size="small" icon={<StopOutlined />} danger />
+                      <Tooltip title="Delete">
+                        <Button size="small" icon={<DeleteOutlined />} danger />
                       </Tooltip>
                     </Popconfirm>
-                  )}
-                  <Popconfirm
-                    title="Delete permanently?"
-                    onConfirm={() => handleDelete(record.id)}
-                    okText="Delete" cancelText="Cancel"
-                  >
-                    <Tooltip title="Delete">
-                      <Button size="small" icon={<DeleteOutlined />} danger />
-                    </Tooltip>
-                  </Popconfirm>
-                </Space>
-              ),
-            },
-          ]}
-        />
-      </Card>
+                  </Space>
+                ),
+              },
+            ]}
+          />
+        </Card>
+      ) : (
+        <Card style={{ borderRadius: 20, textAlign: 'center', padding: 40 }}>
+          <LockOutlined style={{ fontSize: 42, color: '#94a3b8', marginBottom: 12 }} />
+          <Title level={4} style={{ marginTop: 0 }}>
+            Sign in to view your API keys
+          </Title>
+          <Text type="secondary">
+            Once logged in, you can generate keys and manage them from this page.
+          </Text>
+        </Card>
+      )}
 
       {/* CREATE MODAL */}
       <Modal
