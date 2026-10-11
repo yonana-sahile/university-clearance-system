@@ -117,12 +117,9 @@ export default function Header() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
+  // ✅ Always navigate to API settings page — no login required
   const handleOpenSettings = () => {
     setMobileOpen(false);
-    if (!user) {
-      navigate("/login");
-      return;
-    }
     navigate("/settings/api-keys");
   };
 
@@ -544,7 +541,7 @@ export default function Header() {
             </Badge>
           </Tooltip>
 
-          {/* ✅ Settings gear — NOW ALWAYS VISIBLE (regardless of login) */}
+          {/* ✅ Settings gear — always navigates to /settings/api-keys */}
           <Tooltip title="Developer API Settings">
             <Button
               type="text"
