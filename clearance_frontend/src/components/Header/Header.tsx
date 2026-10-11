@@ -31,6 +31,7 @@ import {
   Globe,
   MapPin,
   CheckCircle,
+  LogIn,          // ← NEW
 } from "lucide-react";
 import { clearSession, getSession } from "../../utils/api";
 import { useTheme } from "../../App";
@@ -227,10 +228,7 @@ export default function Header() {
                   width: 38,
                   height: 38,
                   borderRadius: 10,
-                  border: "2px solid #f59e0b",
                   objectFit: "contain",
-                  background: "#ffffff",
-                  padding: 2,
                 }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
@@ -292,6 +290,12 @@ export default function Header() {
                 to="/register"
                 label={t("register")}
                 icon={<User size={15} />}
+              />
+              {/* ✅ Sign In moved here, right next to Register */}
+              <NavLinkItem
+                to="/login"
+                label="Sign In"
+                icon={<LogIn size={15} />}
               />
             </>
           )}
@@ -465,6 +469,7 @@ export default function Header() {
                 <Button
                   type="primary"
                   size="middle"
+                  icon={<LogIn size={15} />}
                   onClick={() => {
                     setMobileOpen(false);
                     navigate("/login");
@@ -519,9 +524,9 @@ export default function Header() {
             </Badge>
           </Tooltip>
 
-          {/* ✅ REMOVED: Demo Roles dropdown button */}
+          {/* ✅ Sign In button removed from here — it's now next to Register in the nav */}
 
-          {user ? (
+          {user && (
             <Space>
               <Button
                 type="text"
@@ -555,20 +560,6 @@ export default function Header() {
                 />
               </Tooltip>
             </Space>
-          ) : (
-            <Link to="/login" className="desktop-only">
-              <Button
-                type="primary"
-                style={{
-                  borderRadius: 20,
-                  background:
-                    "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                  fontWeight: 600,
-                }}
-              >
-                Sign In
-              </Button>
-            </Link>
           )}
 
           <button
