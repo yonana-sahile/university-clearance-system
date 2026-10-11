@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Mail, Phone, Globe, Send, Facebook,
+  Mail, Phone, Globe, Send,
   ShieldCheck, ArrowUp, Copy, Check,
   Building2, Key, ChevronRight
 } from "lucide-react";
@@ -10,6 +10,19 @@ import { useTheme } from "../../App";
 import { useLanguage } from "../../context/LanguageContext";
 import OfficeDirectoryModal from "../Pages/OfficeDirectoryModal";
 import "./Footer.css";
+
+// Inline Facebook icon (lucide-react removed brand icons)
+const FacebookIcon = ({ size = 13 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.52 1.49-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.78-1.63 1.57v1.88h2.78l-.44 2.91h-2.34V22c4.78-.76 8.44-4.92 8.44-9.94z" />
+  </svg>
+);
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -55,7 +68,6 @@ export default function Footer() {
         {/* COL 1: UNIVERSITY BRAND & CONTACT */}
         <div className="footer-col brand-col">
           <div className="footer-brand-header">
-            {/* ✅ Logo — no box, matching the header style */}
             <img
               src="/mau_logo.jpg"
               alt="MAU Emblem"
@@ -167,7 +179,6 @@ export default function Footer() {
               <ChevronRight size={11} />
               <span>{language === 'am' ? 'ዋና ቤተ-መጽሐፍት' : 'Main Library'}</span>
             </Link>
-            {/* ✅ Fixed path */}
             <Link to="/settings/api-keys" className="footer-link-item">
               <Key size={11} />
               <span>
@@ -258,7 +269,7 @@ export default function Footer() {
                 className="social-icon-btn"
                 title="Facebook Page"
               >
-                <Facebook size={13} />
+                <FacebookIcon size={13} />
               </a>
             </div>
           </div>
