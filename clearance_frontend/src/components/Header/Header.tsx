@@ -31,7 +31,8 @@ import {
   Globe,
   MapPin,
   CheckCircle,
-  LogIn,          // ← NEW
+  LogIn,
+  Settings,           // ← NEW
 } from "lucide-react";
 import { clearSession, getSession } from "../../utils/api";
 import { useTheme } from "../../App";
@@ -291,7 +292,6 @@ export default function Header() {
                 label={t("register")}
                 icon={<User size={15} />}
               />
-              {/* ✅ Sign In moved here, right next to Register */}
               <NavLinkItem
                 to="/login"
                 label="Sign In"
@@ -524,7 +524,18 @@ export default function Header() {
             </Badge>
           </Tooltip>
 
-          {/* ✅ Sign In button removed from here — it's now next to Register in the nav */}
+          {/* ✅ NEW: Developer API Settings gear — only when logged in */}
+          {user && (
+            <Tooltip title="Developer API Settings">
+              <Button
+                type="text"
+                shape="circle"
+                icon={<Settings size={18} style={{ color: "#475569" }} />}
+                onClick={() => navigate("/settings/api-keys")}
+                className="desktop-only"
+              />
+            </Tooltip>
+          )}
 
           {user && (
             <Space>
