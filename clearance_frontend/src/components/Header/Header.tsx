@@ -32,7 +32,7 @@ import {
   MapPin,
   CheckCircle,
   LogIn,
-  Settings,           // ← NEW
+  Settings,
 } from "lucide-react";
 import { clearSession, getSession } from "../../utils/api";
 import { useTheme } from "../../App";
@@ -115,6 +115,15 @@ export default function Header() {
 
   const handleMarkAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleOpenSettings = () => {
+    setMobileOpen(false);
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    navigate("/settings/api-keys");
   };
 
   const langMenuItems: MenuProps["items"] = [
@@ -486,6 +495,17 @@ export default function Header() {
                 </Button>
               )}
             </div>
+            {/* Mobile API Settings shortcut */}
+            <div style={{ display: "flex", gap: 8, width: "100%", marginTop: 4 }}>
+              <Button
+                size="middle"
+                icon={<Settings size={15} />}
+                onClick={handleOpenSettings}
+                style={{ flex: 1, borderRadius: 10, fontWeight: 600 }}
+              >
+                API Settings
+              </Button>
+            </div>
           </div>
         </nav>
 
@@ -524,18 +544,16 @@ export default function Header() {
             </Badge>
           </Tooltip>
 
-          {/* ✅ NEW: Developer API Settings gear — only when logged in */}
-          {user && (
-            <Tooltip title="Developer API Settings">
-              <Button
-                type="text"
-                shape="circle"
-                icon={<Settings size={18} style={{ color: "#475569" }} />}
-                onClick={() => navigate("/settings/api-keys")}
-                className="desktop-only"
-              />
-            </Tooltip>
-          )}
+          {/* ✅ Settings gear — NOW ALWAYS VISIBLE (regardless of login) */}
+          <Tooltip title="Developer API Settings">
+            <Button
+              type="text"
+              shape="circle"
+              icon={<Settings size={18} style={{ color: "#475569" }} />}
+              onClick={handleOpenSettings}
+              className="desktop-only"
+            />
+          </Tooltip>
 
           {user && (
             <Space>
