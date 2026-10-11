@@ -42,6 +42,7 @@ import StudentAffairsPage from './components/Pages/StudentAffairsPage';
 import RegistrarPage from './components/Pages/RegistrarPage';
 import AdminDashboard from './components/Pages/AdminDashboard';
 import DeveloperApiPortal from './components/Pages/DeveloperApiPortal';
+import APIKeysPage from './components/Pages/APIKeysPage';   // ← NEW
 
 // Theme Context
 interface ThemeContextType {
@@ -100,6 +101,10 @@ export function App() {
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/change-profile" element={<ChangeProfile />} />
 
+                  {/* Developer Settings */}
+                  <Route path="/settings/api-keys" element={<APIKeysPage />} />   {/* ← NEW */}
+                  <Route path="/developer-api" element={<DeveloperApiPortal />} />
+
                   {/* Portals & Dashboards */}
                   <Route path="/student" element={<StudentDashboard />} />
                   <Route path="/clearance-form" element={
@@ -121,7 +126,6 @@ export function App() {
                   <Route path="/studentaffairs" element={<StudentAffairsPage />} />
                   <Route path="/registrar" element={<RegistrarPage />} />
                   <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/developer-api" element={<DeveloperApiPortal />} />
 
                   {/* Fallback */}
                   <Route path="*" element={<Navigate to="/" replace />} />
@@ -138,4 +142,3 @@ export function App() {
 }
 
 export default App;
-
