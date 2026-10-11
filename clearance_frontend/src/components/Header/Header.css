@@ -33,7 +33,7 @@ body[data-theme='dark'] .header {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  flex-wrap: nowrap;              /* never wrap to a new line */
+  flex-wrap: nowrap;
   min-width: 0;
 }
 
@@ -43,28 +43,24 @@ body[data-theme='dark'] .header {
   gap: 0.7rem;
   text-decoration: none;
   transition: transform 0.25s ease;
-  flex-shrink: 0;                 /* logo never shrinks */
+  flex-shrink: 0;
 }
 
 .header-logo:hover {
   transform: translateY(-1px);
 }
 
+/* ✅ LOGO — no box, no border, no background */
 .logo-img {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
   object-fit: contain;
-  background: #ffffff;
-  padding: 2px;
-  border: 2px solid #f59e0b;
-  box-shadow: 0 2px 12px rgba(245, 158, 11, 0.35);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
 .header-logo:hover .logo-img {
-  transform: scale(1.08) rotate(3deg);
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.55);
+  transform: scale(1.05);
 }
 
 .logo-text-wrapper {
@@ -109,7 +105,7 @@ body[data-theme='dark'] .logo-subtitle {
   display: flex;
   align-items: center;
   gap: 0.2rem;
-  flex-wrap: nowrap;              /* keep all links on one line */
+  flex-wrap: nowrap;
   min-width: 0;
   flex: 1 1 auto;
   justify-content: center;
@@ -129,11 +125,10 @@ body[data-theme='dark'] .logo-subtitle {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  white-space: nowrap;            /* never wrap text inside a link */
-  flex-shrink: 0;                 /* don't shrink */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-/* HOVER — green tint */
 .nav-link:hover {
   opacity: 1;
   background: rgba(34, 197, 94, 0.08);
@@ -145,7 +140,6 @@ body[data-theme='dark'] .nav-link:hover {
   color: #4ade80;
 }
 
-/* UNDERLINE — green gradient */
 .nav-link::after {
   content: '';
   position: absolute;
@@ -166,7 +160,6 @@ body[data-theme='dark'] .nav-link:hover {
   opacity: 0.5;
 }
 
-/* ACTIVE — green highlight */
 .nav-link.active {
   opacity: 1;
   color: #15803d !important;
@@ -368,7 +361,6 @@ body[data-theme='dark'] .menu-btn:hover {
     display: none !important;
   }
 
-  /* Mobile active — green left accent bar */
   .nav-link.active {
     background: rgba(34, 197, 94, 0.12) !important;
     border-left: 4px solid #22c55e;
