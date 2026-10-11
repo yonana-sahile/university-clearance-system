@@ -158,6 +158,7 @@ export default function WelcomePage() {
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {/* ✅ LOGO — no box, no border, no background */}
             <img
               src="/mau_logo.jpg"
               alt="Mekdela Amba University Logo"
@@ -166,10 +167,6 @@ export default function WelcomePage() {
                 height: 104,
                 borderRadius: 22,
                 objectFit: 'contain',
-                background: '#ffffff',
-                padding: 6,
-                border: '2.5px solid #f59e0b',
-                boxShadow: '0 8px 24px rgba(245, 158, 11, 0.28)',
                 cursor: 'pointer',
                 transition: 'transform 0.3s ease',
               }}
