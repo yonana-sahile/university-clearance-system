@@ -32,10 +32,9 @@ import {
   MapPin,
   CheckCircle,
 } from "lucide-react";
-import { clearSession, getSession, setSession } from "../../utils/api";
+import { clearSession, getSession } from "../../utils/api";
 import { useTheme } from "../../App";
 import { useLanguage } from "../../context/LanguageContext";
-import type { UserRole } from "../../types";
 import NotificationDrawer from "./NotificationDrawer";
 import type { NotificationItem } from "./NotificationDrawer";
 import OfficeDirectoryModal from "../Pages/OfficeDirectoryModal";
@@ -115,89 +114,6 @@ export default function Header() {
   const handleMarkAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
-
-  const handleRoleSwitch = (role: UserRole) => {
-    if (!import.meta.env.DEV) return;
-    const isStudent = role === "student";
-    const demoUser = {
-      id: isStudent ? 101 : 99,
-      username: isStudent ? "AAA1234" : `${role}_demo`,
-      email: `${role}@mau.edu.et`,
-      first_name: isStudent ? "Demo" : role,
-      last_name: isStudent ? "Student" : "Officer",
-      full_name: isStudent ? "Demo Student" : `${role.toUpperCase()} Officer`,
-      role,
-      token: `demo_token_${role}`,
-      id_number: isStudent ? "AAA1234" : undefined,
-      department_name: "Software Engineering",
-    };
-    setSession(demoUser);
-
-    const routes: Record<string, string> = {
-      student: "/student",
-      departmenthead: "/departmenthead",
-      librarian: "/librarian",
-      cafeteria: "/cafeteria",
-      psychology: "/psychology",
-      sportmaster: "/sportmaster",
-      campuspolice: "/campuspolice",
-      cooperationsharing: "/cooperationsharing",
-      dopcordinator: "/dopcordinator",
-      studentaffairs: "/studentaffairs",
-      dormitory: "/dormitory",
-      registrar: "/registrar",
-      admin: "/admin",
-    };
-    navigate(routes[role] || "/");
-  };
-
-  const roleMenuItems: MenuProps["items"] = [
-    {
-      key: "header-role-title",
-      label: (
-        <span style={{ fontWeight: "bold", fontSize: "11px", color: "#888" }}>
-          DEMO ROLE SWITCHER
-        </span>
-      ),
-      disabled: true,
-    },
-    { type: "divider" },
-    {
-      key: "student",
-      label: "🎓 Student Portal",
-      onClick: () => handleRoleSwitch("student"),
-    },
-    {
-      key: "departmenthead",
-      label: "🏢 Dept. Head Portal",
-      onClick: () => handleRoleSwitch("departmenthead"),
-    },
-    {
-      key: "librarian",
-      label: "📚 Librarian Portal",
-      onClick: () => handleRoleSwitch("librarian"),
-    },
-    {
-      key: "cafeteria",
-      label: "🍽️ Cafeteria Portal",
-      onClick: () => handleRoleSwitch("cafeteria"),
-    },
-    {
-      key: "dormitory",
-      label: "🏠 Dormitory Portal",
-      onClick: () => handleRoleSwitch("dormitory"),
-    },
-    {
-      key: "registrar",
-      label: "🎓 Registrar Portal",
-      onClick: () => handleRoleSwitch("registrar"),
-    },
-    {
-      key: "admin",
-      label: "⚙️ Admin Dashboard",
-      onClick: () => handleRoleSwitch("admin"),
-    },
-  ];
 
   const langMenuItems: MenuProps["items"] = [
     { key: "en", label: "🇬🇧 English", onClick: () => setLanguage("en") },
@@ -377,7 +293,6 @@ export default function Header() {
                 label={t("register")}
                 icon={<User size={15} />}
               />
-              {/* Sign In link removed — duplicate of the blue button on the right */}
             </>
           )}
 
@@ -604,20 +519,7 @@ export default function Header() {
             </Badge>
           </Tooltip>
 
-          <Dropdown menu={{ items: roleMenuItems }} placement="bottomRight">
-            <Button
-              size="small"
-              icon={<Sparkles size={14} style={{ color: "#8b5cf6" }} />}
-              style={{
-                borderRadius: 20,
-                fontSize: 12,
-                fontWeight: 600,
-                borderColor: "#c084fc",
-              }}
-            >
-              Demo Roles
-            </Button>
-          </Dropdown>
+          {/* ✅ REMOVED: Demo Roles dropdown button */}
 
           {user ? (
             <Space>
