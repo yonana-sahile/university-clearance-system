@@ -223,6 +223,42 @@ body[data-theme='dark'] .nav-link.active::after {
   white-space: nowrap;
 }
 
+/* ============================================================
+   ✅ THEME TOGGLE BUTTON (was missing — now styled)
+   ============================================================ */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.85;
+  transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+  transform: rotate(15deg);
+}
+
+body[data-theme='dark'] .theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-toggle-btn svg {
+  display: block;
+}
+
+/* ============================================================
+   MOBILE BACKDROP
+   ============================================================ */
 .mobile-backdrop {
   position: fixed;
   top: 66px;
