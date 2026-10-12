@@ -90,12 +90,12 @@ export default function Footer() {
           <div className="footer-contact-inline">
             <div className="contact-tag">
               <Phone size={12} className="contact-icon" />
-              <a href="tel:+251921459991">+251 967005077</a>
+              <a href="tel:+251967005077">+251 967005077</a>
               <Tooltip title="Copy Phone">
                 <button
                   type="button"
                   className="copy-tiny-btn"
-                  onClick={() => handleCopy("+251921459991", "Phone")}
+                  onClick={() => handleCopy("+251967005077", "Phone")}
                 >
                   {copiedText === "Phone" ? (
                     <Check size={11} color="#10b981" />
