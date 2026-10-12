@@ -7,3 +7,5 @@ Pillow==12.3.0
 PyJWT==2.15.1
 python-decouple==3.8
 psycopg2-binary==2.9.10
+gunicorn==22.0.0
+whitenoise==6.7.0
