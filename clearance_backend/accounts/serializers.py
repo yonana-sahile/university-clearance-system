@@ -82,13 +82,13 @@ class RegisterSerializer(serializers.Serializer):
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=False, allow_blank=True)
-    # Accept any string for email — the frontend may send a student ID here
+    # CharField (not EmailField) — frontend may send a student ID here
     email = serializers.CharField(required=False, allow_blank=True)
     password = serializers.CharField(write_only=True)
     role = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):
-        # Accept username OR email OR student ID
+        # Accept any of: username, email, or student id_number
         identifier = attrs.get('username') or attrs.get('email')
         password = attrs.get('password')
 
@@ -97,10 +97,10 @@ class LoginSerializer(serializers.Serializer):
 
         user = None
 
-        # 1. Try authenticate with username directly
+        # 1. Direct username authentication
         user = authenticate(username=identifier, password=password)
 
-        # 2. Try by email
+        # 2. Try email → find username → authenticate
         if not user:
             try:
                 u = User.objects.get(email__iexact=identifier)
@@ -108,7 +108,7 @@ class LoginSerializer(serializers.Serializer):
             except User.DoesNotExist:
                 user = None
 
-        # 3. Try by id_number (student ID used as username)
+        # 3. Try id_number → find username → authenticate
         if not user:
             try:
                 u = User.objects.get(id_number__iexact=identifier)
