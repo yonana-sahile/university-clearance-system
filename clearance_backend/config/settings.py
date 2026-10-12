@@ -7,7 +7,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='dev-secret-change-me')
 DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1,.onrender.com',
+    cast=Csv()
+)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -27,12 +31,13 @@ INSTALLED_APPS = [
     'payments',
     'chat',
     'admincsv',
-    'apikeys',                    # ← NEW: developer API keys
+    'apikeys',
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',        # ← NEW: serves static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -57,6 +62,11 @@ TEMPLATES = [{
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# ============================================================
+# DATABASE
+# - Uses PostgreSQL when USE_POSTGRES=True (Neon / Docker)
+# - Falls back to SQLite locally
+# ============================================================
 if os.environ.get('USE_POSTGRES', 'False') == 'True':
     DATABASES = {
         'default': {
@@ -66,6 +76,10 @@ if os.environ.get('USE_POSTGRES', 'False') == 'True':
             'PASSWORD': config('DB_PASSWORD', default='clearance_pass'),
             'HOST': config('DB_HOST', default='db'),
             'PORT': config('DB_PORT', default='5432'),
+            'CONN_MAX_AGE': 600,                          # ← NEW: connection pooling for Neon
+            'OPTIONS': {
+                'sslmode': 'require',                     # ← NEW: Neon requires SSL
+            },
         }
     }
 else:
@@ -87,8 +101,14 @@ TIME_ZONE = 'Africa/Addis_Ababa'
 USE_I18N = True
 USE_TZ = True
 
+# ============================================================
+# STATIC & MEDIA FILES
+# - WhiteNoise serves static files via Django in production
+# ============================================================
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -97,7 +117,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'apikeys.authentication.APIKeyAuthentication',   # ← NEW: external integrations
+        'apikeys.authentication.APIKeyAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
