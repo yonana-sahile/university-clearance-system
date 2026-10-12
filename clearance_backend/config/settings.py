@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'payments',
     'chat',
     'admincsv',
+    'apikeys',                    # ← NEW: developer API keys
 ]
 
 MIDDLEWARE = [
@@ -96,6 +97,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'apikeys.authentication.APIKeyAuthentication',   # ← NEW: external integrations
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
