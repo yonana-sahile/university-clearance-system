@@ -10,4 +10,5 @@ urlpatterns = [
     path('api/', include('payments.urls')),
     path('api/', include('chat.urls')),
     path('api/', include('admincsv.urls')),
+    path('api/', include('apikeys.urls')),         # ← NEW: developer API keys
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
