@@ -37,7 +37,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',        # ← NEW: serves static files in production
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -64,22 +64,26 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # ============================================================
 # DATABASE
-# - Uses PostgreSQL when USE_POSTGRES=True (Neon / Docker)
-# - Falls back to SQLite locally
+# - USE_POSTGRES=True → Postgres (local Docker OR Neon)
+# - SSL is enabled only for remote hosts (Neon), not for local "db"
 # ============================================================
 if os.environ.get('USE_POSTGRES', 'False') == 'True':
+    DB_HOST = config('DB_HOST', default='db')
+    # Local Docker Postgres doesn't support SSL; Neon requires it.
+    DB_OPTIONS = {}
+    if DB_HOST not in ('db', 'localhost', '127.0.0.1'):
+        DB_OPTIONS = {'sslmode': 'require'}
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': config('DB_NAME', default='clearance_db'),
             'USER': config('DB_USER', default='clearance_user'),
             'PASSWORD': config('DB_PASSWORD', default='clearance_pass'),
-            'HOST': config('DB_HOST', default='db'),
+            'HOST': DB_HOST,
             'PORT': config('DB_PORT', default='5432'),
-            'CONN_MAX_AGE': 600,                          # ← NEW: connection pooling for Neon
-            'OPTIONS': {
-                'sslmode': 'require',                     # ← NEW: Neon requires SSL
-            },
+            'CONN_MAX_AGE': 600,
+            'OPTIONS': DB_OPTIONS,
         }
     }
 else:
@@ -101,10 +105,6 @@ TIME_ZONE = 'Africa/Addis_Ababa'
 USE_I18N = True
 USE_TZ = True
 
-# ============================================================
-# STATIC & MEDIA FILES
-# - WhiteNoise serves static files via Django in production
-# ============================================================
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
