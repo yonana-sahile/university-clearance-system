@@ -34,7 +34,7 @@ import {
   LogIn,
   Settings,
 } from "lucide-react";
-import { clearSession, getSession } from "../../utils/api";
+import { clearSession, getSession, setSession, apiFetch } from "../../utils/api";
 import { useTheme } from "../../App";
 import { useLanguage } from "../../context/LanguageContext";
 import NotificationDrawer from "./NotificationDrawer";
@@ -50,6 +50,7 @@ export default function Header() {
   const [adminUsernameInput, setAdminUsernameInput] = useState("");
   const [adminPasswordInput, setAdminPasswordInput] = useState("");
   const [adminAuthError, setAdminAuthError] = useState("");
+  const [adminAuthenticating, setAdminAuthenticating] = useState(false);
 
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
@@ -59,15 +60,43 @@ export default function Header() {
 
   const user = getSession();
 
+  // ✅ Real admin login — calls the Django backend
   const handleAdminAuthSubmit = async () => {
     const enteredUser = adminUsernameInput.trim();
     if (!enteredUser || !adminPasswordInput) {
       setAdminAuthError("Please enter both username and password.");
       return;
     }
-    setAdminAuthError(
-      "Real admin authentication is not yet wired to the backend."
-    );
+    setAdminAuthError("");
+    setAdminAuthenticating(true);
+    try {
+      const data = await apiFetch('/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: enteredUser,
+          password: adminPasswordInput,
+        }),
+      });
+
+      const role = data?.user?.role;
+      if (role !== 'admin') {
+        setAdminAuthError(`This account is not an administrator (role: ${role}).`);
+        setAdminAuthenticating(false);
+        return;
+      }
+
+      setSession(data.user);
+      setAdminAuthOpen(false);
+      setAdminUsernameInput("");
+      setAdminPasswordInput("");
+      setAdminAuthError("");
+      navigate('/admin');
+      setTimeout(() => window.location.reload(), 50);
+    } catch (e: any) {
+      setAdminAuthError(e.message || 'Invalid admin credentials.');
+    } finally {
+      setAdminAuthenticating(false);
+    }
   };
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([
@@ -636,6 +665,7 @@ export default function Header() {
           setAdminPasswordInput("");
         }}
         onOk={handleAdminAuthSubmit}
+        confirmLoading={adminAuthenticating}
         okText="Unlock Admin Portal"
         okButtonProps={{
           style: {
@@ -682,15 +712,15 @@ export default function Header() {
           {adminAuthError && (
             <Alert
               type="error"
-              message={adminAuthError}
+              title={adminAuthError}
               showIcon
               style={{ marginBottom: 12, borderRadius: 8 }}
             />
           )}
           <Alert
             type="info"
-            message="Backend not yet wired"
-            description="Admin authentication will be performed server-side once the Django backend is running."
+            title="Use your staff admin credentials"
+            description="Example: admin_mau / staff123 — the same credentials you use on the main login page."
             showIcon
             style={{ borderRadius: 8 }}
           />
