@@ -75,16 +75,20 @@ class Command(BaseCommand):
     help = 'Seed database with initial data'
 
     def handle(self, *args, **kwargs):
+        # ---------- Colleges ----------
         for name in COLLEGES:
             College.objects.get_or_create(name=name)
 
+        # ---------- Departments ----------
         for college_id, dept_name in DEPARTMENTS:
             college = College.objects.get(id=college_id)
             Department.objects.get_or_create(college=college, name=dept_name)
 
+        # ---------- Buildings ----------
         for name, code in BUILDINGS:
             Building.objects.get_or_create(code=code, defaults={'name': name})
 
+        # ---------- Payment methods ----------
         for name, acc_name, acc_num, bank, phone, instr in PAYMENT_METHODS:
             PaymentMethod.objects.get_or_create(
                 name=name,
@@ -97,6 +101,7 @@ class Command(BaseCommand):
                 }
             )
 
+        # ---------- Valid students ----------
         for fn, ln, idn, email, cname, dname, year, reg in VALID_STUDENTS:
             college = College.objects.filter(name=cname).first()
             dept = Department.objects.filter(name=dname).first()
@@ -113,31 +118,64 @@ class Command(BaseCommand):
                 }
             )
 
+        # ---------- Staff users ----------
+        # (username, first_name, last_name, role, department_name_or_None)
         staff = [
-            ('depthead_se', 'Aster', 'Alemayehu', 'departmenthead'),
-            ('librarian_main', 'Mulugeta', 'Yilma', 'librarian'),
-            ('cafeteria_main', 'Getachew', 'Belay', 'cafeteria'),
-            ('psychology_main', 'Bethelhem', 'Tadesse', 'psychology'),
-            ('sportmaster_main', 'Solomon', 'Kassa', 'sportmaster'),
-            ('campuspolice_main', 'Yonas', 'Girma', 'campuspolice'),
-            ('cooperation_main', 'Alemayehu', 'Bogale', 'cooperationsharing'),
-            ('dop_main', 'Bereket', 'Assefa', 'dopcordinator'),
-            ('studentaffairs_main', 'Helen', 'Desta', 'studentaffairs'),
-            ('dormitory_main', 'Tadesse', 'Woldemariam', 'dormitory'),
-            ('registrar_main', 'Registrar', 'Office', 'registrar'),
-            ('admin_mau', 'Admin', 'MAU', 'admin'),
+            ('depthead_se', 'Aster', 'Alemayehu', 'departmenthead', 'Software Engineering'),
+            ('librarian_main', 'Mulugeta', 'Yilma', 'librarian', None),
+            ('cafeteria_main', 'Getachew', 'Belay', 'cafeteria', None),
+            ('psychology_main', 'Bethelhem', 'Tadesse', 'psychology', None),
+            ('sportmaster_main', 'Solomon', 'Kassa', 'sportmaster', None),
+            ('campuspolice_main', 'Yonas', 'Girma', 'campuspolice', None),
+            ('cooperation_main', 'Alemayehu', 'Bogale', 'cooperationsharing', None),
+            ('dop_main', 'Bereket', 'Assefa', 'dopcordinator', None),
+            ('studentaffairs_main', 'Helen', 'Desta', 'studentaffairs', None),
+            ('dormitory_main', 'Tadesse', 'Woldemariam', 'dormitory', None),
+            ('registrar_main', 'Registrar', 'Office', 'registrar', None),
+            ('admin_mau', 'Admin', 'MAU', 'admin', None),
         ]
-        for username, fn, ln, role in staff:
-            if not User.objects.filter(username=username).exists():
-                User.objects.create_user(
-                    username=username,
-                    password='staff123',
-                    first_name=fn,
-                    last_name=ln,
-                    role=role,
-                    email=f"{username}@mau.edu.et"
-                )
+        for username, fn, ln, role, dept_name in staff:
+            dept = None
+            college = None
+            if dept_name:
+                dept = Department.objects.filter(name=dept_name).first()
+                if dept:
+                    college = dept.college
 
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={
+                    'first_name': fn,
+                    'last_name': ln,
+                    'role': role,
+                    'email': f"{username}@mau.edu.et",
+                    'department': dept,
+                    'college': college,
+                }
+            )
+            if created:
+                user.set_password('staff123')
+                if username == 'admin_mau':
+                    user.is_staff = True
+                    user.is_superuser = True
+                user.save()
+            else:
+                # Update existing user (e.g. after redeploy)
+                updated = False
+                if dept and not user.department:
+                    user.department = dept
+                    updated = True
+                if college and not user.college:
+                    user.college = college
+                    updated = True
+                if username == 'admin_mau' and not user.is_superuser:
+                    user.is_staff = True
+                    user.is_superuser = True
+                    updated = True
+                if updated:
+                    user.save()
+
+        # ---------- Demo student ----------
         if not User.objects.filter(username='AAA1234').exists():
             User.objects.create_user(
                 username='AAA1234',
@@ -152,3 +190,4 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('✅ Seed data loaded!'))
         self.stdout.write('Student login: AAA1234 / student123')
         self.stdout.write('Staff login:   depthead_se / staff123')
+        self.stdout.write('Admin login:   admin_mau / staff123')
