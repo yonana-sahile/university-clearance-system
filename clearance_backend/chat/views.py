@@ -10,10 +10,35 @@ from .serializers import ChatRoomSerializer, ChatMessageSerializer
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def rooms(request):
+    from accounts.models import User
+
     if request.user.role == 'student':
         qs = ChatRoom.objects.filter(student=request.user)
+
+        # Auto-create one room per staff role if none exist yet
+        if not qs.exists():
+            staff_roles = [
+                ('departmenthead', 'Department Head'),
+                ('librarian', 'Library'),
+                ('cafeteria', 'Cafeteria'),
+                ('dormitory', 'Dormitory'),
+                ('registrar', 'Registrar Office'),
+            ]
+            for role, label in staff_roles:
+                staff_user = User.objects.filter(role=role).first()
+                ChatRoom.objects.create(
+                    name=f"{label} Support",
+                    student=request.user,
+                    student_number=request.user.id_number or '',
+                    student_name=request.user.full_name(),
+                    staff_role=role,
+                    staff_name=staff_user.full_name() if staff_user else label,
+                    staff_user=staff_user,
+                )
+            qs = ChatRoom.objects.filter(student=request.user)
     else:
         qs = ChatRoom.objects.filter(staff_role=request.user.role)
+
     return Response(ChatRoomSerializer(qs, many=True).data)
 
 
