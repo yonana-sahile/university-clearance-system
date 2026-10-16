@@ -1,10 +1,16 @@
+import random
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
 
-from .models import ClearanceForm, FormStatus
-from .serializers import ClearanceFormSerializer
+from .models import ClearanceForm, FormStatus, Dispute, Appointment
+from .serializers import (
+    ClearanceFormSerializer,
+    DisputeSerializer,
+    AppointmentSerializer,
+)
 
 
 # role -> (note_field, approver_field, approved_status, previous_status_required)
@@ -41,6 +47,10 @@ STATUS_ORDER = [
 def _role_key(value):
     return (value or '').replace('-', '').replace('_', '').lower()
 
+
+# ============================================================
+# STUDENT ENDPOINTS
+# ============================================================
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -90,6 +100,100 @@ def submit_form(request):
         'form': ClearanceFormSerializer(form).data,
     })
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def sign_cost_sharing(request, form_id):
+    """Student signs the cost-sharing contract (Form CS-04)."""
+    try:
+        form = ClearanceForm.objects.get(
+            id=form_id,
+            id_number=request.user.id_number
+        )
+    except ClearanceForm.DoesNotExist:
+        return Response({'detail': 'Form not found.'}, status=404)
+
+    guarantor_name = request.data.get('guarantor_name', '')
+    guarantor_phone = request.data.get('guarantor_phone', '')
+    guarantor_woreda = request.data.get('guarantor_woreda', '')
+
+    form.cooperationsharing_note = (
+        f"Cost sharing obligation contract Form CS-04 signed by student. "
+        f"Guarantor: {guarantor_name} ({guarantor_phone}), "
+        f"Residence: {guarantor_woreda}."
+    )
+    form.save()
+
+    return Response({
+        'message': 'Cost Sharing Promissory Note signed successfully!',
+        'form': ClearanceFormSerializer(form).data,
+    })
+
+
+# ============================================================
+# DISPUTES
+# ============================================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def disputes(request):
+    if request.method == 'GET':
+        qs = Dispute.objects.filter(student=request.user)
+        return Response(DisputeSerializer(qs, many=True).data)
+
+    # POST — create a new dispute
+    ref = f"APP-2026-{random.randint(100, 999)}"
+    dispute = Dispute.objects.create(
+        student=request.user,
+        ref=ref,
+        department=request.data.get('department', ''),
+        category=request.data.get('category', ''),
+        reason=request.data.get('reason', ''),
+        evidence=request.data.get('evidence', ''),
+        status='under_review',
+        resolution_note='Assigned to Dean of Students & Department Audit Committee',
+    )
+    return Response({
+        'message': 'Dispute appeal submitted successfully!',
+        'dispute': DisputeSerializer(dispute).data,
+    }, status=201)
+
+
+# ============================================================
+# APPOINTMENTS
+# ============================================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def appointments(request):
+    if request.method == 'GET':
+        qs = Appointment.objects.filter(student=request.user)
+        return Response(AppointmentSerializer(qs, many=True).data)
+
+    # POST — create a new appointment
+    ref = f"APT-{random.randint(100, 999)}"
+    office_name = request.data.get('office_name', '')
+    token = f"{office_name[:3].upper()}-T{random.randint(10, 99)}"
+    apt = Appointment.objects.create(
+        student=request.user,
+        ref=ref,
+        office_name=office_name,
+        location=request.data.get('location', ''),
+        date=request.data.get('date'),
+        time_slot=request.data.get('time_slot', ''),
+        purpose=request.data.get('purpose', ''),
+        token_number=token,
+        status='confirmed',
+    )
+    return Response({
+        'message': 'Appointment booked successfully!',
+        'appointment': AppointmentSerializer(apt).data,
+    }, status=201)
+
+
+# ============================================================
+# STAFF ENDPOINTS
+# ============================================================
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -161,33 +265,4 @@ def staff_action(request, role, form_id):
         'message': f'Clearance form {action}d successfully!',
         'status': form.status,
         'note': note,
-    })
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def sign_cost_sharing(request, form_id):
-    """Student signs the cost-sharing contract (Form CS-04)."""
-    try:
-        form = ClearanceForm.objects.get(
-            id=form_id,
-            id_number=request.user.id_number
-        )
-    except ClearanceForm.DoesNotExist:
-        return Response({'detail': 'Form not found.'}, status=404)
-
-    guarantor_name = request.data.get('guarantor_name', '')
-    guarantor_phone = request.data.get('guarantor_phone', '')
-    guarantor_woreda = request.data.get('guarantor_woreda', '')
-
-    form.cooperationsharing_note = (
-        f"Cost sharing obligation contract Form CS-04 signed by student. "
-        f"Guarantor: {guarantor_name} ({guarantor_phone}), "
-        f"Residence: {guarantor_woreda}."
-    )
-    form.save()
-
-    return Response({
-        'message': 'Cost Sharing Promissory Note signed successfully!',
-        'form': ClearanceFormSerializer(form).data,
     })
