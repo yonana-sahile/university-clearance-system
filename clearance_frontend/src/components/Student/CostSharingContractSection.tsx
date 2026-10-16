@@ -22,7 +22,7 @@ import {
   BankOutlined,
 } from '@ant-design/icons';
 import type { User, ClearanceForm } from '../../types';
-import { getStoredForms, setStoredForms } from '../../utils/api';
+import { apiFetch } from '../../utils/api';
 
 const { Title, Text } = Typography;
 
@@ -34,21 +34,14 @@ interface CostSharingProps {
 
 export const CostSharingContractSection: React.FC<CostSharingProps> = ({
   user,
+  form,
   onFormUpdated,
 }) => {
   const [isSignModalOpen, setIsSignModalOpen] = useState(false);
   const [isContractPrintOpen, setIsContractPrintOpen] = useState(false);
-  const [hasSigned, setHasSigned] = useState(() => {
-    return form?.status
-      ? [
-          'approved_cooperationsharing',
-          'approved_dopcordinator',
-          'approved_studentaffairs',
-          'approved_dormitory',
-          'Cleared by Registrar',
-        ].includes(form.status)
-      : false;
-  });
+  const [hasSigned, setHasSigned] = useState(
+    () => !!form?.cooperationsharing_note
+  );
 
   const [guarantorName, setGuarantorName] = useState(
     'Sahile Desta (Parent/Guarantor)'
@@ -92,41 +85,34 @@ export const CostSharingContractSection: React.FC<CostSharingProps> = ({
 
   const totalCost = breakdown.reduce((acc, curr) => acc + curr.amount, 0);
 
-  const handleSignAgreement = (values: any) => {
+  const handleSignAgreement = async (values: any) => {
+    if (!form) {
+      message.error('No clearance form found. Please submit one first.');
+      return;
+    }
     setSigning(true);
-    setTimeout(() => {
-      setGuarantorName(values.guarantor_name || guarantorName);
-      setGuarantorPhone(values.guarantor_phone || guarantorPhone);
-      setGuarantorWoreda(values.guarantor_woreda || guarantorWoreda);
-      setHasSigned(true);
-      setSigning(false);
-      setIsSignModalOpen(false);
-      message.success(
-        'Cost Sharing Promissory Note digitally signed and verified by Federal Revenue Authority!'
-      );
+    try {
+      await apiFetch(`forms/${form.id}/sign-cost-sharing`, {
+        method: 'POST',
+        body: JSON.stringify({
+          guarantor_name: values.guarantor_name,
+          guarantor_phone: values.guarantor_phone,
+          guarantor_woreda: values.guarantor_woreda,
+        }),
+      });
 
-      const allForms = getStoredForms();
-      const myForm = allForms.find(
-        (f) =>
-          f.student_id === user?.id ||
-          f.student_email === user?.email ||
-          f.id_number === user?.id_number
-      );
-      if (myForm) {
-        myForm.cooperationsharing_note =
-          'Cost sharing obligation contract Form CS-04 signed & registered with Ministry Tax Registry.';
-        myForm.cooperationsharing_approved_by =
-          'Alemayehu Bogale (Finance Directorate)';
-        if (
-          myForm.status === 'pending_department' ||
-          myForm.status.includes('approved_campuspolice')
-        ) {
-          myForm.status = 'approved_cooperationsharing';
-        }
-        setStoredForms(allForms);
-        onFormUpdated();
-      }
-    }, 700);
+      setGuarantorName(values.guarantor_name);
+      setGuarantorPhone(values.guarantor_phone);
+      setGuarantorWoreda(values.guarantor_woreda);
+      setHasSigned(true);
+      setIsSignModalOpen(false);
+      message.success('Cost Sharing Promissory Note signed successfully!');
+      if (onFormUpdated) onFormUpdated();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to sign contract.');
+    } finally {
+      setSigning(false);
+    }
   };
 
   const handlePrintContract = () => {
@@ -187,6 +173,7 @@ export const CostSharingContractSection: React.FC<CostSharingProps> = ({
                   type="primary"
                   icon={<EditOutlined />}
                   onClick={() => setIsSignModalOpen(true)}
+                  disabled={!form}
                   style={{
                     borderRadius: 10,
                     background:
@@ -213,7 +200,17 @@ export const CostSharingContractSection: React.FC<CostSharingProps> = ({
           </Col>
         </Row>
 
-        {hasSigned ? (
+        {!form && (
+          <Alert
+            type="info"
+            showIcon
+            message="Submit a clearance form first"
+            description="You must apply for clearance before signing the Cost Sharing Contract."
+            style={{ marginBottom: 24, borderRadius: 12 }}
+          />
+        )}
+
+        {form && hasSigned && (
           <Alert
             type="success"
             showIcon
@@ -221,7 +218,9 @@ export const CostSharingContractSection: React.FC<CostSharingProps> = ({
             description={`Promissory contract has been registered under Student TIN reference ET-TIN-${user?.id_number || '—'}-CS. Repayment will commence via standard 10% income tax withholding following the statutory 6-month post-graduation grace period.`}
             style={{ marginBottom: 24, borderRadius: 12 }}
           />
-        ) : (
+        )}
+
+        {form && !hasSigned && (
           <Alert
             type="warning"
             showIcon
