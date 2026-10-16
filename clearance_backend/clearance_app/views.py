@@ -162,3 +162,32 @@ def staff_action(request, role, form_id):
         'status': form.status,
         'note': note,
     })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def sign_cost_sharing(request, form_id):
+    """Student signs the cost-sharing contract (Form CS-04)."""
+    try:
+        form = ClearanceForm.objects.get(
+            id=form_id,
+            id_number=request.user.id_number
+        )
+    except ClearanceForm.DoesNotExist:
+        return Response({'detail': 'Form not found.'}, status=404)
+
+    guarantor_name = request.data.get('guarantor_name', '')
+    guarantor_phone = request.data.get('guarantor_phone', '')
+    guarantor_woreda = request.data.get('guarantor_woreda', '')
+
+    form.cooperationsharing_note = (
+        f"Cost sharing obligation contract Form CS-04 signed by student. "
+        f"Guarantor: {guarantor_name} ({guarantor_phone}), "
+        f"Residence: {guarantor_woreda}."
+    )
+    form.save()
+
+    return Response({
+        'message': 'Cost Sharing Promissory Note signed successfully!',
+        'form': ClearanceFormSerializer(form).data,
+    })
