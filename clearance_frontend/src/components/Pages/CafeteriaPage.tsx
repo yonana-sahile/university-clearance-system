@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Tag, Button, Input, Typography, Space, message, Tabs } from 'antd';
-import { CheckOutlined, DollarOutlined, SearchOutlined, CoffeeOutlined } from '@ant-design/icons';
-import { getStoredForms, setStoredForms } from '../../utils/api';
+import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
+import { apiFetch } from '../../utils/api';
 import type { ClearanceForm } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
 
@@ -11,28 +11,41 @@ export default function CafeteriaPage() {
   const [forms, setForms] = useState<ClearanceForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [approving, setApproving] = useState<number | null>(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true);
-    setForms(getStoredForms());
-    setLoading(false);
+    try {
+      const data = await apiFetch('forms');
+      setForms(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      message.error(err.message || 'Failed to load forms');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleApprove = (record: ClearanceForm) => {
-    const all = getStoredForms();
-    const idx = all.findIndex(f => f.id === record.id);
-    if (idx !== -1) {
-      all[idx].status = 'approved_cafeteria';
-      all[idx].cafeteria_note = 'Meal ticket returned. Zero cafeteria dues.';
-      all[idx].cafeteria_approved_by = 'Getachew Belay (Cafeteria Manager)';
-      setStoredForms(all);
+  const handleApprove = async (record: ClearanceForm) => {
+    setApproving(record.id as number);
+    try {
+      await apiFetch(`cafeteria/action/${record.id}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'approve',
+          note: 'Meal ticket returned. Zero cafeteria dues.',
+        }),
+      });
+      message.success(`Cafeteria clearance approved for ${record.full_name}!`);
+      loadData();
+    } catch (err: any) {
+      message.error(err.message || 'Approval failed');
+    } finally {
+      setApproving(null);
     }
-    message.success(`Cafeteria clearance approved for ${record.full_name}!`);
-    loadData();
   };
 
   const filtered = forms.filter(f =>
@@ -61,26 +74,50 @@ export default function CafeteriaPage() {
       dataIndex: 'status',
       key: 'status',
       render: (st: string) => {
-        if (['approved_cafeteria', 'approved_psychology', 'approved_sportmaster', 'approved_dormitory', 'Cleared by Registrar'].includes(st)) {
+        if (
+          [
+            'approved_cafeteria',
+            'approved_psychology',
+            'approved_sportmaster',
+            'approved_campuspolice',
+            'approved_cooperationsharing',
+            'approved_dopcordinator',
+            'approved_studentaffairs',
+            'approved_dormitory',
+            'Cleared by Registrar',
+          ].includes(st)
+        ) {
           return <Tag color="success">Cafeteria Approved</Tag>;
         }
+        if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
         return <Tag color="processing">Awaiting Cafeteria Review</Tag>;
       }
     },
     {
       title: 'Actions',
       key: 'actions',
-      render: (_: any, record: ClearanceForm) => (
-        <Button
-          type="primary"
-          size="small"
-          icon={<CheckOutlined />}
-          onClick={() => handleApprove(record)}
-          style={{ background: '#10b981', border: 'none' }}
-        >
-          Clear Cafeteria Status
-        </Button>
-      )
+      render: (_: any, record: ClearanceForm) => {
+        // Show Approve button only when the form is at approved_library stage
+        // (cafeteria is the next stage after library)
+        if (record.status === 'approved_library' || record.status === 'requires_cafeteria_payment') {
+          return (
+            <Button
+              type="primary"
+              size="small"
+              icon={<CheckOutlined />}
+              loading={approving === record.id}
+              onClick={() => handleApprove(record)}
+              style={{ background: '#10b981', border: 'none' }}
+            >
+              Clear Cafeteria Status
+            </Button>
+          );
+        }
+        if (record.status === 'approved_cafeteria') {
+          return <Tag color="success">Completed</Tag>;
+        }
+        return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage yet</Text>;
+      }
     }
   ];
 
@@ -106,7 +143,14 @@ export default function CafeteriaPage() {
                   onChange={e => setSearch(e.target.value)}
                   style={{ marginBottom: 16, borderRadius: 10, maxWidth: 400 }}
                 />
-                <Table columns={columns} dataSource={filtered} rowKey="id" loading={loading} pagination={{ pageSize: 8 }} />
+                <Table
+                  columns={columns}
+                  dataSource={filtered}
+                  rowKey="id"
+                  loading={loading}
+                  pagination={{ pageSize: 8 }}
+                  locale={{ emptyText: 'No students pending cafeteria clearance at this time.' }}
+                />
               </Card>
             )
           },
