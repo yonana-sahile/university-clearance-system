@@ -412,16 +412,16 @@ export default function StudentDashboard() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>Pending Balance</Text>
-              <DollarOutlined style={{ color: form?.status.includes('payment') ? '#f59e0b' : '#10b981', fontSize: 18 }} />
+              <DollarOutlined style={{ color: form?.status?.includes('payment') ? '#f59e0b' : '#10b981', fontSize: 18 }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 28, fontWeight: 800, color: form?.status.includes('payment') ? '#d97706' : '#10b981' }}>
-                {form?.status.includes('payment') ? '350.00' : '0.00'}
+              <span style={{ fontSize: 28, fontWeight: 800, color: form?.status?.includes('payment') ? '#d97706' : '#10b981' }}>
+                {form?.status?.includes('payment') ? '350.00' : '0.00'}
               </span>
               <span style={{ fontSize: 14, color: '#64748b' }}>ETB</span>
             </div>
-            <Text style={{ fontSize: 12, color: form?.status.includes('payment') ? '#b45309' : '#10b981', fontWeight: 600, display: 'block', marginTop: 6 }}>
-              {form?.status.includes('payment') ? '⚠️ Overdue fine at Library' : '✓ All Department Dues Settled'}
+            <Text style={{ fontSize: 12, color: form?.status?.includes('payment') ? '#b45309' : '#10b981', fontWeight: 600, display: 'block', marginTop: 6 }}>
+              {form?.status?.includes('payment') ? '⚠️ Overdue fine at Library' : '✓ All Department Dues Settled'}
             </Text>
           </Card>
         </Col>
@@ -502,7 +502,7 @@ export default function StudentDashboard() {
                 ) : (
                   <div>
                     {/* DUES PAYMENT ALERT */}
-                    {form.status.includes('payment') && (
+                    {form.status?.includes('payment') && (
                       <Alert
                         message="Department Dues Payment Required"
                         description="Main Library records indicate an outstanding balance of 350.00 ETB for an overdue book. Please submit your payment slip through the Payments portal to continue."
@@ -880,7 +880,6 @@ export default function StudentDashboard() {
       />
 
       {/* 4. MODALS */}
-      {/* GRADUATION DOSSIER MODAL */}
       <GraduationDossierModal
         open={isDossierOpen}
         onClose={() => setIsDossierOpen(false)}
@@ -888,14 +887,13 @@ export default function StudentDashboard() {
         user={user}
         stages={stages}
       />
-      {/* A. DIGITAL CERTIFICATE MODAL */}
+
       <ClearanceCertificateModal
         open={isCertificateOpen}
         onClose={() => setIsCertificateOpen(false)}
         form={form}
       />
 
-      {/* B. GRADUATING EXIT SURVEY MODAL */}
       <ExitSurveyModal
         open={isExitSurveyOpen}
         onClose={() => setIsExitSurveyOpen(false)}
@@ -906,7 +904,6 @@ export default function StudentDashboard() {
         }}
       />
 
-      {/* C. QR PASS QUICK MODAL */}
       <Modal
         title="Student Quick Verification QR Pass"
         open={isQRModalOpen}
@@ -934,7 +931,6 @@ export default function StudentDashboard() {
         </div>
       </Modal>
 
-      {/* D. PRINTABLE CLEARANCE SLIP MODAL */}
       <Modal
         title="Official Student Clearance Summary Slip"
         open={isSlipModalOpen}
@@ -951,7 +947,7 @@ export default function StudentDashboard() {
       >
         <div style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 12, background: '#fff' }}>
           <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: 12, marginBottom: 16 }}>
-            <img src="/images/MAU.jpg" alt="MAU" style={{ width: 50, height: 50, borderRadius: 10, marginBottom: 6, objectFit: 'contain', background: '#ffffff', padding: 2 }} />
+            <img src="/mau_logo.jpg" alt="MAU" style={{ width: 50, height: 50, borderRadius: 10, marginBottom: 6, objectFit: 'contain' }} />
             <div style={{ fontWeight: 800, fontSize: 16, color: '#0f172a' }}>MEKDELA AMBA UNIVERSITY</div>
             <div style={{ fontSize: 12, color: '#64748b' }}>OFFICE OF THE UNIVERSITY REGISTRAR • CLEARANCE DIVISION</div>
           </div>
@@ -995,7 +991,6 @@ export default function StudentDashboard() {
         </div>
       </Modal>
 
-      {/* E. OFFICE DIRECTORY MODAL */}
       <OfficeDirectoryModal
         open={isOfficeModalOpen}
         onClose={() => setIsOfficeModalOpen(false)}
