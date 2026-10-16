@@ -7,25 +7,47 @@ from .models import ClearanceForm, FormStatus
 from .serializers import ClearanceFormSerializer
 
 
+# role -> (note_field, approver_field, approved_status, previous_status_required)
 STAFF_ROLES = {
-    'department-head': ('department_note', 'department_approved_by', FormStatus.APPROVED_DEPARTMENT),
-    'librarian': ('library_note', 'library_approved_by', FormStatus.APPROVED_LIBRARY),
-    'cafeteria': ('cafeteria_note', 'cafeteria_approved_by', FormStatus.APPROVED_CAFETERIA),
-    'psychology': ('psychology_note', 'psychology_approved_by', FormStatus.APPROVED_PSYCHOLOGY),
-    'sportmaster': ('sportmaster_note', 'sportmaster_approved_by', FormStatus.APPROVED_SPORTMASTER),
-    'campuspolice': ('campuspolice_note', 'campuspolice_approved_by', FormStatus.APPROVED_CAMPUSPOLICE),
-    'cooperationsharing': ('cooperationsharing_note', 'cooperationsharing_approved_by', FormStatus.APPROVED_COOPERATION),
-    'dopcordinator': ('dopcordinator_note', 'dopcoordinator_approved_by', FormStatus.APPROVED_DOP),
-    'studentaffairs': ('studentaffairs_note', 'studentaffairs_approved_by', FormStatus.APPROVED_STUDENTAFFAIRS),
-    'dormitory': ('dormitory_note', 'dormitory_approved_by', FormStatus.APPROVED_DORMITORY),
-    'registrar': ('registrar_note', 'registrar_approved_by', FormStatus.CLEARED_BY_REGISTRAR),
+    'departmenthead':     ('department_note', 'department_approved_by', FormStatus.APPROVED_DEPARTMENT, FormStatus.PENDING_DEPARTMENT),
+    'librarian':          ('library_note', 'library_approved_by', FormStatus.APPROVED_LIBRARY, FormStatus.APPROVED_DEPARTMENT),
+    'cafeteria':          ('cafeteria_note', 'cafeteria_approved_by', FormStatus.APPROVED_CAFETERIA, FormStatus.APPROVED_LIBRARY),
+    'psychology':         ('psychology_note', 'psychology_approved_by', FormStatus.APPROVED_PSYCHOLOGY, FormStatus.APPROVED_CAFETERIA),
+    'sportmaster':        ('sportmaster_note', 'sportmaster_approved_by', FormStatus.APPROVED_SPORTMASTER, FormStatus.APPROVED_PSYCHOLOGY),
+    'campuspolice':       ('campuspolice_note', 'campuspolice_approved_by', FormStatus.APPROVED_CAMPUSPOLICE, FormStatus.APPROVED_SPORTMASTER),
+    'cooperationsharing': ('cooperationsharing_note', 'cooperationsharing_approved_by', FormStatus.APPROVED_COOPERATION, FormStatus.APPROVED_CAMPUSPOLICE),
+    'dopcordinator':      ('dopcordinator_note', 'dopcoordinator_approved_by', FormStatus.APPROVED_DOP, FormStatus.APPROVED_COOPERATION),
+    'studentaffairs':     ('studentaffairs_note', 'studentaffairs_approved_by', FormStatus.APPROVED_STUDENTAFFAIRS, FormStatus.APPROVED_DOP),
+    'dormitory':          ('dormitory_note', 'dormitory_approved_by', FormStatus.APPROVED_DORMITORY, FormStatus.APPROVED_STUDENTAFFAIRS),
+    'registrar':          ('registrar_note', 'registrar_approved_by', FormStatus.CLEARED_BY_REGISTRAR, FormStatus.APPROVED_DORMITORY),
 }
+
+STATUS_ORDER = [
+    FormStatus.PENDING_DEPARTMENT,
+    FormStatus.APPROVED_DEPARTMENT,
+    FormStatus.APPROVED_LIBRARY,
+    FormStatus.APPROVED_CAFETERIA,
+    FormStatus.APPROVED_PSYCHOLOGY,
+    FormStatus.APPROVED_SPORTMASTER,
+    FormStatus.APPROVED_CAMPUSPOLICE,
+    FormStatus.APPROVED_COOPERATION,
+    FormStatus.APPROVED_DOP,
+    FormStatus.APPROVED_STUDENTAFFAIRS,
+    FormStatus.APPROVED_DORMITORY,
+    FormStatus.CLEARED_BY_REGISTRAR,
+]
+
+
+def _role_key(value):
+    return (value or '').replace('-', '').replace('_', '').lower()
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def student_dashboard(request):
-    forms = ClearanceForm.objects.filter(id_number=request.user.id_number)
+    forms = ClearanceForm.objects.filter(
+        id_number=request.user.id_number
+    ).order_by('-id')
     return Response({
         'forms': ClearanceFormSerializer(forms, many=True).data,
         'notifications': [{
@@ -39,7 +61,9 @@ def student_dashboard(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def student_forms(request):
-    forms = ClearanceForm.objects.filter(id_number=request.user.id_number)
+    forms = ClearanceForm.objects.filter(
+        id_number=request.user.id_number
+    ).order_by('-id')
     return Response(ClearanceFormSerializer(forms, many=True).data)
 
 
@@ -70,36 +94,56 @@ def submit_form(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_forms(request):
-    role = request.user.role
+    role = _role_key(request.user.role)
+
     if role == 'student':
-        forms = ClearanceForm.objects.filter(id_number=request.user.id_number)
+        forms = ClearanceForm.objects.filter(
+            id_number=request.user.id_number
+        ).order_by('-id')
+    elif role == 'admin':
+        forms = ClearanceForm.objects.all().order_by('-id')
+    elif role in STAFF_ROLES:
+        first_needed = STAFF_ROLES[role][3]
+        forms = ClearanceForm.objects.filter(
+            status__in=STATUS_ORDER[STATUS_ORDER.index(first_needed):]
+        ).order_by('-id')
+        if role == 'departmenthead':
+            if not request.user.department:
+                return Response([])
+            forms = forms.filter(department_name=request.user.department.name)
     else:
-        forms = ClearanceForm.objects.all()
+        forms = ClearanceForm.objects.none()
+
     return Response(ClearanceFormSerializer(forms, many=True).data)
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def staff_action(request, role, form_id):
-    role_key = role.replace('-', '').replace('_', '')
-    matched = None
-    for key, cfg in STAFF_ROLES.items():
-        if key.replace('-', '') == role_key:
-            matched = cfg
-            break
-
+    role_key = _role_key(role)
+    matched = STAFF_ROLES.get(role_key)
     if not matched:
         return Response({'detail': f'Unknown role: {role}'}, status=400)
+
+    if _role_key(request.user.role) not in (role_key, 'admin'):
+        return Response({'detail': 'You are not allowed to do this action.'}, status=403)
 
     try:
         form = ClearanceForm.objects.get(id=form_id)
     except ClearanceForm.DoesNotExist:
         return Response({'detail': 'Form not found.'}, status=404)
 
+    note_field, approver_field, approved_status, required_status = matched
+
+    if form.status != required_status:
+        return Response({'detail': 'This form is not at your stage yet.'}, status=400)
+
+    if role_key == 'departmenthead' and request.user.department and \
+            form.department_name != request.user.department.name:
+        return Response({'detail': 'This form belongs to another department.'}, status=403)
+
     action = (request.data.get('action') or 'approve').lower()
     note = request.data.get('note', '')
-
-    note_field, approver_field, approved_status = matched
 
     if action == 'approve':
         setattr(form, note_field, note)
