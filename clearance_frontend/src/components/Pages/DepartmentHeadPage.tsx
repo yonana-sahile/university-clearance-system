@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Table, Tag, Button, Input, Modal, Typography, Space, Row, Col, Statistic, message, Badge, Tabs, Form
+  Card, Table, Tag, Button, Input, Modal, Typography, Space, Row, Col,
+  Statistic, message, Tabs, Form
 } from 'antd';
 import {
-  CheckOutlined, CloseOutlined, SearchOutlined, DownloadOutlined, MessageOutlined, FileTextOutlined
+  CheckOutlined, CloseOutlined, SearchOutlined, DownloadOutlined
 } from '@ant-design/icons';
-import { apiFetch, getStoredForms, setStoredForms } from '../../utils/api';
+import { apiFetch } from '../../utils/api';
 import type { ClearanceForm } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
 
@@ -27,10 +28,10 @@ export default function DepartmentHeadPage() {
   const loadForms = async () => {
     setLoading(true);
     try {
-      const data = getStoredForms();
-      setForms(data);
-    } catch (err) {
-      console.error(err);
+      const data = await apiFetch('forms');
+      setForms(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      message.error(err.message || 'Failed to load forms');
     } finally {
       setLoading(false);
     }
@@ -39,32 +40,26 @@ export default function DepartmentHeadPage() {
   const handleActionClick = (form: ClearanceForm, type: 'approve' | 'reject') => {
     setSelectedForm(form);
     setActionType(type);
-    setNoteText(type === 'approve' ? 'Academic senior thesis and requirements verified.' : 'Missing required course credits.');
+    setNoteText(
+      type === 'approve'
+        ? 'Academic senior thesis and requirements verified.'
+        : 'Missing required course credits.'
+    );
     setIsModalOpen(true);
   };
 
   const handleConfirmAction = async () => {
     if (!selectedForm) return;
     try {
-      const allForms = getStoredForms();
-      const idx = allForms.findIndex(f => f.id === selectedForm.id);
-      if (idx !== -1) {
-        if (actionType === 'approve') {
-          allForms[idx].status = 'approved_department';
-          allForms[idx].department_approved_by = 'Dr. Aster Alemayehu (Dept. Head)';
-          allForms[idx].note = noteText;
-        } else {
-          allForms[idx].status = 'rejected';
-          allForms[idx].note = noteText;
-          allForms[idx].can_resubmit = true;
-        }
-        setStoredForms(allForms);
-      }
+      await apiFetch(`departmenthead/action/${selectedForm.id}`, {
+        method: 'POST',
+        body: JSON.stringify({ action: actionType, note: noteText }),
+      });
       message.success(`Form ${actionType}d successfully!`);
       setIsModalOpen(false);
       loadForms();
-    } catch (err) {
-      message.error('Action failed');
+    } catch (err: any) {
+      message.error(err.message || 'Action failed');
     }
   };
 
@@ -130,23 +125,30 @@ export default function DepartmentHeadPage() {
       key: 'actions',
       render: (_: any, record: ClearanceForm) => (
         <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<CheckOutlined />}
-            onClick={() => handleActionClick(record, 'approve')}
-            style={{ background: '#10b981', border: 'none' }}
-          >
-            Approve
-          </Button>
-          <Button
-            danger
-            size="small"
-            icon={<CloseOutlined />}
-            onClick={() => handleActionClick(record, 'reject')}
-          >
-            Reject
-          </Button>
+          {record.status === 'pending_department' && (
+            <>
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckOutlined />}
+                onClick={() => handleActionClick(record, 'approve')}
+                style={{ background: '#10b981', border: 'none' }}
+              >
+                Approve
+              </Button>
+              <Button
+                danger
+                size="small"
+                icon={<CloseOutlined />}
+                onClick={() => handleActionClick(record, 'reject')}
+              >
+                Reject
+              </Button>
+            </>
+          )}
+          {record.status !== 'pending_department' && record.status !== 'rejected' && (
+            <Tag color="success">Completed</Tag>
+          )}
         </Space>
       )
     }
@@ -164,21 +166,32 @@ export default function DepartmentHeadPage() {
         </Button>
       </div>
 
-      {/* STATS */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={8}>
           <Card style={{ borderRadius: 16 }} styles={{ body: { textAlign: 'center' } }}>
-            <Statistic title="Total Submissions" value={forms.length} styles={{ content: { color: '#2563eb', fontWeight: 800 } }} />
+            <Statistic
+              title="Total Submissions"
+              value={forms.length}
+              styles={{ content: { color: '#2563eb', fontWeight: 800 } }}
+            />
           </Card>
         </Col>
         <Col xs={12} sm={8}>
           <Card style={{ borderRadius: 16 }} styles={{ body: { textAlign: 'center' } }}>
-            <Statistic title="Pending Dept Review" value={pendingCount} styles={{ content: { color: '#f59e0b', fontWeight: 800 } }} />
+            <Statistic
+              title="Pending Dept Review"
+              value={pendingCount}
+              styles={{ content: { color: '#f59e0b', fontWeight: 800 } }}
+            />
           </Card>
         </Col>
         <Col xs={12} sm={8}>
           <Card style={{ borderRadius: 16 }} styles={{ body: { textAlign: 'center' } }}>
-            <Statistic title="Dept Cleared" value={approvedCount} styles={{ content: { color: '#10b981', fontWeight: 800 } }} />
+            <Statistic
+              title="Dept Cleared"
+              value={approvedCount}
+              styles={{ content: { color: '#10b981', fontWeight: 800 } }}
+            />
           </Card>
         </Col>
       </Row>
@@ -198,7 +211,14 @@ export default function DepartmentHeadPage() {
                   onChange={e => setSearch(e.target.value)}
                   style={{ marginBottom: 16, borderRadius: 10, maxWidth: 400 }}
                 />
-                <Table columns={columns} dataSource={filtered} rowKey="id" loading={loading} pagination={{ pageSize: 8 }} />
+                <Table
+                  columns={columns}
+                  dataSource={filtered}
+                  rowKey="id"
+                  loading={loading}
+                  pagination={{ pageSize: 8 }}
+                  locale={{ emptyText: 'No clearance applications pending at your stage.' }}
+                />
               </Card>
             )
           },
@@ -210,14 +230,16 @@ export default function DepartmentHeadPage() {
         ]}
       />
 
-      {/* ACTION MODAL */}
       <Modal
         title={`${actionType === 'approve' ? 'Approve' : 'Reject'} Clearance Request`}
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         onOk={handleConfirmAction}
         okText={`Confirm ${actionType}`}
-        okButtonProps={{ danger: actionType === 'reject', style: actionType === 'approve' ? { background: '#10b981', border: 'none' } : {} }}
+        okButtonProps={{
+          danger: actionType === 'reject',
+          style: actionType === 'approve' ? { background: '#10b981', border: 'none' } : {}
+        }}
       >
         <Paragraph>
           Student: <strong>{selectedForm?.full_name}</strong> ({selectedForm?.id_number})
