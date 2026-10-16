@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Table, Tag, Button, Input, Modal, Typography, Space, Row, Col, Select, Checkbox, message, Tabs, Form
+  Card, Table, Tag, Button, Input, Modal, Typography, Space, Row, Col, Select, Checkbox, message, Tabs
 } from 'antd';
-import { CheckOutlined, HomeOutlined, SearchOutlined, DollarOutlined, ToolOutlined } from '@ant-design/icons';
-import { getStoredForms, setStoredForms, getStoredBuildings } from '../../utils/api';
+import { CheckOutlined, SearchOutlined, ToolOutlined } from '@ant-design/icons';
+import { apiFetch } from '../../utils/api';
 import type { ClearanceForm, Building } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
 
@@ -15,6 +15,7 @@ export default function DormitoryPage() {
   const [selectedBuilding, setSelectedBuilding] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [approving, setApproving] = useState<number | null>(null);
   const [isInspectModalOpen, setIsInspectModalOpen] = useState(false);
   const [inspectForm, setInspectForm] = useState<ClearanceForm | null>(null);
   const [damageItems, setDamageItems] = useState<string[]>([]);
@@ -24,42 +25,53 @@ export default function DormitoryPage() {
     loadData();
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true);
-    setForms(getStoredForms());
-    setBuildings(getStoredBuildings());
-    setLoading(false);
+    try {
+      const [formsData, buildingsData] = await Promise.all([
+        apiFetch('forms'),
+        apiFetch('buildings').catch(() => ({ buildings: [] })),
+      ]);
+      setForms(Array.isArray(formsData) ? formsData : []);
+      const bList = buildingsData?.buildings || [];
+      setBuildings(Array.isArray(bList) ? bList : []);
+    } catch (err: any) {
+      message.error(err.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleApproveDorm = (record: ClearanceForm) => {
-    const all = getStoredForms();
-    const idx = all.findIndex(f => f.id === record.id);
-    if (idx !== -1) {
-      all[idx].status = 'approved_dormitory';
-      all[idx].dormitory_note = 'Room inspected. Key returned, zero room property damage.';
-      all[idx].dormitory_approved_by = 'Tadesse Woldemariam (Dorm Manager)';
-      setStoredForms(all);
+  const handleApproveDorm = async (record: ClearanceForm) => {
+    setApproving(record.id as number);
+    try {
+      await apiFetch(`dormitory/action/${record.id}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'approve',
+          note: 'Room inspected. Key returned, zero room property damage.',
+        }),
+      });
+      message.success(`Dormitory clearance approved for ${record.full_name}!`);
+      loadData();
+    } catch (err: any) {
+      message.error(err.message || 'Approval failed');
+    } finally {
+      setApproving(null);
     }
-    message.success(`Dormitory clearance approved for ${record.full_name}!`);
-    loadData();
   };
 
   const handleIssueDamageFine = () => {
-    if (!inspectForm) return;
-    const all = getStoredForms();
-    const idx = all.findIndex(f => f.id === inspectForm.id);
-    if (idx !== -1) {
-      all[idx].status = 'requires_dormitory_payment';
-      all[idx].dormitory_note = `Room damage fine required: ${damageItems.join(', ')} (${damageFine} ETB).`;
-      setStoredForms(all);
-    }
-    message.warning(`Room damage fine issued for ${inspectForm.full_name}.`);
+    // Backend endpoint for damage fines not yet implemented.
+    // Showing informational message instead of the previous localStorage hack.
+    message.info('Room damage fine issuance requires backend support.');
     setIsInspectModalOpen(false);
-    loadData();
   };
 
   const filtered = forms.filter(f => {
-    const matchesSearch = (f.full_name || '').toLowerCase().includes(search.toLowerCase()) || (f.id_number || '').toLowerCase().includes(search.toLowerCase());
+    const matchesSearch =
+      (f.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (f.id_number || '').toLowerCase().includes(search.toLowerCase());
     const matchesBuilding = !selectedBuilding || f.building?.id === selectedBuilding;
     return matchesSearch && matchesBuilding;
   });
@@ -93,36 +105,46 @@ export default function DormitoryPage() {
         if (st === 'requires_dormitory_payment') {
           return <Tag color="warning">Pending Damage Fine Payment</Tag>;
         }
+        if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
         return <Tag color="processing">Ready for Inspection</Tag>;
       }
     },
     {
       title: 'Actions',
       key: 'actions',
-      render: (_: any, record: ClearanceForm) => (
-        <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<CheckOutlined />}
-            onClick={() => handleApproveDorm(record)}
-            style={{ background: '#10b981', border: 'none' }}
-          >
-            Clear Room
-          </Button>
-          <Button
-            danger
-            size="small"
-            icon={<ToolOutlined />}
-            onClick={() => {
-              setInspectForm(record);
-              setIsInspectModalOpen(true);
-            }}
-          >
-            Inspect Room Damage
-          </Button>
-        </Space>
-      )
+      render: (_: any, record: ClearanceForm) => {
+        if (record.status === 'approved_studentaffairs') {
+          return (
+            <Space>
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckOutlined />}
+                loading={approving === record.id}
+                onClick={() => handleApproveDorm(record)}
+                style={{ background: '#10b981', border: 'none' }}
+              >
+                Clear Room
+              </Button>
+              <Button
+                danger
+                size="small"
+                icon={<ToolOutlined />}
+                onClick={() => {
+                  setInspectForm(record);
+                  setIsInspectModalOpen(true);
+                }}
+              >
+                Inspect Room Damage
+              </Button>
+            </Space>
+          );
+        }
+        if (record.status === 'approved_dormitory') {
+          return <Tag color="success">Completed</Tag>;
+        }
+        return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage yet</Text>;
+      }
     }
   ];
 
@@ -130,7 +152,9 @@ export default function DormitoryPage() {
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 16px' }}>
       <div style={{ marginBottom: 24 }}>
         <Title level={2} style={{ margin: 0, fontWeight: 800 }}>Dormitory Room Inspection & Clearance</Title>
-        <Text type="secondary">Inspect residence room items, keys, furniture condition, and manage room damage dues</Text>
+        <Text type="secondary">
+          Inspect residence room items, keys, furniture condition, and manage room damage dues
+        </Text>
       </div>
 
       <Row gutter={16} style={{ marginBottom: 16 }}>
@@ -149,7 +173,7 @@ export default function DormitoryPage() {
             allowClear
             onChange={val => setSelectedBuilding(val)}
             options={buildings.map(b => ({ label: b.name, value: b.id }))}
-            style={{ width: '100%', borderRadius: 10 }}
+            style={{ width: '100%' }}
           />
         </Col>
       </Row>
@@ -162,7 +186,14 @@ export default function DormitoryPage() {
             label: '🏠 Room Clearance Queue',
             children: (
               <Card style={{ borderRadius: 16 }}>
-                <Table columns={columns} dataSource={filtered} rowKey="id" loading={loading} pagination={{ pageSize: 8 }} />
+                <Table
+                  columns={columns}
+                  dataSource={filtered}
+                  rowKey="id"
+                  loading={loading}
+                  pagination={{ pageSize: 8 }}
+                  locale={{ emptyText: 'No students pending dormitory clearance at this time.' }}
+                />
               </Card>
             )
           },
