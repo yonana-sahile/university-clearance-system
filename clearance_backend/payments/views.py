@@ -47,6 +47,9 @@ def submit_payment(request):
 @permission_classes([IsAuthenticated])
 def pending_payments(request):
     qs = PaymentRecord.objects.filter(status='pending')
+    # ✅ FIX: Students only see their own payments
+    if request.user.role == 'student':
+        qs = qs.filter(student=request.user)
     return Response(PaymentRecordSerializer(qs, many=True).data)
 
 
@@ -54,6 +57,9 @@ def pending_payments(request):
 @permission_classes([IsAuthenticated])
 def verified_payments(request):
     qs = PaymentRecord.objects.exclude(status='pending')
+    # ✅ FIX: Students only see their own payments
+    if request.user.role == 'student':
+        qs = qs.filter(student=request.user)
     return Response(PaymentRecordSerializer(qs, many=True).data)
 
 
