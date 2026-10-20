@@ -57,9 +57,11 @@ export default function StudentDashboard() {
 
   const user = getSession();
 
+  // ✅ FIX: Removed [user] dependency to prevent infinite loading loop
   useEffect(() => {
     loadStudentForm();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadStudentForm = async () => {
     setLoading(true);
