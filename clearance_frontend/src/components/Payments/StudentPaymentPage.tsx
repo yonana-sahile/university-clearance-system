@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Row, Col, Typography, Form, Input, Button, Select, Table, Tag, Alert, Upload, message, Space, Modal
+  Card, Row, Col, Typography, Form, Input, Button, Select, Table, Tag, message
 } from 'antd';
 import {
-  DollarOutlined, CopyOutlined, UploadOutlined, CheckCircleOutlined, ClockCircleOutlined, CreditCardOutlined
+  DollarOutlined, CopyOutlined, CheckCircleOutlined, ClockCircleOutlined
 } from '@ant-design/icons';
-import { apiFetch, getSession, getStoredPaymentMethods } from '../../utils/api';
+import { apiFetch, getSession } from '../../utils/api';
 import type { PaymentMethod, PaymentRecord } from '../../types';
 
 const { Title, Text, Paragraph } = Typography;
@@ -18,21 +18,35 @@ export default function StudentPaymentPage() {
   const [form] = Form.useForm();
   const user = getSession();
 
+  // ✅ FIX 1: Empty dependency array to prevent infinite loop
   useEffect(() => {
     loadPaymentData();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadPaymentData = async () => {
     setLoading(true);
     try {
-      const pmList = getStoredPaymentMethods();
-      setMethods(pmList);
-      if (pmList.length > 0) setSelectedMethod(pmList[0]);
+      // ✅ FIX 2: Fetch real payment methods from backend instead of localStorage
+      const pmList = await apiFetch('payment/methods');
+      const list = Array.isArray(pmList) ? pmList : [];
+      setMethods(list);
+      if (list.length > 0) setSelectedMethod(list[0]);
 
-      const myPayments = await apiFetch('payment/verified/');
-      setPayments(Array.isArray(myPayments) ? myPayments : []);
+      // ✅ FIX 3: Fetch both PENDING and VERIFIED payments for history
+      const [pending, verified] = await Promise.all([
+        apiFetch('payment/pending').catch(() => []),
+        apiFetch('payment/verified').catch(() => []),
+      ]);
+
+      const allPayments = [
+        ...(Array.isArray(pending) ? pending : []),
+        ...(Array.isArray(verified) ? verified : []),
+      ];
+      setPayments(allPayments);
     } catch (err) {
       console.error(err);
+      message.error('Failed to load payment data.');
     } finally {
       setLoading(false);
     }
@@ -46,9 +60,8 @@ export default function StudentPaymentPage() {
   const handleSubmitPayment = async (values: any) => {
     setLoading(true);
     try {
-      await apiFetch('payment/submit/', {
+      await apiFetch('payment/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           student_id: user?.id_number || 'AAA1234',
           student_name: user?.full_name || 'Yonas Sahile',
@@ -160,7 +173,7 @@ export default function StudentPaymentPage() {
               form={form}
               layout="vertical"
               onFinish={handleSubmitPayment}
-              initialValues={{ amount: 350, department_type: 'library', transaction_id: 'PAY-CBE-982341' }}
+              initialValues={{ amount: 350, department_type: 'library' }}
             >
               <Form.Item name="department_type" label="Department Due Requiring Clearance" rules={[{ required: true }]}>
                 <Select
@@ -212,7 +225,14 @@ export default function StudentPaymentPage() {
 
       {/* MY PAYMENT HISTORY TABLE */}
       <Card title="MY SUBMITTED PAYMENT RECORDS" style={{ marginTop: 28, borderRadius: 16 }}>
-        <Table columns={columns} dataSource={payments} rowKey="id" loading={loading} pagination={{ pageSize: 5 }} />
+        <Table
+          columns={columns}
+          dataSource={payments}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 5 }}
+          locale={{ emptyText: 'No payments submitted yet.' }}
+        />
       </Card>
     </div>
   );
