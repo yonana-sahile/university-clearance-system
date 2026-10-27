@@ -8,4 +8,6 @@ urlpatterns = [
     path('payment/verified', views.verified_payments),
     path('payment/verify/<int:payment_id>', views.verify_payment),
     path('dues', views.dues_list),
+    path('payment/initiate-chapa', views.initiate_chapa_payment),
+    path('payment/webhook/chapa', views.chapa_webhook),
 ]
