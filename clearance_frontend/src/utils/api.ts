@@ -10,7 +10,6 @@ import type {
   Building,
 } from '../types';
 
-
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/";
 
 export function getSession(): User | null {
@@ -72,17 +71,26 @@ export async function apiFetch(
 
   const res = await fetch(url, { ...options, headers });
 
-  if (res.status === 401) {
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("ucs_token");
-    sessionStorage.removeItem("ucs_current");
-    throw new Error("Unauthorized. Please log in again.");
-  }
-
+  // ✅ FIX: Parse the body FIRST so we can read the backend's error message
   const contentType = res.headers.get("content-type") || "";
   const data = contentType.includes("application/json")
     ? await res.json()
     : await res.text();
+
+  if (res.status === 401) {
+    // Only clear session if this is NOT a login attempt
+    if (!url.includes('login') && !url.includes('register')) {
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("ucs_token");
+      sessionStorage.removeItem("ucs_current");
+    }
+
+    // ✅ THIS SHOWS THE EXACT BACKEND MESSAGE (e.g., "Incorrect username or password.")
+    const message =
+      (data && (data.detail || data.message)) ||
+      "Incorrect username or password.";
+    throw new Error(message);
+  }
 
   if (!res.ok) {
     const message =
@@ -90,6 +98,7 @@ export async function apiFetch(
       `Request failed (${res.status})`;
     throw new Error(message);
   }
+
   return data;
 }
 
@@ -269,5 +278,5 @@ export function getStoredPayments(): PaymentRecord[] {
 }
 
 export function setStoredPayments(list: PaymentRecord[]): void {
-  setStoredPaymentRecords(list);
+  lsWrite(LS_KEYS.paymentRecords, list);
 }
