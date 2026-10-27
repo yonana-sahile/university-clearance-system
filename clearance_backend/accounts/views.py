@@ -1,3 +1,6 @@
+import random
+from datetime import timedelta
+from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -71,10 +74,7 @@ def register_view(request):
 @permission_classes([AllowAny])
 def login_view(request):
     ser = LoginSerializer(data=request.data)
-    # If authentication fails, the AuthenticationFailed exception is raised
-    # and DRF automatically returns a 401 response with {"detail": "..."}
     ser.is_valid(raise_exception=True)
-
     user = ser.validated_data['user']
     refresh = RefreshToken.for_user(user)
     access = str(refresh.access_token)
@@ -87,3 +87,84 @@ def login_view(request):
 @permission_classes([IsAuthenticated])
 def me_view(request):
     return Response(UserSerializer(request.user).data)
+
+
+# ============================================================
+# PASSWORD RESET ENDPOINTS
+# ============================================================
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def forgot_password(request):
+    email = request.data.get('email', '').strip().lower()
+    try:
+        user = User.objects.get(email__iexact=email)
+    except User.DoesNotExist:
+        return Response({'message': 'If an account exists, an OTP was sent.'})
+
+    # Generate 6-digit OTP
+    otp = str(random.randint(100000, 999999))
+    user.reset_otp = otp
+    user.reset_otp_expiry = timezone.now() + timedelta(minutes=10)
+    user.save()
+
+    # 🚨 FOR TESTING: We return the OTP so you can see it on the screen.
+    print(f"🔑 OTP for {email}: {otp}")
+
+    return Response({
+        'message': 'OTP generated successfully.',
+        'dev_otp': otp  # Remove this line in real production!
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_otp(request):
+    email = request.data.get('email', '').strip().lower()
+    otp = request.data.get('otp', '').strip()
+
+    try:
+        user = User.objects.get(email__iexact=email)
+    except User.DoesNotExist:
+        return Response({'detail': 'Invalid email.'}, status=400)
+
+    if not user.reset_otp or not user.reset_otp_expiry:
+        return Response({'detail': 'No OTP requested.'}, status=400)
+
+    if user.reset_otp != otp:
+        return Response({'detail': 'Invalid OTP code.'}, status=400)
+
+    if timezone.now() > user.reset_otp_expiry:
+        return Response({'detail': 'OTP has expired.'}, status=400)
+
+    return Response({'message': 'OTP verified successfully.'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request):
+    email = request.data.get('email', '').strip().lower()
+    otp = request.data.get('otp', '').strip()
+    new_password = request.data.get('password', '')
+
+    if len(new_password) < 6:
+        return Response({'detail': 'Password must be at least 6 characters.'}, status=400)
+
+    try:
+        user = User.objects.get(email__iexact=email)
+    except User.DoesNotExist:
+        return Response({'detail': 'Invalid email.'}, status=400)
+
+    if user.reset_otp != otp:
+        return Response({'detail': 'Invalid OTP code.'}, status=400)
+
+    if timezone.now() > user.reset_otp_expiry:
+        return Response({'detail': 'OTP has expired.'}, status=400)
+
+    # ✅ Update Password
+    user.set_password(new_password)
+    user.reset_otp = None
+    user.reset_otp_expiry = None
+    user.save()
+
+    return Response({'message': 'Password reset successfully! You can now log in.'})
