@@ -47,7 +47,6 @@ def submit_payment(request):
 @permission_classes([IsAuthenticated])
 def pending_payments(request):
     qs = PaymentRecord.objects.filter(status='pending')
-    # ✅ FIX: Students only see their own payments
     if request.user.role == 'student':
         qs = qs.filter(student=request.user)
     return Response(PaymentRecordSerializer(qs, many=True).data)
@@ -57,7 +56,6 @@ def pending_payments(request):
 @permission_classes([IsAuthenticated])
 def verified_payments(request):
     qs = PaymentRecord.objects.exclude(status='pending')
-    # ✅ FIX: Students only see their own payments
     if request.user.role == 'student':
         qs = qs.filter(student=request.user)
     return Response(PaymentRecordSerializer(qs, many=True).data)
@@ -70,3 +68,33 @@ def dues_list(request):
     if request.user.role == 'student':
         qs = qs.filter(student_id=request.user.id_number)
     return Response(DueRecordSerializer(qs, many=True).data)
+
+
+# ✅ THIS IS THE MISSING FUNCTION
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def verify_payment(request, payment_id):
+    """Staff approves or rejects a submitted payment."""
+    try:
+        record = PaymentRecord.objects.get(id=payment_id)
+    except PaymentRecord.DoesNotExist:
+        return Response({'detail': 'Payment not found.'}, status=404)
+
+    action = (request.data.get('action') or 'approve').lower()
+    reason = request.data.get('reason', '')
+
+    if action == 'approve':
+        record.status = 'verified'
+        record.verified_by = request.user
+        record.verified_at = timezone.now()
+    else:
+        record.status = 'rejected'
+        record.rejection_reason = reason
+
+    record.save()
+
+    return Response({
+        'message': f'Payment {action}d successfully!',
+        'status': record.status,
+        'data': PaymentRecordSerializer(record).data,
+    })
