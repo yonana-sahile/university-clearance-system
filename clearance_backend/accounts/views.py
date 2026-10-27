@@ -71,7 +71,10 @@ def register_view(request):
 @permission_classes([AllowAny])
 def login_view(request):
     ser = LoginSerializer(data=request.data)
+    # If authentication fails, the AuthenticationFailed exception is raised
+    # and DRF automatically returns a 401 response with {"detail": "..."}
     ser.is_valid(raise_exception=True)
+
     user = ser.validated_data['user']
     refresh = RefreshToken.for_user(user)
     access = str(refresh.access_token)
