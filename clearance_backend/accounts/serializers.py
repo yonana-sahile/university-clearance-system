@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed  # ✅ ADDED THIS IMPORT
 from django.contrib.auth import authenticate
 from .models import User, College, Department, Building
 
@@ -82,13 +83,11 @@ class RegisterSerializer(serializers.Serializer):
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=False, allow_blank=True)
-    # CharField (not EmailField) — frontend may send a student ID here
     email = serializers.CharField(required=False, allow_blank=True)
     password = serializers.CharField(write_only=True)
     role = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):
-        # Accept any of: username, email, or student id_number
         identifier = attrs.get('username') or attrs.get('email')
         password = attrs.get('password')
 
@@ -117,7 +116,8 @@ class LoginSerializer(serializers.Serializer):
                 user = None
 
         if not user:
-            raise serializers.ValidationError('Invalid credentials.')
+            # ✅ THIS FIXES THE 400/500 ERROR (Returns clean 401 with 'detail')
+            raise AuthenticationFailed('Incorrect username or password.')
 
         attrs['user'] = user
         return attrs

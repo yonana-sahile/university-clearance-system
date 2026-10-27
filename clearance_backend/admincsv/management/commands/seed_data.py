@@ -44,9 +44,10 @@ BUILDINGS = [
     ("Freshman Residence Hall", "FRESH-01"),
 ]
 
+# ✅ CHANGED THE PHONE NUMBER HERE
 PAYMENT_METHODS = [
-    ("Telebirr Mobile Money", "Mekdela Amba University Revenue", "0921459991", "", "0921459991",
-     "Dial *127# and send to 0921459991"),
+    ("Telebirr Mobile Money", "Mekdela Amba University Revenue", "0967005077", "", "0967005077",
+     "Dial *127# and send to 0967005077"),
     ("Commercial Bank of Ethiopia (CBE Birr)", "Mekdela Amba University Clearance Fund",
      "1000189342512", "Commercial Bank of Ethiopia", "", "Transfer to CBE 1000189342512"),
     ("Awash Bank Mobile Banking", "MAU Finance Account", "01320874512900", "Awash Bank S.C.", "",
@@ -89,8 +90,9 @@ class Command(BaseCommand):
             Building.objects.get_or_create(code=code, defaults={'name': name})
 
         # ---------- Payment methods ----------
+        # ✅ CHANGED TO update_or_create SO IT UPDATES EXISTING DATA
         for name, acc_name, acc_num, bank, phone, instr in PAYMENT_METHODS:
-            PaymentMethod.objects.get_or_create(
+            PaymentMethod.objects.update_or_create(
                 name=name,
                 defaults={
                     'account_name': acc_name,
@@ -119,7 +121,6 @@ class Command(BaseCommand):
             )
 
         # ---------- Staff users ----------
-        # (username, first_name, last_name, role, department_name_or_None)
         staff = [
             ('depthead_se', 'Aster', 'Alemayehu', 'departmenthead', 'Software Engineering'),
             ('librarian_main', 'Mulugeta', 'Yilma', 'librarian', None),
@@ -160,7 +161,6 @@ class Command(BaseCommand):
                     user.is_superuser = True
                 user.save()
             else:
-                # Update existing user (e.g. after redeploy)
                 updated = False
                 if dept and not user.department:
                     user.department = dept
