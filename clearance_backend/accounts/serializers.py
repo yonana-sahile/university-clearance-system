@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed  # ✅ ADDED THIS IMPORT
+from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth import authenticate
+from django.utils import timezone
 from .models import User, College, Department, Building
 
 
@@ -95,11 +96,8 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError('Username/email and password required.')
 
         user = None
-
-        # 1. Direct username authentication
         user = authenticate(username=identifier, password=password)
 
-        # 2. Try email → find username → authenticate
         if not user:
             try:
                 u = User.objects.get(email__iexact=identifier)
@@ -107,7 +105,6 @@ class LoginSerializer(serializers.Serializer):
             except User.DoesNotExist:
                 user = None
 
-        # 3. Try id_number → find username → authenticate
         if not user:
             try:
                 u = User.objects.get(id_number__iexact=identifier)
@@ -116,8 +113,68 @@ class LoginSerializer(serializers.Serializer):
                 user = None
 
         if not user:
-            # ✅ THIS FIXES THE 400/500 ERROR (Returns clean 401 with 'detail')
             raise AuthenticationFailed('Incorrect username or password.')
 
         attrs['user'] = user
+        return attrs
+
+
+# ============================================================
+# ✅ NEW: PASSWORD RESET SERIALIZERS
+# ============================================================
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        if not User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError('No account found with this email address.')
+        return value
+
+
+class VerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=6, max_length=6)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        otp = attrs.get('otp')
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError('Invalid email.')
+
+        if not user.reset_otp or not user.reset_otp_expiry:
+            raise serializers.ValidationError('No OTP requested.')
+
+        if user.reset_otp != otp:
+            raise serializers.ValidationError('Invalid OTP code.')
+
+        if timezone.now() > user.reset_otp_expiry:
+            raise serializers.ValidationError('OTP has expired.')
+
+        return attrs
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=6, max_length=6)
+    password = serializers.CharField(min_length=6, write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        otp = attrs.get('otp')
+
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError('Invalid email.')
+
+        if user.reset_otp != otp:
+            raise serializers.ValidationError('Invalid OTP code.')
+
+        if not user.reset_otp_expiry or timezone.now() > user.reset_otp_expiry:
+            raise serializers.ValidationError('OTP has expired.')
+
         return attrs
