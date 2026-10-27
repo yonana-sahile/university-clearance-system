@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Row, Col, Typography, Form, Input, Button, Select, Table, Tag, message
+  Card, Row, Col, Typography, Form, Input, Button, Select, Table, Tag, message, Divider
 } from 'antd';
 import {
-  DollarOutlined, CopyOutlined, CheckCircleOutlined, ClockCircleOutlined
+  DollarOutlined, CopyOutlined, CheckCircleOutlined, ClockCircleOutlined, RocketOutlined
 } from '@ant-design/icons';
 import { apiFetch, getSession } from '../../utils/api';
 import type { PaymentMethod, PaymentRecord } from '../../types';
@@ -52,6 +52,31 @@ export default function StudentPaymentPage() {
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     message.success('Account number copied to clipboard!');
+  };
+
+  // ✅ NEW: AUTOMATED CHAPA PAYMENT
+  const handleChapaPayment = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch('payment/initiate-chapa', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: 350,
+          department_type: 'library',
+        }),
+      });
+
+      // Redirect the student to the Chapa Checkout page
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        message.error('Failed to get checkout URL.');
+      }
+    } catch (err: any) {
+      message.error(err.message || 'Failed to start automated payment.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmitPayment = async (values: any) => {
@@ -127,6 +152,52 @@ export default function StudentPaymentPage() {
         </Text>
       </div>
 
+      {/* ✅ NEW: AUTOMATED PAYMENT CARD */}
+      <Card
+        style={{
+          borderRadius: 16,
+          marginBottom: 24,
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+          border: 'none'
+        }}
+        styles={{ body: { padding: '28px 24px' } }}
+      >
+        <Row align="middle" justify="space-between" gutter={[16, 16]}>
+          <Col xs={24} md={16}>
+            <Title level={4} style={{ color: '#fff', margin: 0, fontWeight: 800 }}>
+              Pay Instantly Online
+            </Title>
+            <Text style={{ color: '#bfdbfe', fontSize: 14 }}>
+              Skip the manual upload. Pay securely with Telebirr, CBE Birr, or Card. Your clearance will be automatically updated.
+            </Text>
+          </Col>
+          <Col xs={24} md={8} style={{ textAlign: 'right' }}>
+            <Button
+              type="primary"
+              size="large"
+              icon={<RocketOutlined />}
+              loading={loading}
+              onClick={handleChapaPayment}
+              style={{
+                height: 48,
+                borderRadius: 12,
+                background: '#10b981',
+                border: 'none',
+                fontWeight: 700,
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                width: '100%'
+              }}
+            >
+              Pay Now (Automated)
+            </Button>
+          </Col>
+        </Row>
+      </Card>
+
+      <Divider style={{ margin: '32px 0' }}>
+        <Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>OR MANUAL PAYMENT</Text>
+      </Divider>
+
       <Row gutter={[24, 24]}>
         {/* PAYMENT METHOD SELECTION & INSTRUCTIONS */}
         <Col xs={24} md={12}>
@@ -165,7 +236,7 @@ export default function StudentPaymentPage() {
 
         {/* SUBMIT RECEIPT FORM */}
         <Col xs={24} md={12}>
-          <Card title="2. SUBMIT PAYMENT TRANSACTION" style={{ borderRadius: 16 }}>
+          <Card title="2. SUBMIT MANUAL RECEIPT" style={{ borderRadius: 16 }}>
             <Form
               form={form}
               layout="vertical"
@@ -194,7 +265,6 @@ export default function StudentPaymentPage() {
               </Form.Item>
 
               <Form.Item name="phone_number" label="Payer Phone Number">
-                {/* ✅ CHANGED PHONE NUMBER HERE */}
                 <Input size="large" placeholder="0967005077" style={{ borderRadius: 10 }} />
               </Form.Item>
 
