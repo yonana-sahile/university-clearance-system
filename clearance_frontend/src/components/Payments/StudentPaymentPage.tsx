@@ -18,7 +18,6 @@ export default function StudentPaymentPage() {
   const [form] = Form.useForm();
   const user = getSession();
 
-  // ✅ FIX 1: Empty dependency array to prevent infinite loop
   useEffect(() => {
     loadPaymentData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -27,13 +26,11 @@ export default function StudentPaymentPage() {
   const loadPaymentData = async () => {
     setLoading(true);
     try {
-      // ✅ FIX 2: Fetch real payment methods from backend instead of localStorage
       const pmList = await apiFetch('payment/methods');
       const list = Array.isArray(pmList) ? pmList : [];
       setMethods(list);
       if (list.length > 0) setSelectedMethod(list[0]);
 
-      // ✅ FIX 3: Fetch both PENDING and VERIFIED payments for history
       const [pending, verified] = await Promise.all([
         apiFetch('payment/pending').catch(() => []),
         apiFetch('payment/verified').catch(() => []),
@@ -197,7 +194,8 @@ export default function StudentPaymentPage() {
               </Form.Item>
 
               <Form.Item name="phone_number" label="Payer Phone Number">
-                <Input size="large" placeholder="0921459991" style={{ borderRadius: 10 }} />
+                {/* ✅ CHANGED PHONE NUMBER HERE */}
+                <Input size="large" placeholder="0967005077" style={{ borderRadius: 10 }} />
               </Form.Item>
 
               <Button
