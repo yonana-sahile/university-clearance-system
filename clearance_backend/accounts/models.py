@@ -53,5 +53,9 @@ class User(AbstractUser):
     building = models.ForeignKey(Building, null=True, blank=True, on_delete=models.SET_NULL)
     profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
 
+    # ✅ NEW FIELDS FOR PASSWORD RESET
+    reset_otp = models.CharField(max_length=6, blank=True, null=True)
+    reset_otp_expiry = models.DateTimeField(blank=True, null=True)
+
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip() or self.username
