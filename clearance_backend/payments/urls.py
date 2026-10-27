@@ -6,5 +6,6 @@ urlpatterns = [
     path('payment/submit', views.submit_payment),
     path('payment/pending', views.pending_payments),
     path('payment/verified', views.verified_payments),
+    path('payment/verify/<int:payment_id>', views.verify_payment),
     path('dues', views.dues_list),
 ]
