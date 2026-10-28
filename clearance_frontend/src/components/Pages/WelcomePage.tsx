@@ -18,6 +18,7 @@ import {
   SearchOutlined,
   ApartmentOutlined,
   QuestionCircleOutlined,
+  CaretRightOutlined,
 } from '@ant-design/icons';
 import { getSession, getStoredForms } from '../../utils/api';
 import type { ClearanceForm } from '../../types';
@@ -529,76 +530,109 @@ export default function WelcomePage() {
           </Row>
         </div>
 
-        {/* FREQUENTLY ASKED QUESTIONS (FAQ) */}
-        <div style={{ textAlign: 'left' }}>
+        {/* UPGRADED: FREQUENTLY ASKED QUESTIONS (FAQ) */}
+        <div style={{
+          textAlign: 'left',
+          background: 'linear-gradient(to bottom right, #f0fdf4 0%, #f8fafc 50%, #eff6ff 100%)',
+          padding: '32px',
+          borderRadius: '24px',
+          border: '1px solid #bfdbfe',
+          boxShadow: '0 10px 30px -10px rgba(37, 99, 235, 0.1)'
+        }}>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
-              marginBottom: 16,
+              gap: 12,
+              marginBottom: 24,
             }}
           >
-            <QuestionCircleOutlined style={{ fontSize: 22, color: '#d97706' }} />
-            <Title level={4} style={{ margin: 0, color: '#0f172a', fontWeight: 800 }}>
-              Frequently Asked Questions (FAQ)
-            </Title>
+            <div style={{
+              width: 44, height: 44, borderRadius: 12,
+              background: '#dbeafe', color: '#1d4ed8',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 22
+            }}>
+              <QuestionCircleOutlined />
+            </div>
+            <div>
+              <Title level={3} style={{ margin: 0, color: '#1e3a8a', fontWeight: 900 }}>
+                Frequently Asked Questions
+              </Title>
+              <Text style={{ color: '#475569', fontSize: 14 }}>
+                Quick answers to help you navigate your clearance journey.
+              </Text>
+            </div>
           </div>
 
           <Collapse
-            style={{
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: 14,
-            }}
+            ghost
+            expandIconPosition="end"
+            expandIcon={({ isActive }) => (
+              <div style={{
+                background: isActive ? '#1e3a8a' : '#f1f5f9',
+                color: isActive ? '#ffffff' : '#64748b',
+                borderRadius: '50%', width: 28, height: 28,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.3s ease'
+              }}>
+                <CaretRightOutlined rotate={isActive ? 90 : 0} style={{ fontSize: 14 }} />
+              </div>
+            )}
             items={[
               {
                 key: '1',
-                label: (
-                  <span style={{ color: '#0f172a', fontWeight: 700 }}>
-                    How do I apply for digital clearance at Mekdela Amba University?
-                  </span>
-                ),
+                label: <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>📝 How do I apply for digital clearance at Mekdela Amba University?</span>,
                 children: (
-                  <p style={{ color: '#475569', margin: 0 }}>
-                    Log in to your Student Account, navigate to 'Apply
-                    Clearance', fill in your department and ID details, and
-                    click Submit. Your clearance request will automatically
-                    broadcast to all 11 campus offices simultaneously!
+                  <p style={{ color: '#475569', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
+                    Log in to your Student Account, navigate to <strong>'Apply Clearance'</strong>, fill in your department and ID details, and click Submit. Your clearance request will automatically broadcast to all 11 campus offices simultaneously!
                   </p>
                 ),
+                style: {
+                  marginBottom: 16,
+                  background: '#ffffff',
+                  borderRadius: 16,
+                  border: '1px solid #e2e8f0',
+                  padding: '16px 24px',
+                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
+                  transition: 'all 0.3s ease'
+                }
               },
               {
                 key: '2',
-                label: (
-                  <span style={{ color: '#0f172a', fontWeight: 700 }}>
-                    How can I pay library or cafeteria fines online?
-                  </span>
-                ),
+                label: <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>💳 How can I pay library or cafeteria fines online?</span>,
                 children: (
-                  <p style={{ color: '#475569', margin: 0 }}>
-                    Go to the 'Payments' page in your dashboard, select Telebirr
-                    Mobile Money or CBE Birr, send payment to the MAU Official
-                    Merchant account, and submit your transaction reference
-                    number for instant digital clearance.
+                  <p style={{ color: '#475569', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
+                    Go to the <strong>'Payments'</strong> page in your dashboard, select Telebirr Mobile Money or CBE Birr, send payment to the MAU Official Merchant account, and submit your transaction reference number for instant digital clearance.
                   </p>
                 ),
+                style: {
+                  marginBottom: 16,
+                  background: '#ffffff',
+                  borderRadius: 16,
+                  border: '1px solid #e2e8f0',
+                  padding: '16px 24px',
+                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
+                  transition: 'all 0.3s ease'
+                }
               },
               {
                 key: '3',
-                label: (
-                  <span style={{ color: '#0f172a', fontWeight: 700 }}>
-                    When do I get my official digital clearance certificate?
-                  </span>
-                ),
+                label: <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>🎓 When do I get my official digital clearance certificate?</span>,
                 children: (
-                  <p style={{ color: '#475569', margin: 0 }}>
-                    Once all 10 preliminary departments approve your record, the
-                    University Registrar grants final seal approval. A
-                    downloadable PDF certificate complete with QR verification
-                    code will immediately generate in your dashboard!
+                  <p style={{ color: '#475569', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
+                    Once all 10 preliminary departments approve your record, the University Registrar grants final seal approval. A downloadable PDF certificate complete with QR verification code will immediately generate in your dashboard!
                   </p>
                 ),
+                style: {
+                  marginBottom: 0,
+                  background: '#ffffff',
+                  borderRadius: 16,
+                  border: '1px solid #e2e8f0',
+                  padding: '16px 24px',
+                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
+                  transition: 'all 0.3s ease'
+                }
               },
             ]}
           />
