@@ -100,15 +100,6 @@ export default function LoginPage() {
     }
   };
 
-  const fillQuickDemo = (role: UserRole) => {
-    if (!import.meta.env.DEV) return;
-    setSelectedRole(role);
-    form.setFieldsValue({
-      identifier: role === 'student' ? 'AAA1234' : `${role}_officer`,
-      password: 'Password123!',
-    });
-  };
-
   return (
     <div className="mau-login-wrapper mau-theme-adey-abeba">
       <div className="mau-login-backdrop-glow" aria-hidden="true" />
@@ -189,7 +180,7 @@ export default function LoginPage() {
         {/* RIGHT PANEL: Login Form OR Lock Cover */}
         <div className="mau-login-form-panel">
 
-          {/* Top Bar (Theme text removed) */}
+          {/* Top Bar */}
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 20 }}>
              <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>2026/2027 A.Y.</span>
           </div>
@@ -301,17 +292,6 @@ export default function LoginPage() {
                   )}
                 </button>
               </Form>
-
-              {/* QUICK DEMO LOGIN */}
-              {import.meta.env.DEV && (
-                <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px dashed #e2e8f0', textAlign: 'center' }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 10 }}>⚡ QUICK DEMO LOGINS</span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
-                    <button type="button" onClick={() => fillQuickDemo('student')} style={{ padding: '4px 8px', borderRadius: 6, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 12 }}>🎓 Student</button>
-                    <button type="button" onClick={() => fillQuickDemo('admin')} style={{ padding: '4px 8px', borderRadius: 6, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 12 }}>⚙️ Admin</button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
