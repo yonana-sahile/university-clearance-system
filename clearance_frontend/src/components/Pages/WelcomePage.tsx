@@ -19,8 +19,8 @@ import {
   ApartmentOutlined,
   QuestionCircleOutlined,
 } from '@ant-design/icons';
-import { getSession, setSession, getStoredForms } from '../../utils/api';
-import type { ClearanceForm, UserRole } from '../../types';
+import { getSession, getStoredForms } from '../../utils/api';
+import type { ClearanceForm } from '../../types';
 import StarryFlag from '../Common/StarryFlag';
 
 const { Title, Text, Paragraph } = Typography;
@@ -60,31 +60,6 @@ export default function WelcomePage() {
       setTrackResult(match || 'not_found');
       setTracking(false);
     }, 400);
-  };
-
-  const handleQuickDemoLogin = (role: UserRole) => {
-    if (!import.meta.env.DEV) return;
-    const demoUser = {
-      id: 101,
-      username: `${role}_demo`,
-      full_name: role === 'student' ? 'Demo Student' : `Demo ${role.toUpperCase()} Officer`,
-      email: `${role}@mau.edu.et`,
-      role: role,
-      id_number: 'UGR/1234/14',
-      department_name: 'Software Engineering',
-      college: 'College of Computing',
-    };
-    setSession(demoUser);
-    const routes: Record<string, string> = {
-      student: '/student',
-      departmenthead: '/departmenthead',
-      librarian: '/librarian',
-      cafeteria: '/cafeteria',
-      dormitory: '/dormitory',
-      registrar: '/registrar',
-      admin: '/admin',
-    };
-    navigate(routes[role] || '/student');
   };
 
   return (
@@ -158,7 +133,6 @@ export default function WelcomePage() {
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {/* ✅ LOGO — no box, no border, no background */}
             <img
               src="/mau_logo.jpg"
               alt="Mekdela Amba University Logo"
@@ -552,130 +526,6 @@ export default function WelcomePage() {
                 </Card>
               </Col>
             ))}
-          </Row>
-        </div>
-
-        {/* FEATURE CARD 3: 1-CLICK DEMO TEST PORTALS */}
-        <div
-          style={{
-            background: '#ffffff',
-            borderRadius: 20,
-            padding: 24,
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)',
-            marginBottom: 36,
-            textAlign: 'left',
-          }}
-        >
-          <Title
-            level={4}
-            style={{ color: '#1e3a8a', fontWeight: 800, margin: '0 0 12px 0' }}
-          >
-            ⚡ 1-Click Instant Demo Role Portals
-          </Title>
-          <Text
-            style={{
-              color: '#64748b',
-              fontSize: 13,
-              display: 'block',
-              marginBottom: 16,
-            }}
-          >
-            Test the complete system experience across all user perspectives
-            immediately:
-          </Text>
-
-          <Row gutter={[10, 10]}>
-            <Col xs={12} sm={8} md={4}>
-              <Button
-                block
-                onClick={() => handleQuickDemoLogin('student')}
-                style={{
-                  borderRadius: 10,
-                  background: '#1e3a8a',
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 700,
-                }}
-              >
-                👨‍🎓 Student
-              </Button>
-            </Col>
-            <Col xs={12} sm={8} md={4}>
-              <Button
-                block
-                onClick={() => handleQuickDemoLogin('departmenthead')}
-                style={{
-                  borderRadius: 10,
-                  background: '#0284c7',
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 700,
-                }}
-              >
-                🎓 Dept Head
-              </Button>
-            </Col>
-            <Col xs={12} sm={8} md={4}>
-              <Button
-                block
-                onClick={() => handleQuickDemoLogin('librarian')}
-                style={{
-                  borderRadius: 10,
-                  background: '#7c3aed',
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 700,
-                }}
-              >
-                📚 Librarian
-              </Button>
-            </Col>
-            <Col xs={12} sm={8} md={4}>
-              <Button
-                block
-                onClick={() => handleQuickDemoLogin('cafeteria')}
-                style={{
-                  borderRadius: 10,
-                  background: '#ea580c',
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 700,
-                }}
-              >
-                🍱 Cafeteria
-              </Button>
-            </Col>
-            <Col xs={12} sm={8} md={4}>
-              <Button
-                block
-                onClick={() => handleQuickDemoLogin('dormitory')}
-                style={{
-                  borderRadius: 10,
-                  background: '#059669',
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 700,
-                }}
-              >
-                🏠 Dormitory
-              </Button>
-            </Col>
-            <Col xs={12} sm={8} md={4}>
-              <Button
-                block
-                onClick={() => handleQuickDemoLogin('registrar')}
-                style={{
-                  borderRadius: 10,
-                  background: '#dc2626',
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 700,
-                }}
-              >
-                🏛️ Registrar
-              </Button>
-            </Col>
           </Row>
         </div>
 
