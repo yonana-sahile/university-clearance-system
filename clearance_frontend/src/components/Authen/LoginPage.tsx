@@ -257,7 +257,7 @@ export default function LoginPage() {
                     <Input
                       size="large"
                       prefix={isStudent ? <Mail size={16} style={{ color: '#94a3b8', marginRight: 4 }} /> : <User size={16} style={{ color: '#94a3b8', marginRight: 4 }} />}
-                      placeholder={isStudent ? 'e.g. AAA1234' : 'e.g. depthead_se'}
+                      placeholder={isStudent ? 'e.g. MAU1234' : 'e.g. depthead_se'}
                       style={{ borderRadius: 10, height: 46 }}
                     />
                   </Form.Item>
