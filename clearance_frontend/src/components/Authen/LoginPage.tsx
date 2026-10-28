@@ -22,7 +22,6 @@ export default function LoginPage() {
   const [clearanceReleased, setClearanceReleased] = useState<boolean>(() => {
     return localStorage.getItem('mau_clearance_released') === 'true';
   });
-  const [staffBypassMode, setStaffBypassMode] = useState(false);
 
   const isStudent = selectedRole === 'student';
 
@@ -167,8 +166,8 @@ export default function LoginPage() {
              <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>2026/2027 A.Y.</span>
           </div>
 
-          {!clearanceReleased && !staffBypassMode ? (
-            // LOCK SCREEN (Students see this)
+          {!clearanceReleased ? (
+            // LOCK SCREEN (Only shows when locked, no bypass buttons)
             <div className="mau-login-lock-cover">
               <div className="mau-cover-icon-circle">
                 <Lock size={46} className="mau-cover-lock-icon" />
@@ -176,31 +175,21 @@ export default function LoginPage() {
 
               <h2 className="mau-cover-title">Clearance is Locked</h2>
               <p className="mau-cover-desc">
-                The digital graduation clearance portal is officially locked. Access will be unveiled only after the University Administrator releases the session.
+                The digital graduation clearance portal is officially locked. Access will be unveiled only after the University Administrator releases the session from the Admin Dashboard.
               </p>
 
-              <div className="mau-cover-staff-switch">
-                <span>Are you University Staff or Admin? </span>
-                <button
-                  type="button"
-                  className="mau-cover-staff-link"
-                  onClick={() => {
-                    setSelectedRole('admin');
-                    setStaffBypassMode(true);
-                  }}
-                >
-                  Log in here to Unlock
-                </button>
+              <div style={{ marginTop: 24, padding: '12px 16px', background: '#0c0802', borderRadius: 8, border: '1px solid #ffd000', display: 'inline-block' }}>
+                <span style={{ fontSize: 12, color: '#fef9c3', fontWeight: 600 }}>
+                  Are you an Admin? Log in via the <a href="/admin-login" style={{ color: '#ffd000', textDecoration: 'underline' }}>Admin Portal</a>.
+                </span>
               </div>
             </div>
           ) : (
-            // LOGIN FORM
+            // LOGIN FORM (Only shows when UNLOCKED)
             <div>
               <div className="mau-form-header">
                 <h2 className="mau-form-title">Sign in to Portal</h2>
-                <p className="mau-form-subtitle">
-                  {staffBypassMode ? 'Admin Access: Unlock the portal from your dashboard.' : 'Enter your credentials to track or submit clearance'}
-                </p>
+                <p className="mau-form-subtitle">Enter your credentials to track or submit clearance</p>
               </div>
 
               {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 16, borderRadius: 10 }} />}
@@ -225,7 +214,7 @@ export default function LoginPage() {
                     <Input
                       size="large"
                       prefix={isStudent ? <Mail size={16} style={{ color: '#94a3b8', marginRight: 4 }} /> : <User size={16} style={{ color: '#94a3b8', marginRight: 4 }} />}
-                      placeholder={isStudent ? 'e.g. MAU1234' : 'e.g. admin_mau'}
+                      placeholder={isStudent ? 'e.g. MAU1234' : 'e.g. depthead_se'}
                       style={{ borderRadius: 10, height: 46 }}
                     />
                   </Form.Item>
@@ -247,6 +236,11 @@ export default function LoginPage() {
                   <Link to="/forgot-password" style={{ fontSize: 13, color: '#2563eb' }}>
                     Forgot password?
                   </Link>
+                  {isStudent && (
+                    <Link to="/register" style={{ fontSize: 13, color: '#2563eb', fontWeight: 600 }}>
+                      New student? Register here
+                    </Link>
+                  )}
                 </div>
 
                 <button type="submit" className="mau-submit-btn" disabled={loading}>
