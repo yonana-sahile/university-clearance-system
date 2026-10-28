@@ -167,7 +167,7 @@ export default function LoginPage() {
           </div>
 
           {!clearanceReleased ? (
-            // LOCK SCREEN (Only shows when locked, no bypass buttons)
+            // LOCK SCREEN
             <div className="mau-login-lock-cover">
               <div className="mau-cover-icon-circle">
                 <Lock size={46} className="mau-cover-lock-icon" />
@@ -177,15 +177,9 @@ export default function LoginPage() {
               <p className="mau-cover-desc">
                 The digital graduation clearance portal is officially locked. Access will be unveiled only after the University Administrator releases the session from the Admin Dashboard.
               </p>
-
-              <div style={{ marginTop: 24, padding: '12px 16px', background: '#0c0802', borderRadius: 8, border: '1px solid #ffd000', display: 'inline-block' }}>
-                <span style={{ fontSize: 12, color: '#fef9c3', fontWeight: 600 }}>
-                  Are you an Admin? Log in via the <a href="/admin-login" style={{ color: '#ffd000', textDecoration: 'underline' }}>Admin Portal</a>.
-                </span>
-              </div>
             </div>
           ) : (
-            // LOGIN FORM (Only shows when UNLOCKED)
+            // LOGIN FORM
             <div>
               <div className="mau-form-header">
                 <h2 className="mau-form-title">Sign in to Portal</h2>
