@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Table, Tag, Button, Input, Upload, Typography, Space, Row, Col, Statistic, Modal, Form, message, Popconfirm
+  Card, Table, Tag, Button, Input, Upload, Typography, Space, Row, Col, Statistic, Modal, Form, message, Popconfirm, Switch
 } from 'antd';
 import {
-  UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined, SearchOutlined, UserOutlined, SafetyCertificateOutlined, CodeOutlined
+  UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined, SearchOutlined, UserOutlined, SafetyCertificateOutlined, CodeOutlined, LockOutlined, UnlockOutlined
 } from '@ant-design/icons';
 import { apiFetch, getStoredValidStudents, setStoredValidStudents } from '../../utils/api';
 import type { ValidStudentCSV } from '../../types';
@@ -16,6 +16,23 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addForm] = Form.useForm();
+
+  // ==========================================
+  // CLEARANCE SEASON LOCK STATE
+  // ==========================================
+  const [clearanceReleased, setClearanceReleased] = useState<boolean>(() => {
+    return localStorage.getItem('mau_clearance_released') === 'true';
+  });
+
+  const handleToggleClearance = (checked: boolean) => {
+    setClearanceReleased(checked);
+    localStorage.setItem('mau_clearance_released', String(checked));
+    if (checked) {
+      message.success('Clearance Portal is now UNLOCKED for students!');
+    } else {
+      message.warning('Clearance Portal is now LOCKED.');
+    }
+  };
 
   useEffect(() => {
     loadStudents();
@@ -205,6 +222,43 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 16px' }}>
+
+      {/* ✅ CLEARANCE SEASON LOCK/UNLOCK CONTROL PANEL */}
+      <Card
+        style={{
+          borderRadius: 16,
+          marginBottom: 24,
+          background: clearanceReleased ? '#f0fdf4' : '#fef2f2',
+          border: `1px solid ${clearanceReleased ? '#bbf7d0' : '#fecaca'}`,
+          boxShadow: clearanceReleased ? '0 4px 12px rgba(16, 185, 129, 0.1)' : '0 4px 12px rgba(239, 68, 68, 0.1)'
+        }}
+        styles={{ body: { padding: '24px' } }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <div>
+            <Title level={4} style={{ margin: 0, color: clearanceReleased ? '#166534' : '#991b1b', display: 'flex', alignItems: 'center', gap: 8 }}>
+              {clearanceReleased ? <UnlockOutlined /> : <LockOutlined />}
+              {clearanceReleased ? 'Clearance Portal is OPEN' : 'Clearance Portal is LOCKED'}
+            </Title>
+            <Text style={{ color: clearanceReleased ? '#15803d' : '#b91c1c', fontSize: 14, display: 'block', marginTop: 4 }}>
+              {clearanceReleased
+                ? 'Students can currently log in and submit clearance forms.'
+                : 'Students are blocked from logging in. Unlock to start the clearance season.'}
+            </Text>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#ffffff', padding: '8px 16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+            <Text strong style={{ fontSize: 13, color: '#475569' }}>
+              {clearanceReleased ? 'LOCK PORTAL' : 'UNLOCK PORTAL'}
+            </Text>
+            <Switch
+              checked={clearanceReleased}
+              onChange={handleToggleClearance}
+              style={{ backgroundColor: clearanceReleased ? '#10b981' : '#ef4444' }}
+            />
+          </div>
+        </div>
+      </Card>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <Title level={2} style={{ margin: 0, fontWeight: 800 }}>Admin CSV Student Management Console</Title>
