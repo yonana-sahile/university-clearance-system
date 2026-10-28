@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Form, Input, Select, Alert, Modal, message, Typography } from 'antd';
+import { Form, Input, Select, Alert, message, Typography } from 'antd';
 import {
-  GraduationCap, User, Shield, Lock, Unlock, Mail,
+  GraduationCap, User, Shield, Lock, Mail,
   ArrowRight, CheckCircle, Key
 } from 'lucide-react';
 import { apiFetch, setSession } from '../../utils/api';
@@ -18,21 +18,11 @@ export default function LoginPage() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
-  // ==========================================
   // LOCK FEATURE STATE
-  // ==========================================
   const [clearanceReleased, setClearanceReleased] = useState<boolean>(() => {
     return localStorage.getItem('mau_clearance_released') === 'true';
   });
-  const [releaseModalOpen, setReleaseModalOpen] = useState(false);
   const [staffBypassMode, setStaffBypassMode] = useState(false);
-
-  const handleToggleRelease = (releaseState: boolean) => {
-    setClearanceReleased(releaseState);
-    if (releaseState) setStaffBypassMode(false);
-    localStorage.setItem('mau_clearance_released', String(releaseState));
-    message.success(releaseState ? 'Clearance Window RELEASED by Admin!' : 'Clearance Window Locked.');
-  };
 
   const isStudent = selectedRole === 'student';
 
@@ -53,11 +43,6 @@ export default function LoginPage() {
   ];
 
   const handleFinish = async (values: any) => {
-    if (isStudent && !clearanceReleased) {
-      message.error('Clearance window is locked. Please wait for Admin release.');
-      return;
-    }
-
     setLoading(true);
     setError(null);
     try {
@@ -105,14 +90,13 @@ export default function LoginPage() {
       <div className="mau-login-backdrop-glow" aria-hidden="true" />
 
       <div className="mau-login-card">
-        {/* Top Ribbon */}
         <div className="mau-national-ribbon">
           <div className="mau-ribbon-green" />
           <div className="mau-ribbon-yellow" />
           <div className="mau-ribbon-red" />
         </div>
 
-        {/* LEFT PANEL: Hero & Theme */}
+        {/* LEFT PANEL */}
         <div className="mau-login-hero-panel">
           <div className="mau-hero-overlay" />
           <div className="mau-hero-content">
@@ -177,16 +161,14 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* RIGHT PANEL: Login Form OR Lock Cover */}
+        {/* RIGHT PANEL */}
         <div className="mau-login-form-panel">
-
-          {/* Top Bar */}
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 20 }}>
              <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>2026/2027 A.Y.</span>
           </div>
 
           {!clearanceReleased && !staffBypassMode ? (
-            // LOCK SCREEN
+            // LOCK SCREEN (Students see this)
             <div className="mau-login-lock-cover">
               <div className="mau-cover-icon-circle">
                 <Lock size={46} className="mau-cover-lock-icon" />
@@ -197,17 +179,8 @@ export default function LoginPage() {
                 The digital graduation clearance portal is officially locked. Access will be unveiled only after the University Administrator releases the session.
               </p>
 
-              <button
-                type="button"
-                className="mau-cover-release-main-btn"
-                onClick={() => setReleaseModalOpen(true)}
-              >
-                <Key size={18} />
-                <span>Admin: Release & Unlock Portal</span>
-              </button>
-
               <div className="mau-cover-staff-switch">
-                <span>University Staff? </span>
+                <span>Are you University Staff or Admin? </span>
                 <button
                   type="button"
                   className="mau-cover-staff-link"
@@ -216,23 +189,18 @@ export default function LoginPage() {
                     setStaffBypassMode(true);
                   }}
                 >
-                  Staff Access Login
+                  Log in here to Unlock
                 </button>
               </div>
             </div>
           ) : (
             // LOGIN FORM
             <div>
-              {clearanceReleased && (
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 12px', borderRadius: 8, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#166534' }}>✅ Clearance is RELEASED</span>
-                  <button onClick={() => handleToggleRelease(false)} style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Lock</button>
-                </div>
-              )}
-
               <div className="mau-form-header">
                 <h2 className="mau-form-title">Sign in to Portal</h2>
-                <p className="mau-form-subtitle">Enter your credentials to track or submit clearance</p>
+                <p className="mau-form-subtitle">
+                  {staffBypassMode ? 'Admin Access: Unlock the portal from your dashboard.' : 'Enter your credentials to track or submit clearance'}
+                </p>
               </div>
 
               {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 16, borderRadius: 10 }} />}
@@ -257,7 +225,7 @@ export default function LoginPage() {
                     <Input
                       size="large"
                       prefix={isStudent ? <Mail size={16} style={{ color: '#94a3b8', marginRight: 4 }} /> : <User size={16} style={{ color: '#94a3b8', marginRight: 4 }} />}
-                      placeholder={isStudent ? 'e.g. MAU1234' : 'e.g. depthead_se'}
+                      placeholder={isStudent ? 'e.g. MAU1234' : 'e.g. admin_mau'}
                       style={{ borderRadius: 10, height: 46 }}
                     />
                   </Form.Item>
@@ -279,11 +247,6 @@ export default function LoginPage() {
                   <Link to="/forgot-password" style={{ fontSize: 13, color: '#2563eb' }}>
                     Forgot password?
                   </Link>
-                  {isStudent && (
-                    <Link to="/register" style={{ fontSize: 13, color: '#2563eb', fontWeight: 600 }}>
-                      New student? Register here
-                    </Link>
-                  )}
                 </div>
 
                 <button type="submit" className="mau-submit-btn" disabled={loading}>
@@ -296,27 +259,6 @@ export default function LoginPage() {
           )}
         </div>
       </div>
-
-      {/* ADMIN RELEASE MODAL */}
-      <Modal
-        title={<div style={{ display: 'flex', gap: 8, alignItems: 'center' }}><Key size={20} color="#f59e0b"/> <span>Release Clearance Window</span></div>}
-        open={releaseModalOpen}
-        onCancel={() => setReleaseModalOpen(false)}
-        footer={[
-          <button key="cancel" onClick={() => setReleaseModalOpen(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', marginRight: 8 }}>Cancel</button>,
-          <button key="release" onClick={() => { handleToggleRelease(true); setReleaseModalOpen(false); }} style={{ padding: '8px 16px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}>
-            <Unlock size={14} style={{ marginRight: 4 }} /> Confirm & Release
-          </button>
-        ]}
-      >
-        <Alert
-          message="Official Institutional Action"
-          description="Releasing the clearance window unlocks the digital portal for all graduating seniors. All 13 university directorates will be activated for verification."
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16, borderRadius: 10 }}
-        />
-      </Modal>
     </div>
   );
 }
