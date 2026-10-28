@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Form, Input, Select, Alert, Modal, message } from 'antd';
+import { Form, Input, Select, Alert, Modal, message, Typography } from 'antd';
 import {
-  GraduationCap, Building2, BookOpen, Home, User, Sparkles,
-  Shield, Lock, Unlock, Mail, ArrowRight, CheckCircle, Key, Globe
+  GraduationCap, BookOpen, User, Shield, Lock, Unlock, Mail,
+  ArrowRight, CheckCircle, Key
 } from 'lucide-react';
-import { apiFetch, setSession, getSession } from '../../utils/api';
+import { apiFetch, setSession } from '../../utils/api';
 import type { UserRole } from '../../types';
 import './LoginPage.css';
 
-const { Title, Text } = Typography; // Note: Typography import needed from antd below
-
-import { Typography } from 'antd';
+const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -38,7 +36,6 @@ export default function LoginPage() {
 
   const isStudent = selectedRole === 'student';
 
-  // Your original roles array
   const roles = [
     { label: '🎓 Student', value: 'student' },
     { label: '🏢 Department Head', value: 'departmenthead' },
@@ -55,7 +52,6 @@ export default function LoginPage() {
     { label: '⚙️ System Administrator', value: 'admin' },
   ];
 
-  // Your original login logic
   const handleFinish = async (values: any) => {
     if (isStudent && !clearanceReleased) {
       message.error('Clearance window is locked. Please wait for Admin release.');
@@ -193,10 +189,9 @@ export default function LoginPage() {
         {/* RIGHT PANEL: Login Form OR Lock Cover */}
         <div className="mau-login-form-panel">
 
-          {/* Top Bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+          {/* Top Bar (Theme text removed) */}
+          <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 20 }}>
              <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>2026/2027 A.Y.</span>
-             <span style={{ fontSize: 12, fontWeight: 800, color: '#f59e0b' }}>🐝 Bee Yellow & Onyx</span>
           </div>
 
           {!clearanceReleased && !staffBypassMode ? (
@@ -235,7 +230,7 @@ export default function LoginPage() {
               </div>
             </div>
           ) : (
-            // LOGIN FORM (Your Original Form, Styled)
+            // LOGIN FORM
             <div>
               {clearanceReleased && (
                 <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 12px', borderRadius: 8, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -307,7 +302,7 @@ export default function LoginPage() {
                 </button>
               </Form>
 
-              {/* QUICK DEMO LOGIN (Optional - kept from your code) */}
+              {/* QUICK DEMO LOGIN */}
               {import.meta.env.DEV && (
                 <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px dashed #e2e8f0', textAlign: 'center' }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 10 }}>⚡ QUICK DEMO LOGINS</span>
