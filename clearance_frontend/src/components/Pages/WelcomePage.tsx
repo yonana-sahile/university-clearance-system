@@ -26,6 +26,25 @@ import StarryFlag from '../Common/StarryFlag';
 
 const { Title, Text, Paragraph } = Typography;
 
+// ✅ HELPER: Automatically calculates the current Ethiopian Calendar Year
+const getEthiopianYear = () => {
+  const now = new Date();
+  const gYear = now.getFullYear();
+  const gMonth = now.getMonth(); // 0-11 (8 is September)
+  const gDay = now.getDate();
+
+  // Ethiopian New Year is Sept 11 (or Sept 12 in the year before a Gregorian leap year)
+  const isNextYearLeap =
+    ((gYear + 1) % 4 === 0 && (gYear + 1) % 100 !== 0) ||
+    ((gYear + 1) % 400 === 0);
+  const newYearDay = isNextYearLeap ? 12 : 11;
+
+  if (gMonth < 8 || (gMonth === 8 && gDay < newYearDay)) {
+    return gYear - 8; // Before Sept 11/12
+  }
+  return gYear - 7;   // After Sept 11/12
+};
+
 const DEPARTMENTS_INFO = [
   { key: 'dept', title: '1. Department Head', icon: '🎓', desc: 'Grade reports, senior research thesis clearance, lab tools check.' },
   { key: 'library', title: '2. Main Library', icon: '📚', desc: 'Return of borrowed books, clearing e-library accounts & fines.' },
@@ -182,7 +201,8 @@ export default function WelcomePage() {
               borderColor: '#fde047',
             }}
           >
-            MEKDELA AMBA UNIVERSITY • EST. 2015 E.C.
+            {/* ✅ DYNAMIC YEAR ADDED HERE */}
+            MEKDELA AMBA UNIVERSITY • EST. {getEthiopianYear()} E.C.
           </Tag>
         </div>
 
@@ -530,7 +550,7 @@ export default function WelcomePage() {
           </Row>
         </div>
 
-        {/* UPGRADED: FREQUENTLY ASKED QUESTIONS (FAQ) */}
+        {/* FAQ SECTION */}
         <div style={{
           textAlign: 'left',
           background: 'linear-gradient(to bottom right, #f0fdf4 0%, #f8fafc 50%, #eff6ff 100%)',
