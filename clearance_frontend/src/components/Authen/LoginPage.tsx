@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Form, Input, Select, Alert, Modal, message, Typography } from 'antd';
 import {
-  GraduationCap, BookOpen, User, Shield, Lock, Unlock, Mail,
+  GraduationCap, User, Shield, Lock, Unlock, Mail,
   ArrowRight, CheckCircle, Key
 } from 'lucide-react';
 import { apiFetch, setSession } from '../../utils/api';
