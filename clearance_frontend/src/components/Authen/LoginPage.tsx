@@ -1,26 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Form, Input, Select, Alert, Modal, message } from 'antd';
 import {
-  Form,
-  Input,
-  Button,
-  Card,
-  Select,
-  Typography,
-  Space,
-  Alert,
-  Tag,
-} from 'antd';
-import {
-  UserOutlined,
-  LockOutlined,
-  MailOutlined,
-  ArrowRightOutlined,
-} from '@ant-design/icons';
-import { apiFetch, setSession } from '../../utils/api';
+  GraduationCap, Building2, BookOpen, Home, User, Sparkles,
+  Shield, Lock, Unlock, Mail, ArrowRight, CheckCircle, Key, Globe
+} from 'lucide-react';
+import { apiFetch, setSession, getSession } from '../../utils/api';
 import type { UserRole } from '../../types';
+import './LoginPage.css';
 
-const { Title, Text } = Typography;
+const { Title, Text } = Typography; // Note: Typography import needed from antd below
+
+import { Typography } from 'antd';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -29,8 +20,25 @@ export default function LoginPage() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
+  // ==========================================
+  // LOCK FEATURE STATE
+  // ==========================================
+  const [clearanceReleased, setClearanceReleased] = useState<boolean>(() => {
+    return localStorage.getItem('mau_clearance_released') === 'true';
+  });
+  const [releaseModalOpen, setReleaseModalOpen] = useState(false);
+  const [staffBypassMode, setStaffBypassMode] = useState(false);
+
+  const handleToggleRelease = (releaseState: boolean) => {
+    setClearanceReleased(releaseState);
+    if (releaseState) setStaffBypassMode(false);
+    localStorage.setItem('mau_clearance_released', String(releaseState));
+    message.success(releaseState ? 'Clearance Window RELEASED by Admin!' : 'Clearance Window Locked.');
+  };
+
   const isStudent = selectedRole === 'student';
 
+  // Your original roles array
   const roles = [
     { label: '🎓 Student', value: 'student' },
     { label: '🏢 Department Head', value: 'departmenthead' },
@@ -47,7 +55,13 @@ export default function LoginPage() {
     { label: '⚙️ System Administrator', value: 'admin' },
   ];
 
+  // Your original login logic
   const handleFinish = async (values: any) => {
+    if (isStudent && !clearanceReleased) {
+      message.error('Clearance window is locked. Please wait for Admin release.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -66,7 +80,6 @@ export default function LoginPage() {
 
       if (res.user) {
         setSession(res.user);
-
         const roleRoutes: Record<string, string> = {
           student: '/student',
           departmenthead: '/departmenthead',
@@ -82,7 +95,6 @@ export default function LoginPage() {
           registrar: '/registrar',
           admin: '/admin',
         };
-
         navigate(roleRoutes[selectedRole] || '/student');
       }
     } catch (err: any) {
@@ -95,236 +107,241 @@ export default function LoginPage() {
   const fillQuickDemo = (role: UserRole) => {
     if (!import.meta.env.DEV) return;
     setSelectedRole(role);
-    if (role === 'student') {
-      form.setFieldsValue({
-        identifier: 'AAA1234',
-        password: 'Password123!',
-      });
-    } else {
-      form.setFieldsValue({
-        identifier: `${role}_officer`,
-        password: 'Password123!',
-      });
-    }
+    form.setFieldsValue({
+      identifier: role === 'student' ? 'AAA1234' : `${role}_officer`,
+      password: 'Password123!',
+    });
   };
 
   return (
-    <div className="auth-page-canvas">
-      <Card
-        style={{
-          width: '100%',
-          maxWidth: 480,
-          borderRadius: 20,
-          boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(255,255,255,0.8)',
-          background: '#ffffff',
-        }}
-        styles={{ body: { padding: '36px 32px' } }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <img
-            src="/mau_logo.jpg"
-            alt="Mekdela Amba University Logo"
-            style={{
-              width: 70,
-              height: 70,
-              borderRadius: 16,
-              marginBottom: 12,
-              border: '2px solid #0284c7',
-              objectFit: 'contain',
-              background: '#ffffff',
-              padding: 3,
-            }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src =
-                'https://via.placeholder.com/70x70/2563eb/ffffff?text=MAU';
-            }}
-          />
-          <Title level={3} style={{ marginBottom: 4, fontWeight: 800 }}>
-            Welcome Back
-          </Title>
-          <Text type="secondary">
-            Mekdela Amba University Online Clearance System
-          </Text>
+    <div className="mau-login-wrapper mau-theme-adey-abeba">
+      <div className="mau-login-backdrop-glow" aria-hidden="true" />
+
+      <div className="mau-login-card">
+        {/* Top Ribbon */}
+        <div className="mau-national-ribbon">
+          <div className="mau-ribbon-green" />
+          <div className="mau-ribbon-yellow" />
+          <div className="mau-ribbon-red" />
         </div>
 
-        {error && (
-          <Alert
-            title={error}
-            type="error"
-            showIcon
-            style={{ marginBottom: 20, borderRadius: 10 }}
-          />
-        )}
+        {/* LEFT PANEL: Hero & Theme */}
+        <div className="mau-login-hero-panel">
+          <div className="mau-hero-overlay" />
+          <div className="mau-hero-content">
+            <div>
+              <div className="mau-institution-brand">
+                <img
+                  src="/mau_logo.jpg"
+                  alt="MAU"
+                  className="mau-crest-badge"
+                  onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/60x60/2563eb/ffffff?text=MAU'}
+                />
+                <div className="mau-institution-texts">
+                  <span className="mau-amharic-title">መቅደላ አምባ ዩኒቨርሲቲ</span>
+                  <span className="mau-english-title">Mekdela Amba University</span>
+                  <span className="mau-accreditation-tag">FDRE Ministry of Education</span>
+                </div>
+              </div>
 
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleFinish}
-        >
-          <Form.Item label="Select Your Portal Role" required>
-            <Select
-              value={selectedRole}
-              onChange={(val) => setSelectedRole(val)}
-              options={roles}
-              size="large"
-              style={{ borderRadius: 10 }}
-            />
-          </Form.Item>
+              <div className="mau-hero-body">
+                <h1 className="mau-system-headline">
+                  Official Academic <span>Clearance Portal</span>
+                </h1>
+                <p className="mau-system-desc">
+                  Unified institutional digital gateway for graduating seniors and 13 university directorates.
+                </p>
 
-          <Form.Item
-            name="identifier"
-            label={
-              isStudent ? 'Student Email or ID Number' : 'Staff / Official Username'
-            }
-            rules={[
-              { required: true, message: 'Please enter your username or email' },
-            ]}
-          >
-            <Input
-              size="large"
-              prefix={
-                isStudent ? (
-                  <MailOutlined style={{ color: '#94a3b8' }} />
+                <div className="mau-pillars-list">
+                  <div className="mau-pillar-item">
+                    <div className="mau-pillar-icon-box"><GraduationCap size={16} /></div>
+                    <div className="mau-pillar-text">
+                      <span className="mau-pillar-title">100% Paperless Workflow</span>
+                      <span className="mau-pillar-subtitle">Clear all 13 academic and financial directorates online.</span>
+                    </div>
+                  </div>
+                  <div className="mau-pillar-item">
+                    <div className="mau-pillar-icon-box"><Key size={16} /></div>
+                    <div className="mau-pillar-text">
+                      <span className="mau-pillar-title">Cryptographic QR Verification</span>
+                      <span className="mau-pillar-subtitle">Tamper-proof clearance certificates instantly verifiable.</span>
+                    </div>
+                  </div>
+                  <div className="mau-pillar-item">
+                    <div className="mau-pillar-icon-box"><Shield size={16} /></div>
+                    <div className="mau-pillar-text">
+                      <span className="mau-pillar-title">Secure Dues Settlement</span>
+                      <span className="mau-pillar-subtitle">Integrated CBE Birr, Telebirr, and bank receipt reconciliation.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mau-hero-footer">
+              <div className={`mau-live-status ${clearanceReleased ? 'status-open' : 'status-locked'}`}>
+                {clearanceReleased ? (
+                  <><CheckCircle size={14} style={{ color: '#22c55e' }} /> <span>Clearance is RELEASED & OPEN</span></>
                 ) : (
-                  <UserOutlined style={{ color: '#94a3b8' }} />
-                )
-              }
-              placeholder={
-                isStudent ? 'e.g. AAA1234 or email@mau.edu.et' : 'e.g. depthead_se'
-              }
-              style={{ borderRadius: 10 }}
-            />
-          </Form.Item>
+                  <><Lock size={14} style={{ color: '#ffd000' }} /> <span>Clearance Window: LOCKED</span></>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
-          <Form.Item
-            name="password"
-            label="Password"
-            rules={[{ required: true, message: 'Please enter your password' }]}
-          >
-            <Input.Password
-              size="large"
-              prefix={<LockOutlined style={{ color: '#94a3b8' }} />}
-              placeholder="••••••••"
-              style={{ borderRadius: 10 }}
-            />
-          </Form.Item>
+        {/* RIGHT PANEL: Login Form OR Lock Cover */}
+        <div className="mau-login-form-panel">
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: 24,
-            }}
-          >
-            <Link
-              to="/forgot-password"
-              style={{ fontSize: 13, color: '#2563eb' }}
-            >
-              Forgot password?
-            </Link>
-            {isStudent && (
-              <Link
-                to="/register"
-                style={{ fontSize: 13, color: '#2563eb', fontWeight: 600 }}
-              >
-                New student? Register here
-              </Link>
-            )}
+          {/* Top Bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+             <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>2026/2027 A.Y.</span>
+             <span style={{ fontSize: 12, fontWeight: 800, color: '#f59e0b' }}>🐝 Bee Yellow & Onyx</span>
           </div>
 
-          <Button
-            type="primary"
-            htmlType="submit"
-            size="large"
-            block
-            loading={loading}
-            icon={<ArrowRightOutlined />}
-            style={{
-              height: 48,
-              borderRadius: 12,
-              background:
-                'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-              fontWeight: 700,
-              fontSize: 15,
-              border: 'none',
-              boxShadow: '0 6px 16px rgba(37,99,235,0.3)',
-            }}
-          >
-            Sign In to{' '}
-            {roles.find((r) => r.value === selectedRole)?.label.split(' ')[1] ||
-              'Portal'}
-          </Button>
-        </Form>
+          {!clearanceReleased && !staffBypassMode ? (
+            // LOCK SCREEN
+            <div className="mau-login-lock-cover">
+              <div className="mau-cover-icon-circle">
+                <Lock size={46} className="mau-cover-lock-icon" />
+              </div>
 
-        {/* QUICK DEMO LOGIN SHORTCUTS — DEV ONLY */}
-        {import.meta.env.DEV && (
-          <div
-            style={{
-              marginTop: 28,
-              paddingTop: 20,
-              borderTop: '1px dashed #e2e8f0',
-              textAlign: 'center',
-            }}
-          >
-            <Text
-              type="secondary"
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                display: 'block',
-                marginBottom: 10,
-              }}
-            >
-              ⚡ QUICK DEMO LOGINS (1-CLICK TEST)
-            </Text>
-            <Space wrap size={[6, 6]} style={{ justifyContent: 'center', width: '100%' }}>
-              <Tag
-                color="blue"
-                style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
-                onClick={() => fillQuickDemo('student')}
+              <h2 className="mau-cover-title">Clearance is Locked</h2>
+              <p className="mau-cover-desc">
+                The digital graduation clearance portal is officially locked. Access will be unveiled only after the University Administrator releases the session.
+              </p>
+
+              <button
+                type="button"
+                className="mau-cover-release-main-btn"
+                onClick={() => setReleaseModalOpen(true)}
               >
-                🎓 Student
-              </Tag>
-              <Tag
-                color="purple"
-                style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
-                onClick={() => fillQuickDemo('departmenthead')}
-              >
-                🏢 Dept Head
-              </Tag>
-              <Tag
-                color="cyan"
-                style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
-                onClick={() => fillQuickDemo('librarian')}
-              >
-                📚 Librarian
-              </Tag>
-              <Tag
-                color="green"
-                style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
-                onClick={() => fillQuickDemo('dormitory')}
-              >
-                🏠 Dormitory
-              </Tag>
-              <Tag
-                color="gold"
-                style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
-                onClick={() => fillQuickDemo('registrar')}
-              >
-                🎓 Registrar
-              </Tag>
-              <Tag
-                color="red"
-                style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
-                onClick={() => fillQuickDemo('admin')}
-              >
-                ⚙️ Admin
-              </Tag>
-            </Space>
-          </div>
-        )}
-      </Card>
+                <Key size={18} />
+                <span>Admin: Release & Unlock Portal</span>
+              </button>
+
+              <div className="mau-cover-staff-switch">
+                <span>University Staff? </span>
+                <button
+                  type="button"
+                  className="mau-cover-staff-link"
+                  onClick={() => {
+                    setSelectedRole('admin');
+                    setStaffBypassMode(true);
+                  }}
+                >
+                  Staff Access Login
+                </button>
+              </div>
+            </div>
+          ) : (
+            // LOGIN FORM (Your Original Form, Styled)
+            <div>
+              {clearanceReleased && (
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 12px', borderRadius: 8, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#166534' }}>✅ Clearance is RELEASED</span>
+                  <button onClick={() => handleToggleRelease(false)} style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Lock</button>
+                </div>
+              )}
+
+              <div className="mau-form-header">
+                <h2 className="mau-form-title">Sign in to Portal</h2>
+                <p className="mau-form-subtitle">Enter your credentials to track or submit clearance</p>
+              </div>
+
+              {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 16, borderRadius: 10 }} />}
+
+              <Form form={form} layout="vertical" onFinish={handleFinish}>
+                <div className="mau-input-group">
+                  <label className="mau-input-label">Select Your Portal Role</label>
+                  <Select
+                    value={selectedRole}
+                    onChange={(val) => setSelectedRole(val)}
+                    options={roles}
+                    size="large"
+                    style={{ width: '100%', borderRadius: 10 }}
+                  />
+                </div>
+
+                <div className="mau-input-group">
+                  <label className="mau-input-label">
+                    {isStudent ? 'Student Email or ID Number' : 'Staff / Official Username'}
+                  </label>
+                  <Form.Item name="identifier" noStyle rules={[{ required: true, message: 'Please enter your username or email' }]}>
+                    <Input
+                      size="large"
+                      prefix={isStudent ? <Mail size={16} style={{ color: '#94a3b8', marginRight: 4 }} /> : <User size={16} style={{ color: '#94a3b8', marginRight: 4 }} />}
+                      placeholder={isStudent ? 'e.g. AAA1234' : 'e.g. depthead_se'}
+                      style={{ borderRadius: 10, height: 46 }}
+                    />
+                  </Form.Item>
+                </div>
+
+                <div className="mau-input-group">
+                  <label className="mau-input-label">Password</label>
+                  <Form.Item name="password" noStyle rules={[{ required: true, message: 'Please enter your password' }]}>
+                    <Input.Password
+                      size="large"
+                      prefix={<Lock size={16} style={{ color: '#94a3b8', marginRight: 4 }} />}
+                      placeholder="••••••••"
+                      style={{ borderRadius: 10, height: 46 }}
+                    />
+                  </Form.Item>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
+                  <Link to="/forgot-password" style={{ fontSize: 13, color: '#2563eb' }}>
+                    Forgot password?
+                  </Link>
+                  {isStudent && (
+                    <Link to="/register" style={{ fontSize: 13, color: '#2563eb', fontWeight: 600 }}>
+                      New student? Register here
+                    </Link>
+                  )}
+                </div>
+
+                <button type="submit" className="mau-submit-btn" disabled={loading}>
+                  {loading ? 'Authenticating...' : (
+                    <>Sign In <ArrowRight size={17} /></>
+                  )}
+                </button>
+              </Form>
+
+              {/* QUICK DEMO LOGIN (Optional - kept from your code) */}
+              {import.meta.env.DEV && (
+                <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px dashed #e2e8f0', textAlign: 'center' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 10 }}>⚡ QUICK DEMO LOGINS</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+                    <button type="button" onClick={() => fillQuickDemo('student')} style={{ padding: '4px 8px', borderRadius: 6, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 12 }}>🎓 Student</button>
+                    <button type="button" onClick={() => fillQuickDemo('admin')} style={{ padding: '4px 8px', borderRadius: 6, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 12 }}>⚙️ Admin</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ADMIN RELEASE MODAL */}
+      <Modal
+        title={<div style={{ display: 'flex', gap: 8, alignItems: 'center' }}><Key size={20} color="#f59e0b"/> <span>Release Clearance Window</span></div>}
+        open={releaseModalOpen}
+        onCancel={() => setReleaseModalOpen(false)}
+        footer={[
+          <button key="cancel" onClick={() => setReleaseModalOpen(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', marginRight: 8 }}>Cancel</button>,
+          <button key="release" onClick={() => { handleToggleRelease(true); setReleaseModalOpen(false); }} style={{ padding: '8px 16px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}>
+            <Unlock size={14} style={{ marginRight: 4 }} /> Confirm & Release
+          </button>
+        ]}
+      >
+        <Alert
+          message="Official Institutional Action"
+          description="Releasing the clearance window unlocks the digital portal for all graduating seniors. All 13 university directorates will be activated for verification."
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16, borderRadius: 10 }}
+        />
+      </Modal>
     </div>
   );
 }
