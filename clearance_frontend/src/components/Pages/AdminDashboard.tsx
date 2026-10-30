@@ -3,12 +3,12 @@ import {
   Card, Table, Tag, Button, Input, Upload, Typography, Space, Row, Col, Statistic, Modal, Form, message, Popconfirm, Switch
 } from 'antd';
 import {
-  UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined, SearchOutlined, UserOutlined, SafetyCertificateOutlined, CodeOutlined, LockOutlined, UnlockOutlined
+  UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined, SearchOutlined, CodeOutlined, LockOutlined, UnlockOutlined
 } from '@ant-design/icons';
-import { apiFetch, getStoredValidStudents, setStoredValidStudents } from '../../utils/api';
+import { apiFetch } from '../../utils/api'; // ✅ Using apiFetch instead of localStorage
 import type { ValidStudentCSV } from '../../types';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 export default function AdminDashboard() {
   const [students, setStudents] = useState<ValidStudentCSV[]>([]);
@@ -38,13 +38,15 @@ export default function AdminDashboard() {
     loadStudents();
   }, []);
 
+  // ✅ FETCH FROM BACKEND
   const loadStudents = async () => {
     setLoading(true);
     try {
-      const data = getStoredValidStudents();
-      setStudents(data);
-    } catch (err) {
-      console.error(err);
+      const res = await apiFetch('admin/valid-students');
+      // Backend returns { students: [...] }
+      setStudents(res.students || []);
+    } catch (err: any) {
+      message.error(err.message || 'Failed to load students');
     } finally {
       setLoading(false);
     }
@@ -76,10 +78,10 @@ export default function AdminDashboard() {
     message.success('Exported valid students CSV database!');
   };
 
-  // Upload CSV File
+  // ✅ UPLOAD TO BACKEND
   const handleCSVUpload = (file: File) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const text = e.target?.result as string;
         const lines = text.split('\n').filter(l => l.trim().length > 0);
@@ -88,76 +90,88 @@ export default function AdminDashboard() {
           return;
         }
 
-        const newEntries: ValidStudentCSV[] = [];
+        const newEntries = [];
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(',').map(c => c.trim());
           if (cols.length >= 5) {
             newEntries.push({
-              id: Date.now() + i,
               id_number: cols[0],
               first_name: cols[1],
               last_name: cols[2],
-              full_name: `${cols[1]} ${cols[2]}`,
               college: cols[3],
               department: cols[4],
               year_of_admission: cols[5] || '2022',
-              status: 'active',
-              is_registered: false
+              status: 'active'
             });
           }
         }
 
-        const updated = [...students, ...newEntries];
-        setStoredValidStudents(updated);
-        setStudents(updated);
+        await apiFetch('admin/valid-students', {
+          method: 'POST',
+          body: JSON.stringify({ students: newEntries })
+        });
+
         message.success(`Successfully imported ${newEntries.length} student records!`);
-      } catch (err) {
-        message.error('Failed to parse CSV file.');
+        loadStudents();
+      } catch (err: any) {
+        message.error(err.message || 'Failed to parse or upload CSV file.');
       }
     };
     reader.readAsText(file);
     return false; // Prevent auto POST
   };
 
-  const handleAddManualStudent = (values: any) => {
-    const newStudent: ValidStudentCSV = {
-      id: Date.now(),
-      id_number: values.id_number,
-      first_name: values.first_name,
-      last_name: values.last_name,
-      full_name: `${values.first_name} ${values.last_name}`,
-      college: values.college,
-      department: values.department,
-      year_of_admission: values.year_of_admission || '2022',
-      status: 'active',
-      is_registered: false
-    };
+  // ✅ SAVE TO BACKEND
+  const handleAddManualStudent = async (values: any) => {
+    try {
+      const newStudent = {
+        id_number: values.id_number,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        college: values.college,
+        department: values.department,
+        year_of_admission: values.year_of_admission || '2022',
+        status: 'active'
+      };
 
-    const updated = [newStudent, ...students];
-    setStoredValidStudents(updated);
-    setStudents(updated);
-    message.success('Student record added to valid database!');
-    setIsAddModalOpen(false);
-    addForm.resetFields();
+      await apiFetch('admin/valid-students', {
+        method: 'POST',
+        body: JSON.stringify({ students: [newStudent] }) // Backend expects array
+      });
+
+      message.success('Student record added to valid database!');
+      setIsAddModalOpen(false);
+      addForm.resetFields();
+      loadStudents(); // Refresh list from DB
+    } catch (err: any) {
+      message.error(err.message || 'Failed to add student');
+    }
   };
 
-  const handleDeleteStudent = (id: number | string) => {
-    const updated = students.filter(s => s.id !== id);
-    setStoredValidStudents(updated);
-    setStudents(updated);
-    message.success('Student record removed.');
+  // ✅ DELETE FROM BACKEND
+  const handleDeleteStudent = async (id: number | string) => {
+    try {
+      await apiFetch(`admin/valid-students/${id}`, { method: 'DELETE' });
+      message.success('Student record removed.');
+      loadStudents();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to delete student');
+    }
   };
 
-  const toggleStatus = (id: number | string) => {
-    const updated = students.map(s => {
-      if (s.id === id) {
-        return { ...s, status: s.status === 'active' ? 'inactive' : 'active' } as ValidStudentCSV;
-      }
-      return s;
-    });
-    setStoredValidStudents(updated);
-    setStudents(updated);
-    message.info('Student status updated.');
+  // ✅ TOGGLE STATUS IN BACKEND
+  const toggleStatus = async (id: number | string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      await apiFetch(`admin/valid-students/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      });
+      message.info('Student status updated.');
+      loadStudents();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to update status');
+    }
   };
 
   const filtered = students.filter(s =>
@@ -209,7 +223,7 @@ export default function AdminDashboard() {
       key: 'actions',
       render: (_: any, record: ValidStudentCSV) => (
         <Space>
-          <Button size="small" onClick={() => toggleStatus(record.id)}>
+          <Button size="small" onClick={() => toggleStatus(record.id, record.status)}>
             Toggle Status
           </Button>
           <Popconfirm title="Delete student record?" onConfirm={() => handleDeleteStudent(record.id)}>
@@ -223,7 +237,7 @@ export default function AdminDashboard() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 16px' }}>
 
-      {/* ✅ CLEARANCE SEASON LOCK/UNLOCK CONTROL PANEL */}
+      {/* CLEARANCE SEASON LOCK/UNLOCK CONTROL PANEL */}
       <Card
         style={{
           borderRadius: 16,
