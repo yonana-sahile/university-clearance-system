@@ -1,9 +1,4 @@
 {
-  "buildCommand": "cd clearance_frontend && npm run build",
-  "outputDirectory": "clearance_frontend/dist",
-  "devCommand": "cd clearance_frontend && npm run dev",
-  "installCommand": "cd clearance_frontend && npm install",
-  "framework": "vite",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
