@@ -168,3 +168,35 @@ def reset_password(request):
     user.save()
 
     return Response({'message': 'Password reset successfully! You can now log in.'})
+
+
+# ============================================================
+# ADMIN STAFF CREATION ENDPOINT
+# ============================================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def admin_create_staff(request):
+    if request.user.role != 'admin':
+        return Response({'detail': 'Only admin can create staff.'}, status=403)
+
+    data = request.data
+    if User.objects.filter(username=data.get('username')).exists():
+        return Response({'detail': 'Username already exists.'}, status=400)
+
+    # Find the department and college
+    dept_name = data.get('department')
+    dept = Department.objects.filter(name=dept_name).first() if dept_name else None
+    college = dept.college if dept else None
+
+    user = User.objects.create_user(
+        username=data.get('username'),
+        password=data.get('password'),
+        first_name=data.get('first_name'),
+        last_name=data.get('last_name'),
+        role=data.get('role'),
+        email=data.get('email', f"{data.get('username')}@mau.edu.et"),
+        department=dept,
+        college=college
+    )
+    return Response({'message': 'Staff created successfully.', 'id': user.id}, status=201)
