@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Table, Tag, Button, Input, Upload, Typography, Space, Row, Col, Statistic, Modal, Form, message, Popconfirm, Switch
+  Card, Table, Tag, Button, Input, Upload, Typography, Space, Row, Col,
+  Statistic, Modal, Form, message, Popconfirm, Switch, Select
 } from 'antd';
 import {
-  UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined, SearchOutlined, CodeOutlined, LockOutlined, UnlockOutlined
+  UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined,
+  SearchOutlined, CodeOutlined, LockOutlined, UnlockOutlined, UserAddOutlined
 } from '@ant-design/icons';
-import { apiFetch } from '../../utils/api'; // ✅ Using apiFetch instead of localStorage
+import { apiFetch } from '../../utils/api';
 import type { ValidStudentCSV } from '../../types';
 
 const { Title, Text } = Typography;
@@ -16,6 +18,10 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addForm] = Form.useForm();
+
+  // ✅ STAFF REGISTRATION STATE
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [staffForm] = Form.useForm();
 
   // ==========================================
   // CLEARANCE SEASON LOCK STATE
@@ -43,12 +49,26 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       const res = await apiFetch('admin/valid-students');
-      // Backend returns { students: [...] }
       setStudents(res.students || []);
     } catch (err: any) {
       message.error(err.message || 'Failed to load students');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ HANDLE ADD STAFF
+  const handleAddStaff = async (values: any) => {
+    try {
+      await apiFetch('admin/create-staff', {
+        method: 'POST',
+        body: JSON.stringify(values)
+      });
+      message.success('Staff member created successfully!');
+      setIsStaffModalOpen(false);
+      staffForm.resetFields();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to create staff');
     }
   };
 
@@ -136,13 +156,13 @@ export default function AdminDashboard() {
 
       await apiFetch('admin/valid-students', {
         method: 'POST',
-        body: JSON.stringify({ students: [newStudent] }) // Backend expects array
+        body: JSON.stringify({ students: [newStudent] })
       });
 
       message.success('Student record added to valid database!');
       setIsAddModalOpen(false);
       addForm.resetFields();
-      loadStudents(); // Refresh list from DB
+      loadStudents();
     } catch (err: any) {
       message.error(err.message || 'Failed to add student');
     }
@@ -293,6 +313,12 @@ export default function AdminDashboard() {
           <Button icon={<CodeOutlined />} onClick={() => window.location.href = '/developer-api'} style={{ background: '#0284c7', color: '#fff', border: 'none' }}>
             Developer API Portal
           </Button>
+
+          {/* ✅ ADDED: REGISTER STAFF BUTTON */}
+          <Button type="primary" icon={<UserAddOutlined />} onClick={() => setIsStaffModalOpen(true)} style={{ background: '#8b5cf6', border: 'none' }}>
+            Register Staff
+          </Button>
+
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsAddModalOpen(true)} style={{ background: '#10b981', border: 'none' }}>
             Add Student
           </Button>
@@ -354,6 +380,48 @@ export default function AdminDashboard() {
           </Form.Item>
           <Button type="primary" htmlType="submit" block style={{ height: 44, borderRadius: 10, marginTop: 12 }}>
             Save Student Record
+          </Button>
+        </Form>
+      </Modal>
+
+      {/* ✅ ADDED: REGISTER STAFF MODAL */}
+      <Modal
+        title="Register New Staff / Department Head"
+        open={isStaffModalOpen}
+        onCancel={() => setIsStaffModalOpen(false)}
+        footer={null}
+      >
+        <Form form={staffForm} layout="vertical" onFinish={handleAddStaff}>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="first_name" label="First Name" rules={[{ required: true }]}><Input /></Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="last_name" label="Last Name" rules={[{ required: true }]}><Input /></Form.Item>
+            </Col>
+          </Row>
+          <Form.Item name="username" label="Username" rules={[{ required: true }]}><Input placeholder="e.g. depthead_cs" /></Form.Item>
+          <Form.Item name="password" label="Password" rules={[{ required: true }]}><Input.Password /></Form.Item>
+          <Form.Item name="role" label="Role" rules={[{ required: true }]}>
+            <Select options={[
+              { label: 'Department Head', value: 'departmenthead' },
+              { label: 'Librarian', value: 'librarian' },
+              { label: 'Registrar', value: 'registrar' },
+              { label: 'Cafeteria', value: 'cafeteria' },
+              { label: 'Dormitory', value: 'dormitory' },
+              { label: 'Psychology', value: 'psychology' },
+            ]} />
+          </Form.Item>
+          <Form.Item name="department" label="Department (Required for Dept Heads)">
+            <Select options={[
+              { label: 'Software Engineering', value: 'Software Engineering' },
+              { label: 'Computer Science', value: 'Computer Science' },
+              { label: 'Civil Engineering', value: 'Civil Engineering' },
+              { label: 'Accounting & Finance', value: 'Accounting & Finance' },
+            ]} allowClear />
+          </Form.Item>
+          <Button type="primary" htmlType="submit" block style={{ height: 44, borderRadius: 10, marginTop: 12, background: '#8b5cf6' }}>
+            Create Staff Account
           </Button>
         </Form>
       </Modal>
