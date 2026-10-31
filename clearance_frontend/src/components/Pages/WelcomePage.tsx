@@ -20,7 +20,7 @@ import {
   QuestionCircleOutlined,
   CaretRightOutlined,
 } from '@ant-design/icons';
-import { getSession, apiFetch } from '../../utils/api'; // ✅ Changed to apiFetch
+import { getSession, apiFetch } from '../../utils/api';
 import StarryFlag from '../Common/StarryFlag';
 
 const { Title, Text, Paragraph } = Typography;
@@ -62,11 +62,9 @@ export default function WelcomePage() {
   const user = getSession();
 
   const [trackInput, setTrackInput] = useState('');
-  // ✅ Changed type to any to match the public API response
   const [trackResult, setTrackResult] = useState<any | null | 'not_found'>(null);
   const [tracking, setTracking] = useState(false);
 
-  // ✅ UPDATED: Real API Call
   const handleTrack = async () => {
     if (!trackInput.trim()) return;
     setTracking(true);
@@ -345,7 +343,7 @@ export default function WelcomePage() {
                     GRADUATING STUDENTS
                   </span>
                 }
-                value="14,850+"
+                value="5,000+"
                 styles={{ content: { color: '#1e3a8a', fontWeight: 900, fontSize: 24 } }}
               />
             </Col>
