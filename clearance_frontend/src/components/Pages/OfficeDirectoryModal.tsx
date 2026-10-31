@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { Modal, Input, Card, Tag, Typography, Space, Row, Col } from 'antd';
 import { SearchOutlined, PhoneOutlined, MailOutlined, EnvironmentOutlined, ClockCircleOutlined, UserOutlined } from '@ant-design/icons';
-import CampusMap from '../Common/CampusMap'; // ✅ Import the Map component
+import CampusMap from '../Common/CampusMap';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 interface OfficeDirectoryModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-// ✅ Added lat and lng to each office
 const OFFICES = [
   {
     id: 'departmenthead',
@@ -192,7 +191,6 @@ export const OfficeDirectoryModal: React.FC<OfficeDirectoryModalProps> = ({ open
                 <strong>Clearance Requirements:</strong> {office.requirements}
               </div>
 
-              {/* ✅ ADDED THE CAMPUS MAP HERE */}
               <CampusMap
                 lat={office.lat}
                 lng={office.lng}
