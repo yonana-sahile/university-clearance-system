@@ -12,4 +12,5 @@ urlpatterns = [
     path('forgot-password', views.forgot_password),
     path('verify-otp', views.verify_otp),
     path('reset-password', views.reset_password),
+    path('admin/create-staff', views.admin_create_staff),
 ]
