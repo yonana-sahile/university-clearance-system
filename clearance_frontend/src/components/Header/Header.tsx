@@ -312,11 +312,6 @@ export default function Header() {
                 icon={<Building2 size={15} />}
               />
               <NavLinkItem
-                to="/learn-more"
-                label={t("learn_more")}
-                icon={<BookOpen size={15} />}
-              />
-              <NavLinkItem
                 to="/verify-certificate"
                 label="Verify Clearance"
                 icon={<CheckCircle size={15} />}

@@ -9,7 +9,6 @@ import { LanguageProvider } from './context/LanguageContext';
 // Pages & Components
 import WelcomePage from './components/Pages/WelcomePage';
 import AboutPage from './components/Pages/AboutPage';
-import LearnMorePage from './components/Pages/LearnMorePage';
 import IntroSlides from './components/Pages/IntroSlides';
 import MaintenancePage from './components/Pages/MaintenancePage';
 import ProfilePage from './components/Pages/ProfilePage';
@@ -42,7 +41,7 @@ import StudentAffairsPage from './components/Pages/StudentAffairsPage';
 import RegistrarPage from './components/Pages/RegistrarPage';
 import AdminDashboard from './components/Pages/AdminDashboard';
 import DeveloperApiPortal from './components/Pages/DeveloperApiPortal';
-import APIKeysPage from './components/Pages/APIKeysPage';   // ← NEW
+import APIKeysPage from './components/Pages/APIKeysPage';
 
 // Theme Context
 interface ThemeContextType {
@@ -83,7 +82,6 @@ export function App() {
                   {/* Public Pages */}
                   <Route path="/" element={<WelcomePage />} />
                   <Route path="/about" element={<AboutPage />} />
-                  <Route path="/learn-more" element={<LearnMorePage />} />
                   <Route path="/intro-slides" element={<IntroSlides />} />
                   <Route path="/maintenance" element={<MaintenancePage />} />
                   <Route path="/verify-certificate" element={<VerifyCertificatePage />} />
@@ -102,7 +100,7 @@ export function App() {
                   <Route path="/change-profile" element={<ChangeProfile />} />
 
                   {/* Developer Settings */}
-                  <Route path="/settings/api-keys" element={<APIKeysPage />} />   {/* ← NEW */}
+                  <Route path="/settings/api-keys" element={<APIKeysPage />} />
                   <Route path="/developer-api" element={<DeveloperApiPortal />} />
 
                   {/* Portals & Dashboards */}
