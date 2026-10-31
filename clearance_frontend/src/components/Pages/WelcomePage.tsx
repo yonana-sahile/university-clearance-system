@@ -20,8 +20,7 @@ import {
   QuestionCircleOutlined,
   CaretRightOutlined,
 } from '@ant-design/icons';
-import { getSession, getStoredForms } from '../../utils/api';
-import type { ClearanceForm } from '../../types';
+import { getSession, apiFetch } from '../../utils/api'; // ✅ Changed to apiFetch
 import StarryFlag from '../Common/StarryFlag';
 
 const { Title, Text, Paragraph } = Typography;
@@ -33,16 +32,15 @@ const getEthiopianYear = () => {
   const gMonth = now.getMonth(); // 0-11 (8 is September)
   const gDay = now.getDate();
 
-  // Ethiopian New Year is Sept 11 (or Sept 12 in the year before a Gregorian leap year)
   const isNextYearLeap =
     ((gYear + 1) % 4 === 0 && (gYear + 1) % 100 !== 0) ||
     ((gYear + 1) % 400 === 0);
   const newYearDay = isNextYearLeap ? 12 : 11;
 
   if (gMonth < 8 || (gMonth === 8 && gDay < newYearDay)) {
-    return gYear - 8; // Before Sept 11/12
+    return gYear - 8;
   }
-  return gYear - 7;   // After Sept 11/12
+  return gYear - 7;
 };
 
 const DEPARTMENTS_INFO = [
@@ -64,22 +62,28 @@ export default function WelcomePage() {
   const user = getSession();
 
   const [trackInput, setTrackInput] = useState('');
-  const [trackResult, setTrackResult] = useState<ClearanceForm | null | 'not_found'>(null);
+  // ✅ Changed type to any to match the public API response
+  const [trackResult, setTrackResult] = useState<any | null | 'not_found'>(null);
   const [tracking, setTracking] = useState(false);
 
-  const handleTrack = () => {
+  // ✅ UPDATED: Real API Call
+  const handleTrack = async () => {
     if (!trackInput.trim()) return;
     setTracking(true);
-    setTimeout(() => {
-      const forms = getStoredForms();
-      const match = forms.find(
-        (f) =>
-          f.id_number.toLowerCase() === trackInput.trim().toLowerCase() ||
-          f.full_name.toLowerCase().includes(trackInput.trim().toLowerCase())
-      );
-      setTrackResult(match || 'not_found');
+    setTrackResult(null);
+
+    try {
+      const res = await apiFetch(`public/track?id_number=${encodeURIComponent(trackInput.trim())}`);
+      if (res.found) {
+        setTrackResult(res);
+      } else {
+        setTrackResult('not_found');
+      }
+    } catch (err) {
+      setTrackResult('not_found');
+    } finally {
       setTracking(false);
-    }, 400);
+    }
   };
 
   return (
@@ -201,7 +205,6 @@ export default function WelcomePage() {
               borderColor: '#fde047',
             }}
           >
-            {/* ✅ DYNAMIC YEAR ADDED HERE */}
             MEKDELA AMBA UNIVERSITY • EST. {getEthiopianYear()} E.C.
           </Tag>
         </div>
@@ -412,15 +415,13 @@ export default function WelcomePage() {
             type="secondary"
             style={{ color: '#334155', fontSize: 13, display: 'block', marginBottom: 16 }}
           >
-            Type your Student ID Number (e.g. <strong>UGR/1234/14</strong> or
-            student name) to check your real-time 11-stage clearance progress
-            without signing in.
+            Type your Student ID Number (e.g. <strong>MAU1234</strong>) to check your real-time clearance progress without signing in.
           </Text>
 
           <Space.Compact style={{ width: '100%', marginBottom: 16 }}>
             <Input
               size="large"
-              placeholder="Enter Student ID Number (e.g. UGR/1234/14)..."
+              placeholder="Enter Student ID Number (e.g. MAU1234)..."
               value={trackInput}
               onChange={(e) => setTrackInput(e.target.value)}
               onPressEnter={handleTrack}
