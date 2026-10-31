@@ -166,7 +166,7 @@ export default function RegisterPage() {
           </Form>
         )}
 
-        {/* STEP 1: ACCOUNT DETAILS */}
+        {/* STEP 1: ACCOUNT DETAILS (LOCKED FIELDS) */}
         {currentStep === 1 && verifiedStudent && (
           <Form
             form={form}
@@ -185,26 +185,26 @@ export default function RegisterPage() {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="first_name" label="First Name" rules={[{ required: true }]}>
-                  <Input size="large" style={{ borderRadius: 10 }} />
+                  <Input size="large" disabled style={{ borderRadius: 10, backgroundColor: '#f8fafc' }} /> {/* 🔒 DISABLED */}
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item name="last_name" label="Last Name" rules={[{ required: true }]}>
-                  <Input size="large" style={{ borderRadius: 10 }} />
+                  <Input size="large" disabled style={{ borderRadius: 10, backgroundColor: '#f8fafc' }} /> {/* 🔒 DISABLED */}
                 </Form.Item>
               </Col>
             </Row>
 
             <Form.Item name="email" label="University Email Address" rules={[{ required: true, type: 'email' }]}>
-              <Input size="large" prefix={<MailOutlined />} style={{ borderRadius: 10 }} />
+              <Input size="large" prefix={<MailOutlined />} disabled style={{ borderRadius: 10, backgroundColor: '#f8fafc' }} /> {/* 🔒 DISABLED */}
             </Form.Item>
 
             <Form.Item name="college" label="College" rules={[{ required: true }]}>
-              <Select size="large" options={colleges.map(c => ({ label: c.name, value: c.name }))} style={{ borderRadius: 10 }} />
+              <Select size="large" options={colleges.map(c => ({ label: c.name, value: c.name }))} disabled style={{ borderRadius: 10 }} /> {/* 🔒 DISABLED */}
             </Form.Item>
 
             <Form.Item name="department_name" label="Department" rules={[{ required: true }]}>
-              <Select size="large" options={departments.map(d => ({ label: d.name, value: d.name }))} style={{ borderRadius: 10 }} />
+              <Select size="large" options={departments.map(d => ({ label: d.name, value: d.name }))} disabled style={{ borderRadius: 10 }} /> {/* 🔒 DISABLED */}
             </Form.Item>
 
             <Form.Item name="building_id" label="Assigned Dormitory Block (Optional)">
