@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Modal, Input, Card, Tag, Typography, Space, Row, Col, Badge } from 'antd';
+import { Modal, Input, Card, Tag, Typography, Space, Row, Col } from 'antd';
 import { SearchOutlined, PhoneOutlined, MailOutlined, EnvironmentOutlined, ClockCircleOutlined, UserOutlined } from '@ant-design/icons';
+import CampusMap from '../Common/CampusMap'; // ✅ Import the Map component
 
 const { Title, Text } = Typography;
 
@@ -9,6 +10,7 @@ interface OfficeDirectoryModalProps {
   onClose: () => void;
 }
 
+// ✅ Added lat and lng to each office
 const OFFICES = [
   {
     id: 'departmenthead',
@@ -18,7 +20,8 @@ const OFFICES = [
     officer: 'Dr. Aster Alemayehu',
     phone: '+251 58 111 2011',
     email: 'depthead.eng@mau.edu.et',
-    requirements: 'Senior project submission, grade reports clearance, laboratory gear return'
+    requirements: 'Senior project submission, grade reports clearance, laboratory gear return',
+    lat: 11.5936, lng: 37.3869
   },
   {
     id: 'librarian',
@@ -28,7 +31,8 @@ const OFFICES = [
     officer: 'Mulugeta Yilma',
     phone: '+251 58 111 2012',
     email: 'library@mau.edu.et',
-    requirements: 'Return all borrowed books, settle overdue fines via Telebirr or CBE Birr'
+    requirements: 'Return all borrowed books, settle overdue fines via Telebirr or CBE Birr',
+    lat: 11.5942, lng: 37.3875
   },
   {
     id: 'cafeteria',
@@ -38,7 +42,8 @@ const OFFICES = [
     officer: 'Bekele Desta',
     phone: '+251 58 111 2013',
     email: 'cafeteria@mau.edu.et',
-    requirements: 'Hand in monthly dining coupon booklet and meal ID badge'
+    requirements: 'Hand in monthly dining coupon booklet and meal ID badge',
+    lat: 11.5930, lng: 37.3880
   },
   {
     id: 'dormitory',
@@ -48,7 +53,8 @@ const OFFICES = [
     officer: 'Almaz Tadesse',
     phone: '+251 58 111 2014',
     email: 'dormitory@mau.edu.et',
-    requirements: 'Room inspection clearance, return room keys and mattress'
+    requirements: 'Room inspection clearance, return room keys and mattress',
+    lat: 11.5925, lng: 37.3860
   },
   {
     id: 'psychology',
@@ -58,7 +64,8 @@ const OFFICES = [
     officer: 'Dr. Samuel Kassa',
     phone: '+251 58 111 2015',
     email: 'counseling@mau.edu.et',
-    requirements: 'Counseling exit feedback form'
+    requirements: 'Counseling exit feedback form',
+    lat: 11.5945, lng: 37.3855
   },
   {
     id: 'sportmaster',
@@ -68,7 +75,8 @@ const OFFICES = [
     officer: 'Coach Yosef Kebede',
     phone: '+251 58 111 2016',
     email: 'sports@mau.edu.et',
-    requirements: 'Return university jerseys, sports equipment, and gym locker key'
+    requirements: 'Return university jerseys, sports equipment, and gym locker key',
+    lat: 11.5920, lng: 37.3890
   },
   {
     id: 'campuspolice',
@@ -78,7 +86,8 @@ const OFFICES = [
     officer: 'Commander Firew Worku',
     phone: '+251 58 111 2017',
     email: 'security@mau.edu.et',
-    requirements: 'Clearance of campus conduct and parking/vehicle permits'
+    requirements: 'Clearance of campus conduct and parking/vehicle permits',
+    lat: 11.5950, lng: 37.3870
   },
   {
     id: 'cooperationsharing',
@@ -88,7 +97,8 @@ const OFFICES = [
     officer: 'Tigist Wondimu',
     phone: '+251 58 111 2018',
     email: 'costsharing@mau.edu.et',
-    requirements: 'Signed Ministry of Education cost-sharing agreement contract'
+    requirements: 'Signed Ministry of Education cost-sharing agreement contract',
+    lat: 11.5940, lng: 37.3862
   },
   {
     id: 'dopcordinator',
@@ -98,7 +108,8 @@ const OFFICES = [
     officer: 'Prof. Girma Bedada',
     phone: '+251 58 111 2019',
     email: 'dop@mau.edu.et',
-    requirements: 'Curriculum course credit verification and thesis audit'
+    requirements: 'Curriculum course credit verification and thesis audit',
+    lat: 11.5938, lng: 37.3865
   },
   {
     id: 'studentaffairs',
@@ -108,7 +119,8 @@ const OFFICES = [
     officer: 'Eleni Haile',
     phone: '+251 58 111 2020',
     email: 'studentaffairs@mau.edu.et',
-    requirements: 'Student union and campus club conduct clearance'
+    requirements: 'Student union and campus club conduct clearance',
+    lat: 11.5932, lng: 37.3872
   },
   {
     id: 'registrar',
@@ -118,7 +130,8 @@ const OFFICES = [
     officer: 'Dr. Worku Tesfaye',
     phone: '+251 58 111 2000',
     email: 'registrar@mau.edu.et',
-    requirements: 'Final official digital clearance seal & degree parchment processing'
+    requirements: 'Final official digital clearance seal & degree parchment processing',
+    lat: 11.5948, lng: 37.3868
   }
 ];
 
@@ -154,7 +167,7 @@ export const OfficeDirectoryModal: React.FC<OfficeDirectoryModalProps> = ({ open
         style={{ marginBottom: 20, borderRadius: 12 }}
       />
 
-      <Row gutter={[16, 16]} style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 4 }}>
+      <Row gutter={[16, 16]} style={{ maxHeight: '65vh', overflowY: 'auto', paddingRight: 4 }}>
         {filtered.map(office => (
           <Col xs={24} md={12} key={office.id}>
             <Card
@@ -178,6 +191,14 @@ export const OfficeDirectoryModal: React.FC<OfficeDirectoryModalProps> = ({ open
               <div style={{ marginTop: 12, paddingTop: 8, borderTop: '1px dashed #e2e8f0', fontSize: 12, color: '#64748b' }}>
                 <strong>Clearance Requirements:</strong> {office.requirements}
               </div>
+
+              {/* ✅ ADDED THE CAMPUS MAP HERE */}
+              <CampusMap
+                lat={office.lat}
+                lng={office.lng}
+                name={office.name}
+                address={office.building}
+              />
             </Card>
           </Col>
         ))}
