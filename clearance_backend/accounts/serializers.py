@@ -68,6 +68,8 @@ class RegisterSerializer(serializers.Serializer):
     def create(self, validated_data):
         from admincsv.models import ValidStudent
         valid = ValidStudent.objects.get(id_number__iexact=validated_data['id_number'])
+
+        # 🚨 CRITICAL FIX: Assign the department and college from the ValidStudent record
         user = User.objects.create_user(
             username=validated_data['id_number'],
             email=validated_data['email'],
@@ -76,6 +78,8 @@ class RegisterSerializer(serializers.Serializer):
             last_name=validated_data['last_name'],
             role='student',
             id_number=valid.id_number,
+            department=valid.department,  # 👈 Added
+            college=valid.college,  # 👈 Added
         )
         valid.is_registered = True
         valid.save(update_fields=['is_registered'])
@@ -120,7 +124,7 @@ class LoginSerializer(serializers.Serializer):
 
 
 # ============================================================
-# ✅ NEW: PASSWORD RESET SERIALIZERS
+# PASSWORD RESET SERIALIZERS
 # ============================================================
 
 class ForgotPasswordSerializer(serializers.Serializer):
