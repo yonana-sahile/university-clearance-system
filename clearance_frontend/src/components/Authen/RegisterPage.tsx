@@ -166,7 +166,7 @@ export default function RegisterPage() {
           </Form>
         )}
 
-        {/* STEP 1: ACCOUNT DETAILS (LOCKED FIELDS) */}
+        {/* STEP 1: ACCOUNT DETAILS (VISIBLE BUT READ-ONLY) */}
         {currentStep === 1 && verifiedStudent && (
           <Form
             form={form}
@@ -185,26 +185,28 @@ export default function RegisterPage() {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="first_name" label="First Name" rules={[{ required: true }]}>
-                  <Input size="large" disabled style={{ borderRadius: 10, backgroundColor: '#f8fafc' }} /> {/* 🔒 DISABLED */}
+                  <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item name="last_name" label="Last Name" rules={[{ required: true }]}>
-                  <Input size="large" disabled style={{ borderRadius: 10, backgroundColor: '#f8fafc' }} /> {/* 🔒 DISABLED */}
+                  <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
                 </Form.Item>
               </Col>
             </Row>
 
             <Form.Item name="email" label="University Email Address" rules={[{ required: true, type: 'email' }]}>
-              <Input size="large" prefix={<MailOutlined />} disabled style={{ borderRadius: 10, backgroundColor: '#f8fafc' }} /> {/* 🔒 DISABLED */}
+              <Input size="large" prefix={<MailOutlined />} readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
             </Form.Item>
 
+            {/* ✅ Changed Select to Input so it can be readOnly */}
             <Form.Item name="college" label="College" rules={[{ required: true }]}>
-              <Select size="large" options={colleges.map(c => ({ label: c.name, value: c.name }))} disabled style={{ borderRadius: 10 }} /> {/* 🔒 DISABLED */}
+              <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
             </Form.Item>
 
+            {/* ✅ Changed Select to Input so it can be readOnly */}
             <Form.Item name="department_name" label="Department" rules={[{ required: true }]}>
-              <Select size="large" options={departments.map(d => ({ label: d.name, value: d.name }))} disabled style={{ borderRadius: 10 }} /> {/* 🔒 DISABLED */}
+              <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
             </Form.Item>
 
             <Form.Item name="building_id" label="Assigned Dormitory Block (Optional)">
