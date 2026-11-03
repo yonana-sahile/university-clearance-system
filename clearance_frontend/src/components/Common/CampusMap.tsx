@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Button } from 'antd';
-import { EnvironmentOutlined } from '@ant-design/icons';
+import { Button, Space } from 'antd';
+import { EnvironmentOutlined, GlobalOutlined, PictureOutlined } from '@ant-design/icons';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -23,6 +23,9 @@ interface CampusMapProps {
 }
 
 export default function CampusMap({ lat, lng, name, address }: CampusMapProps) {
+  // ✅ NEW: State to toggle between Street and Satellite view
+  const [mapType, setMapType] = useState<'street' | 'satellite'>('street');
+
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
   return (
@@ -33,12 +36,47 @@ export default function CampusMap({ lat, lng, name, address }: CampusMapProps) {
         Campus Location & Directions
       </div>
 
-      <div style={{ height: '180px', width: '100%', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+      <div style={{ height: '220px', width: '100%', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', position: 'relative' }}>
+
+        {/* ✅ NEW: Floating Toggle Button inside the map */}
+        <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 1000 }}>
+          <Space.Compact>
+            <Button
+              size="small"
+              type={mapType === 'street' ? 'primary' : 'default'}
+              icon={<GlobalOutlined />}
+              onClick={() => setMapType('street')}
+              style={{ fontWeight: 600, fontSize: 12 }}
+            >
+              Street
+            </Button>
+            <Button
+              size="small"
+              type={mapType === 'satellite' ? 'primary' : 'default'}
+              icon={<PictureOutlined />}
+              onClick={() => setMapType('satellite')}
+              style={{ fontWeight: 600, fontSize: 12 }}
+            >
+              Satellite
+            </Button>
+          </Space.Compact>
+        </div>
+
         <MapContainer center={[lat, lng]} zoom={16} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; OpenStreetMap'
-          />
+
+          {/* ✅ DYNAMIC TILE LAYER: Switches based on mapType state */}
+          {mapType === 'street' ? (
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; OpenStreetMap'
+            />
+          ) : (
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              attribution='&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerographics, IGN, IGP, UPR-EGP, and the GIS User Community'
+            />
+          )}
+
           <Marker position={[lat, lng]} icon={redIcon}>
             <Popup>
               <strong>{name}</strong><br />
