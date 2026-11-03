@@ -200,3 +200,76 @@ def admin_create_staff(request):
         college=college
     )
     return Response({'message': 'Staff created successfully.', 'id': user.id}, status=201)
+
+
+# ============================================================
+# ADMIN ACADEMICS (COLLEGES & DEPARTMENTS) ENDPOINTS
+# ============================================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def admin_colleges(request):
+    if request.method == 'GET':
+        return Response(CollegeSerializer(College.objects.all(), many=True).data)
+
+    if request.user.role != 'admin':
+        return Response({'detail': 'Only admin can add colleges.'}, status=403)
+
+    name = (request.data.get('name') or '').strip()
+    if not name:
+        return Response({'detail': 'College name required.'}, status=400)
+
+    if College.objects.filter(name__iexact=name).exists():
+        return Response({'detail': 'College already exists.'}, status=400)
+
+    college = College.objects.create(name=name)
+    return Response(CollegeSerializer(college).data, status=201)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def admin_college_detail(request, pk):
+    if request.user.role != 'admin':
+        return Response({'detail': 'Only admin can delete colleges.'}, status=403)
+
+    deleted, _ = College.objects.filter(id=pk).delete()
+    if not deleted:
+        return Response({'detail': 'College not found.'}, status=404)
+    return Response(status=204)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def admin_departments(request):
+    if request.method == 'GET':
+        return Response(DepartmentSerializer(Department.objects.all(), many=True).data)
+
+    if request.user.role != 'admin':
+        return Response({'detail': 'Only admin can add departments.'}, status=403)
+
+    name = (request.data.get('name') or '').strip()
+    college_id = request.data.get('college_id')
+
+    if not name or not college_id:
+        return Response({'detail': 'Department name and College ID required.'}, status=400)
+
+    if not College.objects.filter(id=college_id).exists():
+        return Response({'detail': 'Selected college does not exist.'}, status=400)
+
+    if Department.objects.filter(name__iexact=name, college_id=college_id).exists():
+        return Response({'detail': 'Department already exists in this college.'}, status=400)
+
+    dept = Department.objects.create(name=name, college_id=college_id)
+    return Response(DepartmentSerializer(dept).data, status=201)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def admin_department_detail(request, pk):
+    if request.user.role != 'admin':
+        return Response({'detail': 'Only admin can delete departments.'}, status=403)
+
+    deleted, _ = Department.objects.filter(id=pk).delete()
+    if not deleted:
+        return Response({'detail': 'Department not found.'}, status=404)
+    return Response(status=204)

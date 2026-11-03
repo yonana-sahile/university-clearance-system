@@ -13,4 +13,8 @@ urlpatterns = [
     path('verify-otp', views.verify_otp),
     path('reset-password', views.reset_password),
     path('admin/create-staff', views.admin_create_staff),
+    path('admin/colleges', views.admin_colleges),
+    path('admin/colleges/<int:pk>', views.admin_college_detail),
+    path('admin/departments', views.admin_departments),
+    path('admin/departments/<int:pk>', views.admin_department_detail),
 ]
