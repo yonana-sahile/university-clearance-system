@@ -84,6 +84,14 @@ export default function WelcomePage() {
     }
   };
 
+  // ✅ NEW HELPER: Format the new overall_status for public display
+  const getPublicStatusTag = (status: string) => {
+    if (status === 'Cleared by Registrar') return <Tag color="success">🎉 Fully Cleared</Tag>;
+    if (status === 'rejected') return <Tag color="error">Action Required</Tag>;
+    if (status === 'requires_payment') return <Tag color="warning">Payment Required</Tag>;
+    return <Tag color="processing">In Progress</Tag>;
+  };
+
   return (
     <div
       style={{
@@ -466,7 +474,8 @@ export default function WelcomePage() {
                 <Text strong style={{ color: '#0f172a', fontSize: 16 }}>
                   {trackResult.full_name}
                 </Text>
-                <Tag color="green">{trackResult.status}</Tag>
+                {/* ✅ FIXED: Use the new dynamic status tag helper */}
+                {getPublicStatusTag(trackResult.status)}
               </div>
               <Text style={{ color: '#475569', fontSize: 13, display: 'block' }}>
                 ID:{' '}
@@ -604,7 +613,7 @@ export default function WelcomePage() {
                 label: <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>📝 How do I apply for digital clearance at Mekdela Amba University?</span>,
                 children: (
                   <p style={{ color: '#475569', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
-                    Log in to your Student Account, navigate to <strong>'Apply Clearance'</strong>, fill in your department and ID details, and click Submit. Your clearance request will automatically broadcast to all 11 campus offices simultaneously!
+                    Log in to your Student Account, navigate to <strong>'Apply Clearance'</strong>, fill in your department and ID details, and click Submit. Your clearance request will automatically broadcast to all campus offices simultaneously!
                   </p>
                 ),
                 style: {
@@ -640,7 +649,7 @@ export default function WelcomePage() {
                 label: <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>🎓 When do I get my official digital clearance certificate?</span>,
                 children: (
                   <p style={{ color: '#475569', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
-                    Once all 10 preliminary departments approve your record, the University Registrar grants final seal approval. A downloadable PDF certificate complete with QR verification code will immediately generate in your dashboard!
+                    Once all preliminary departments approve your record, the University Registrar grants final seal approval. A downloadable PDF certificate complete with QR verification code will immediately generate in your dashboard!
                   </p>
                 ),
                 style: {

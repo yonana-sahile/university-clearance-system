@@ -18,8 +18,7 @@ import {
   SafetyCertificateOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons';
-import { getStoredForms } from '../../utils/api';
-import type { ClearanceForm } from '../../types';
+import { apiFetch } from '../../utils/api'; // ✅ IMPORT API
 
 const { Title, Text } = Typography;
 
@@ -29,7 +28,7 @@ export const VerifyCertificatePage: React.FC = () => {
 
   const [inputCode, setInputCode] = useState(certIdParam);
   const [loading, setLoading] = useState(false);
-  const [foundForm, setFoundForm] = useState<ClearanceForm | null>(null);
+  const [foundForm, setFoundForm] = useState<any | null>(null);
   const [searched, setSearched] = useState(false);
 
   useEffect(() => {
@@ -39,32 +38,25 @@ export const VerifyCertificatePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [certIdParam]);
 
-  const handleSearch = (codeToSearch: string) => {
+  const handleSearch = async (codeToSearch: string) => {
     if (!codeToSearch.trim()) return;
     setLoading(true);
     setSearched(true);
 
-    setTimeout(() => {
-      const forms = getStoredForms();
-      const cleaned = codeToSearch.replace(/[^0-9]/g, '');
-      const match = forms.find(
-        (f) =>
-          codeToSearch.toLowerCase().includes(f.id.toString()) ||
-          f.id.toString() === cleaned ||
-          f.id_number.toLowerCase() === codeToSearch.toLowerCase()
-      );
+    try {
+      // ✅ FIXED: Query the real backend instead of using localStorage
+      const res = await apiFetch(`public/track?id_number=${encodeURIComponent(codeToSearch.trim())}`);
 
-      if (
-        match &&
-        (match.status === 'Cleared by Registrar' ||
-          match.status.includes('approved'))
-      ) {
-        setFoundForm(match);
+      if (res.found && res.status === 'Cleared by Registrar') {
+        setFoundForm(res);
       } else {
         setFoundForm(null);
       }
+    } catch (err) {
+      setFoundForm(null);
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   return (
@@ -103,7 +95,7 @@ export const VerifyCertificatePage: React.FC = () => {
         <Space.Compact style={{ width: '100%', marginBottom: 28 }}>
           <Input
             size="large"
-            placeholder="Enter Certificate Reference ID (e.g. MAU-CLR-2026-00001 or Student ID)..."
+            placeholder="Enter Certificate Reference ID or Student ID..."
             value={inputCode}
             onChange={(e) => setInputCode(e.target.value)}
             onPressEnter={() => handleSearch(inputCode)}
@@ -182,9 +174,7 @@ export const VerifyCertificatePage: React.FC = () => {
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   STUDENT FULL NAME
                 </Text>
-                <div
-                  style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}
-                >
+                <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>
                   {foundForm.full_name}
                 </div>
               </div>
@@ -192,17 +182,9 @@ export const VerifyCertificatePage: React.FC = () => {
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   ID NUMBER
                 </Text>
-                <div
-                  style={{ fontWeight: 800, color: '#2563eb', fontSize: 16 }}
-                >
+                <div style={{ fontWeight: 800, color: '#2563eb', fontSize: 16 }}>
                   {foundForm.id_number}
                 </div>
-              </div>
-              <div>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  COLLEGE
-                </Text>
-                <div style={{ fontWeight: 600 }}>{foundForm.college}</div>
               </div>
               <div>
                 <Text type="secondary" style={{ fontSize: 12 }}>
@@ -214,20 +196,10 @@ export const VerifyCertificatePage: React.FC = () => {
               </div>
               <div>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  PROGRAM LEVEL
+                  REGISTRAR CLEARANCE STATUS
                 </Text>
-                <div style={{ fontWeight: 600 }}>
-                  {foundForm.program_level} ({foundForm.enrollment_type})
-                </div>
-              </div>
-              <div>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  REGISTRAR CLEARANCE DATE
-                </Text>
-                <div style={{ fontWeight: 600 }}>
-                  {new Date(
-                    foundForm.updated_at || Date.now()
-                  ).toLocaleDateString()}
+                <div style={{ fontWeight: 600, color: '#16a34a' }}>
+                  FULLY CLEARED
                 </div>
               </div>
             </div>
@@ -237,7 +209,7 @@ export const VerifyCertificatePage: React.FC = () => {
               type="success"
               showIcon
               message="Registrar Verification Notice"
-              description="This student record has been cryptographically confirmed cleared by all 11 Mekdela Amba University department offices."
+              description="This student record has been cryptographically confirmed cleared by all required Mekdela Amba University department offices."
             />
           </div>
         )}
@@ -245,8 +217,8 @@ export const VerifyCertificatePage: React.FC = () => {
         {!loading && searched && !foundForm && (
           <Result
             status="error"
-            title="Certificate Record Not Found"
-            subTitle="The certificate reference code or student ID provided does not match an active approved clearance record in Mekdela Amba University databases."
+            title="Certificate Record Not Found or Not Fully Cleared"
+            subTitle="The certificate reference code or student ID provided does not match an active, fully cleared record in Mekdela Amba University databases."
           />
         )}
       </Card>
