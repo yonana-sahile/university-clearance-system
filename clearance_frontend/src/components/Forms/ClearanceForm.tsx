@@ -58,7 +58,7 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
     >
       <Alert
         title="Important Submission Notice"
-        description="Ensure all your senior thesis papers, library books, dormitory keys, and cafeteria tickets are accounted for before applying."
+        description="Your name, ID, college, and department are locked to your official university record. Ensure all your senior thesis papers, library books, dormitory keys, and cafeteria tickets are accounted for before applying."
         type="info"
         showIcon
         style={{ marginBottom: 24, borderRadius: 10 }}
@@ -71,8 +71,8 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
         initialValues={{
           full_name: user?.full_name || 'Yonas Sahile',
           id_number: user?.id_number || 'AAA1234',
-          college: 'College of Computing & Informatics',
-          department_name: 'Software Engineering',
+          college: user?.college_name || 'College of Computing & Informatics',
+          department_name: user?.department_name || 'Software Engineering',
           program_level: 'Undergraduate (B.Sc.)',
           enrollment_type: 'Regular',
           year: '4th Year',
@@ -83,12 +83,12 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item name="full_name" label="Student Full Name" rules={[{ required: true }]}>
-              <Input size="large" style={{ borderRadius: 10 }} />
+              <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a', fontWeight: 600 }} />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12}>
             <Form.Item name="id_number" label="Student ID Number" rules={[{ required: true }]}>
-              <Input size="large" style={{ borderRadius: 10 }} />
+              <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a', fontWeight: 600 }} />
             </Form.Item>
           </Col>
         </Row>
@@ -96,12 +96,14 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item name="college" label="College" rules={[{ required: true }]}>
-              <Select size="large" options={colleges.map(c => ({ label: c.name, value: c.name }))} style={{ borderRadius: 10 }} />
+              {/* ✅ CHANGED TO READONLY INPUT SO STUDENTS CANNOT CHANGE THEIR COLLEGE */}
+              <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12}>
             <Form.Item name="department_name" label="Department" rules={[{ required: true }]}>
-              <Select size="large" options={departments.map(d => ({ label: d.name, value: d.name }))} style={{ borderRadius: 10 }} />
+              {/* ✅ CHANGED TO READONLY INPUT SO STUDENTS CANNOT CHANGE THEIR DEPARTMENT */}
+              <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
             </Form.Item>
           </Col>
         </Row>
