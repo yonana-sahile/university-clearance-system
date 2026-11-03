@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import User, College, Department, Building
+from .models import User, College, Department, Building, SystemSetting
 from .serializers import (
     UserSerializer, RegisterSerializer, LoginSerializer,
     CollegeSerializer, DepartmentSerializer, BuildingSerializer,
@@ -273,3 +273,42 @@ def admin_department_detail(request, pk):
     if not deleted:
         return Response({'detail': 'Department not found.'}, status=404)
     return Response(status=204)
+
+
+# ============================================================
+# ✅ NEW: GLOBAL SYSTEM SETTINGS (LOCK/UNLOCK)
+# ============================================================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])  # Anyone can check if portal is open
+def get_system_settings(request):
+    settings = SystemSetting.get_settings()
+    return Response({
+        'is_clearance_open': settings.is_clearance_open,
+        'locked_message': settings.locked_message,
+        'updated_at': settings.updated_at.isoformat() if settings.updated_at else None,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def toggle_clearance_portal(request):
+    """Admin-only — toggle the global lock/unlock state."""
+    if request.user.role != 'admin':
+        return Response({'detail': 'Only admin can toggle the clearance portal.'}, status=403)
+
+    is_open = bool(request.data.get('is_clearance_open', False))
+    custom_message = request.data.get('locked_message')
+
+    settings = SystemSetting.get_settings()
+    settings.is_clearance_open = is_open
+    if custom_message is not None:
+        settings.locked_message = custom_message
+    settings.updated_by = request.user
+    settings.save()
+
+    return Response({
+        'message': f"Clearance portal is now {'OPEN' if is_open else 'LOCKED'} for ALL users.",
+        'is_clearance_open': settings.is_clearance_open,
+        'locked_message': settings.locked_message,
+    })

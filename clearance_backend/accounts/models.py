@@ -53,9 +53,46 @@ class User(AbstractUser):
     building = models.ForeignKey(Building, null=True, blank=True, on_delete=models.SET_NULL)
     profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
 
-    # ✅ NEW FIELDS FOR PASSWORD RESET
+    # ✅ FIELDS FOR PASSWORD RESET
     reset_otp = models.CharField(max_length=6, blank=True, null=True)
     reset_otp_expiry = models.DateTimeField(blank=True, null=True)
 
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip() or self.username
+
+
+# ============================================================
+# ✅ NEW: GLOBAL SYSTEM SETTINGS (LOCK/UNLOCK PORTAL)
+# ============================================================
+class SystemSetting(models.Model):
+    """
+    Singleton model to store global system settings.
+    There should only be ONE row (id=1).
+    """
+    is_clearance_open = models.BooleanField(
+        default=False,
+        help_text='If true, students can submit clearance forms. If false, portal is locked.'
+    )
+    locked_message = models.CharField(
+        max_length=255,
+        default='The clearance portal is currently locked by the administration. Please check back later.',
+        blank=True
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='settings_updated'
+    )
+
+    class Meta:
+        verbose_name = 'System Setting'
+        verbose_name_plural = 'System Settings'
+
+    def __str__(self):
+        return f"Clearance Open: {self.is_clearance_open}"
+
+    @classmethod
+    def get_settings(cls):
+        """Get or create the singleton settings row."""
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj

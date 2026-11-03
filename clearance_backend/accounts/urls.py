@@ -17,4 +17,8 @@ urlpatterns = [
     path('admin/colleges/<int:pk>', views.admin_college_detail),
     path('admin/departments', views.admin_departments),
     path('admin/departments/<int:pk>', views.admin_department_detail),
+
+    # ✅ NEW: Global System Settings (Lock/Unlock)
+    path('system/settings', views.get_system_settings),
+    path('admin/toggle-clearance', views.toggle_clearance_portal),
 ]
