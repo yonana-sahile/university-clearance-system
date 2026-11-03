@@ -359,5 +359,8 @@ def public_track(request):
         'full_name': form.full_name,
         'id_number': form.id_number,
         'department_name': form.department_name,
-        'status': form.overall_status,  # ✅ Changed to overall_status
+        'college': form.college,
+        'program_level': form.program_level,
+        'enrollment_type': form.enrollment_type,
+        'status': form.overall_status,
     })
