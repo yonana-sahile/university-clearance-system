@@ -184,9 +184,9 @@ def admin_create_staff(request):
     if User.objects.filter(username=data.get('username')).exists():
         return Response({'detail': 'Username already exists.'}, status=400)
 
-    # Find the department and college
-    dept_name = data.get('department')
-    dept = Department.objects.filter(name=dept_name).first() if dept_name else None
+    # ✅ FIXED: Find the department by ID instead of name to prevent collisions
+    dept_id = data.get('department_id')
+    dept = Department.objects.filter(id=dept_id).first() if dept_id else None
     college = dept.college if dept else None
 
     user = User.objects.create_user(
