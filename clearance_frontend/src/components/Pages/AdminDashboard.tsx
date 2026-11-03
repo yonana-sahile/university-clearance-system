@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card, Table, Tag, Button, Input, Upload, Typography, Space, Row, Col,
-  Statistic, Modal, Form, message, Popconfirm, Switch, Select
+  Statistic, Modal, Form, message, Popconfirm, Switch, Select, Tabs
 } from 'antd';
 import {
   UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined,
-  SearchOutlined, CodeOutlined, LockOutlined, UnlockOutlined, UserAddOutlined
+  SearchOutlined, CodeOutlined, LockOutlined, UnlockOutlined, UserAddOutlined,
+  BankOutlined, ApartmentOutlined
 } from '@ant-design/icons';
 import { apiFetch } from '../../utils/api';
 import type { ValidStudentCSV } from '../../types';
@@ -22,6 +23,11 @@ export default function AdminDashboard() {
   // ✅ STAFF REGISTRATION STATE
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [staffForm] = Form.useForm();
+
+  // ✅ ACADEMICS MANAGEMENT STATE
+  const [isAcademicsModalOpen, setIsAcademicsModalOpen] = useState(false);
+  const [colleges, setColleges] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
 
   // ==========================================
   // CLEARANCE SEASON LOCK STATE
@@ -42,9 +48,10 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadStudents();
+    loadAcademics();
   }, []);
 
-  // ✅ FETCH FROM BACKEND
+  // ✅ FETCH STUDENTS FROM BACKEND
   const loadStudents = async () => {
     setLoading(true);
     try {
@@ -54,6 +61,18 @@ export default function AdminDashboard() {
       message.error(err.message || 'Failed to load students');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ FETCH COLLEGES & DEPARTMENTS FROM BACKEND
+  const loadAcademics = async () => {
+    try {
+      const c = await apiFetch('admin/colleges');
+      const d = await apiFetch('admin/departments');
+      setColleges(c || []);
+      setDepartments(d || []);
+    } catch (err) {
+      console.error('Failed to load academics', err);
     }
   };
 
@@ -69,6 +88,49 @@ export default function AdminDashboard() {
       staffForm.resetFields();
     } catch (err: any) {
       message.error(err.message || 'Failed to create staff');
+    }
+  };
+
+  // ==========================================
+  // ✅ ACADEMICS HANDLERS
+  // ==========================================
+  const handleAddCollege = async (values: any) => {
+    try {
+      await apiFetch('admin/colleges', { method: 'POST', body: JSON.stringify(values) });
+      message.success('College added!');
+      loadAcademics();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to add college');
+    }
+  };
+
+  const handleDeleteCollege = async (id: number) => {
+    try {
+      await apiFetch(`admin/colleges/${id}`, { method: 'DELETE' });
+      message.success('College deleted!');
+      loadAcademics();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to delete college');
+    }
+  };
+
+  const handleAddDepartment = async (values: any) => {
+    try {
+      await apiFetch('admin/departments', { method: 'POST', body: JSON.stringify(values) });
+      message.success('Department added!');
+      loadAcademics();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to add department');
+    }
+  };
+
+  const handleDeleteDepartment = async (id: number) => {
+    try {
+      await apiFetch(`admin/departments/${id}`, { method: 'DELETE' });
+      message.success('Department deleted!');
+      loadAcademics();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to delete department');
     }
   };
 
@@ -314,7 +376,17 @@ export default function AdminDashboard() {
             Developer API Portal
           </Button>
 
-          {/* ✅ ADDED: REGISTER STAFF BUTTON */}
+          {/* ✅ MANAGE ACADEMICS BUTTON */}
+          <Button
+            type="primary"
+            icon={<ApartmentOutlined />}
+            onClick={() => setIsAcademicsModalOpen(true)}
+            style={{ background: '#f59e0b', border: 'none' }}
+          >
+            Manage Academics
+          </Button>
+
+          {/* ✅ REGISTER STAFF BUTTON */}
           <Button type="primary" icon={<UserAddOutlined />} onClick={() => setIsStaffModalOpen(true)} style={{ background: '#8b5cf6', border: 'none' }}>
             Register Staff
           </Button>
@@ -384,7 +456,7 @@ export default function AdminDashboard() {
         </Form>
       </Modal>
 
-      {/* ✅ ADDED: REGISTER STAFF MODAL */}
+      {/* ✅ REGISTER STAFF MODAL — uses dynamic departments */}
       <Modal
         title="Register New Staff / Department Head"
         open={isStaffModalOpen}
@@ -413,17 +485,111 @@ export default function AdminDashboard() {
             ]} />
           </Form.Item>
           <Form.Item name="department" label="Department (Required for Dept Heads)">
-            <Select options={[
-              { label: 'Software Engineering', value: 'Software Engineering' },
-              { label: 'Computer Science', value: 'Computer Science' },
-              { label: 'Civil Engineering', value: 'Civil Engineering' },
-              { label: 'Accounting & Finance', value: 'Accounting & Finance' },
-            ]} allowClear />
+            {/* ✅ Dynamic departments from backend */}
+            <Select
+              options={departments.map(d => ({ label: d.name, value: d.name }))}
+              allowClear
+              placeholder="Select a department"
+              showSearch
+              optionFilterProp="label"
+            />
           </Form.Item>
           <Button type="primary" htmlType="submit" block style={{ height: 44, borderRadius: 10, marginTop: 12, background: '#8b5cf6' }}>
             Create Staff Account
           </Button>
         </Form>
+      </Modal>
+
+      {/* ✅ MANAGE ACADEMICS MODAL */}
+      <Modal
+        title={<><BankOutlined /> Manage Colleges & Departments</>}
+        open={isAcademicsModalOpen}
+        onCancel={() => setIsAcademicsModalOpen(false)}
+        footer={null}
+        width={700}
+      >
+        <Tabs defaultActiveKey="colleges" items={[
+          {
+            key: 'colleges',
+            label: 'Colleges',
+            children: (
+              <div>
+                <Form layout="inline" onFinish={handleAddCollege} style={{ marginBottom: 16, gap: 8 }}>
+                  <Form.Item name="name" rules={[{ required: true, message: 'Enter name' }]}>
+                    <Input placeholder="New College Name" style={{ width: 250 }} />
+                  </Form.Item>
+                  <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>Add College</Button>
+                </Form>
+                <Table
+                  dataSource={colleges}
+                  rowKey="id"
+                  size="small"
+                  pagination={{ pageSize: 5 }}
+                  columns={[
+                    { title: 'ID', dataIndex: 'id', width: 60 },
+                    { title: 'College Name', dataIndex: 'name' },
+                    {
+                      title: 'Action',
+                      width: 80,
+                      render: (_: any, r: any) => (
+                        <Popconfirm title="Delete college?" onConfirm={() => handleDeleteCollege(r.id)}>
+                          <Button size="small" danger icon={<DeleteOutlined />} />
+                        </Popconfirm>
+                      )
+                    }
+                  ]}
+                />
+              </div>
+            )
+          },
+          {
+            key: 'departments',
+            label: 'Departments',
+            children: (
+              <div>
+                <Form layout="inline" onFinish={handleAddDepartment} style={{ marginBottom: 16, gap: 8 }}>
+                  <Form.Item name="name" rules={[{ required: true, message: 'Enter name' }]}>
+                    <Input placeholder="New Department Name" style={{ width: 200 }} />
+                  </Form.Item>
+                  <Form.Item name="college_id" rules={[{ required: true, message: 'Select college' }]}>
+                    <Select
+                      placeholder="Select College"
+                      style={{ width: 200 }}
+                      options={colleges.map(c => ({ label: c.name, value: c.id }))}
+                      showSearch
+                      optionFilterProp="label"
+                    />
+                  </Form.Item>
+                  <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>Add Dept</Button>
+                </Form>
+                <Table
+                  dataSource={departments}
+                  rowKey="id"
+                  size="small"
+                  pagination={{ pageSize: 5 }}
+                  columns={[
+                    { title: 'ID', dataIndex: 'id', width: 60 },
+                    { title: 'Department Name', dataIndex: 'name' },
+                    {
+                      title: 'College',
+                      dataIndex: 'college',
+                      render: (collegeId: number) => colleges.find(c => c.id === collegeId)?.name || 'Unknown'
+                    },
+                    {
+                      title: 'Action',
+                      width: 80,
+                      render: (_: any, r: any) => (
+                        <Popconfirm title="Delete department?" onConfirm={() => handleDeleteDepartment(r.id)}>
+                          <Button size="small" danger icon={<DeleteOutlined />} />
+                        </Popconfirm>
+                      )
+                    }
+                  ]}
+                />
+              </div>
+            )
+          }
+        ]} />
       </Modal>
     </div>
   );
