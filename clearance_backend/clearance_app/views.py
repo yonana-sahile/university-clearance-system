@@ -4,56 +4,34 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
 
-from .models import ClearanceForm, FormStatus, Dispute, Appointment
+from .models import ClearanceForm, FormStatus, Dispute, Appointment, WorkflowStep, ClearanceApproval
 from .serializers import (
     ClearanceFormSerializer,
     DisputeSerializer,
     AppointmentSerializer,
+    WorkflowStepSerializer,
 )
 
-# role -> (note_field, approver_field, approved_status, previous_status_required)
-STAFF_ROLES = {
-    'departmenthead': ('department_note', 'department_approved_by', FormStatus.APPROVED_DEPARTMENT,
-                       FormStatus.PENDING_DEPARTMENT),
-    'librarian': ('library_note', 'library_approved_by', FormStatus.APPROVED_LIBRARY, FormStatus.APPROVED_DEPARTMENT),
-    'cafeteria': ('cafeteria_note', 'cafeteria_approved_by', FormStatus.APPROVED_CAFETERIA,
-                  FormStatus.APPROVED_LIBRARY),
-    'psychology': ('psychology_note', 'psychology_approved_by', FormStatus.APPROVED_PSYCHOLOGY,
-                   FormStatus.APPROVED_CAFETERIA),
-    'sportmaster': ('sportmaster_note', 'sportmaster_approved_by', FormStatus.APPROVED_SPORTMASTER,
-                    FormStatus.APPROVED_PSYCHOLOGY),
-    'campuspolice': ('campuspolice_note', 'campuspolice_approved_by', FormStatus.APPROVED_CAMPUSPOLICE,
-                     FormStatus.APPROVED_SPORTMASTER),
-    'cooperationsharing': ('cooperationsharing_note', 'cooperationsharing_approved_by', FormStatus.APPROVED_COOPERATION,
-                           FormStatus.APPROVED_CAMPUSPOLICE),
-    'dopcordinator': ('dopcordinator_note', 'dopcoordinator_approved_by', FormStatus.APPROVED_DOP,
-                      FormStatus.APPROVED_COOPERATION),
-    'studentaffairs': ('studentaffairs_note', 'studentaffairs_approved_by', FormStatus.APPROVED_STUDENTAFFAIRS,
-                       FormStatus.APPROVED_DOP),
-    'dormitory': ('dormitory_note', 'dormitory_approved_by', FormStatus.APPROVED_DORMITORY,
-                  FormStatus.APPROVED_STUDENTAFFAIRS),
-    'registrar': ('registrar_note', 'registrar_approved_by', FormStatus.CLEARED_BY_REGISTRAR,
-                  FormStatus.APPROVED_DORMITORY),
-}
 
-STATUS_ORDER = [
-    FormStatus.PENDING_DEPARTMENT,
-    FormStatus.APPROVED_DEPARTMENT,
-    FormStatus.APPROVED_LIBRARY,
-    FormStatus.APPROVED_CAFETERIA,
-    FormStatus.APPROVED_PSYCHOLOGY,
-    FormStatus.APPROVED_SPORTMASTER,
-    FormStatus.APPROVED_CAMPUSPOLICE,
-    FormStatus.APPROVED_COOPERATION,
-    FormStatus.APPROVED_DOP,
-    FormStatus.APPROVED_STUDENTAFFAIRS,
-    FormStatus.APPROVED_DORMITORY,
-    FormStatus.CLEARED_BY_REGISTRAR,
-]
+# ============================================================
+# HELPER FUNCTION: DYNAMIC NEXT STEP
+# ============================================================
+def get_next_workflow_step(form):
+    """
+    Finds the next active step.
+    If a step was deleted or disabled, it safely skips to the next valid one.
+    """
+    last_approval = form.approvals.filter(status='approved').order_by('-step__order').first()
 
-
-def _role_key(value):
-    return (value or '').replace('-', '').replace('_', '').lower()
+    if last_approval and last_approval.step:
+        # Find the next active step after the last approved step
+        return WorkflowStep.objects.filter(
+            is_active=True,
+            order__gt=last_approval.step.order
+        ).order_by('order').first()
+    else:
+        # If no approvals yet, start from the very first active step
+        return WorkflowStep.objects.filter(is_active=True).order_by('order').first()
 
 
 # ============================================================
@@ -66,8 +44,13 @@ def student_dashboard(request):
     forms = ClearanceForm.objects.filter(
         id_number=request.user.id_number
     ).order_by('-id')
+
+    # ✅ Return the dynamic workflow steps so the frontend can draw the timeline
+    workflow = WorkflowStep.objects.filter(is_active=True)
+
     return Response({
         'forms': ClearanceFormSerializer(forms, many=True).data,
+        'workflow': WorkflowStepSerializer(workflow, many=True).data,
         'notifications': [{
             'id': 1,
             'message': 'Welcome to Online Clearance System! Track your stage approvals in real-time.',
@@ -91,8 +74,9 @@ def submit_form(request):
     data = request.data
     user = request.user
 
-    # 🚨 CRITICAL SECURITY FIX: Force all identity fields from the logged-in user's profile.
-    # Never trust the frontend for full_name, id_number, college, or department_name.
+    # Get the first active step dynamically
+    first_step = WorkflowStep.objects.filter(is_active=True).order_by('order').first()
+
     form = ClearanceForm.objects.create(
         student=user,
         full_name=user.full_name() or user.username,
@@ -100,14 +84,15 @@ def submit_form(request):
         student_email=user.email or '',
         college=user.college.name if getattr(user, 'college', None) else '',
         department_name=user.department.name if getattr(user, 'department', None) else '',
-
-        # These are the only fields the student is allowed to fill out
         program_level=data.get('program_level', ''),
         enrollment_type=data.get('enrollment_type', ''),
         year=data.get('year', ''),
         semester=data.get('semester', ''),
         reason=data.get('reason', ''),
-        status=FormStatus.PENDING_DEPARTMENT,
+
+        # ✅ NEW DYNAMIC FIELDS
+        overall_status=FormStatus.IN_PROGRESS,
+        current_step=first_step
     )
     return Response({
         'message': 'Clearance form submitted successfully!',
@@ -131,12 +116,16 @@ def sign_cost_sharing(request, form_id):
     guarantor_phone = request.data.get('guarantor_phone', '')
     guarantor_woreda = request.data.get('guarantor_woreda', '')
 
-    form.cooperationsharing_note = (
-        f"Cost sharing obligation contract Form CS-04 signed by student. "
-        f"Guarantor: {guarantor_name} ({guarantor_phone}), "
-        f"Residence: {guarantor_woreda}."
+    # Since we removed the hardcoded column, we save this as a generic approval/note
+    cost_sharing_step = WorkflowStep.objects.filter(role_required='cooperationsharing').first()
+
+    ClearanceApproval.objects.create(
+        form=form,
+        step=cost_sharing_step,
+        approved_by=request.user,
+        note=f"Cost sharing obligation contract Form CS-04 signed by student. Guarantor: {guarantor_name} ({guarantor_phone}), Residence: {guarantor_woreda}.",
+        status='student_signed'
     )
-    form.save()
 
     return Response({
         'message': 'Cost Sharing Promissory Note signed successfully!',
@@ -204,13 +193,13 @@ def appointments(request):
 
 
 # ============================================================
-# STAFF ENDPOINTS
+# STAFF ENDPOINTS (DYNAMIC)
 # ============================================================
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_forms(request):
-    role = _role_key(request.user.role)
+    role = request.user.role
 
     if role == 'student':
         forms = ClearanceForm.objects.filter(
@@ -218,10 +207,11 @@ def list_forms(request):
         ).order_by('-id')
     elif role == 'admin':
         forms = ClearanceForm.objects.all().order_by('-id')
-    elif role in STAFF_ROLES:
-        first_needed = STAFF_ROLES[role][3]
+    else:
+        # ✅ DYNAMIC: Only show forms currently at this staff member's step
         forms = ClearanceForm.objects.filter(
-            status__in=STATUS_ORDER[STATUS_ORDER.index(first_needed):]
+            current_step__role_required=role,
+            overall_status=FormStatus.IN_PROGRESS
         ).order_by('-id')
 
         # 🚨 DEPARTMENT HEAD ISOLATION
@@ -234,64 +224,118 @@ def list_forms(request):
         elif role == 'registrar':
             if getattr(request.user, 'college', None):
                 forms = forms.filter(college__iexact=request.user.college.name)
-    else:
-        forms = ClearanceForm.objects.none()
 
     return Response(ClearanceFormSerializer(forms, many=True).data)
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def staff_action(request, role, form_id):
-    role_key = _role_key(role)
-    matched = STAFF_ROLES.get(role_key)
-    if not matched:
-        return Response({'detail': f'Unknown role: {role}'}, status=400)
-
-    if _role_key(request.user.role) not in (role_key, 'admin'):
-        return Response({'detail': 'You are not allowed to do this action.'}, status=403)
-
+def staff_action(request, form_id):
     try:
         form = ClearanceForm.objects.get(id=form_id)
     except ClearanceForm.DoesNotExist:
         return Response({'detail': 'Form not found.'}, status=404)
 
-    note_field, approver_field, approved_status, required_status = matched
+    current_step = form.current_step
 
-    if form.status != required_status:
-        return Response({'detail': 'This form is not at your stage yet.'}, status=400)
+    # If the current step got deleted by Admin, re-route the student safely
+    if not current_step:
+        current_step = get_next_workflow_step(form)
+        form.current_step = current_step
 
-    # 🚨 DEPARTMENT HEAD ISOLATION
-    if role_key == 'departmenthead':
-        if not request.user.department:
-            return Response({'detail': 'You have no department assigned.'}, status=403)
-        if form.department_name.lower() != request.user.department.name.lower():
-            return Response({'detail': 'This form belongs to another department. Access Denied.'}, status=403)
+    if not current_step or (request.user.role != current_step.role_required and request.user.role != 'admin'):
+        return Response({'detail': 'You are not authorized to approve this stage.'}, status=403)
 
-    # 🚨 REGISTRAR COLLEGE ISOLATION
-    if role_key == 'registrar':
+    # 🚨 EXTRA VALIDATION: Department Head / Registrar
+    if request.user.role == 'departmenthead':
+        if not request.user.department or form.department_name.lower() != request.user.department.name.lower():
+            return Response({'detail': 'This form belongs to another department.'}, status=403)
+
+    if request.user.role == 'registrar':
         if getattr(request.user, 'college', None) and form.college.lower() != request.user.college.name.lower():
             return Response({'detail': 'This form belongs to another college.'}, status=403)
 
     action = (request.data.get('action') or 'approve').lower()
     note = request.data.get('note', '')
 
-    if action == 'approve':
-        setattr(form, note_field, note)
-        setattr(form, approver_field, request.user.full_name)
-        form.status = approved_status
-    else:
-        setattr(form, note_field, note)
-        form.status = FormStatus.REJECTED
+    if action == 'reject':
+        form.overall_status = FormStatus.REJECTED
         form.can_resubmit = True
+        ClearanceApproval.objects.create(form=form, step=current_step, approved_by=request.user, note=note,
+                                         status='rejected')
+        form.save()
+        return Response({'message': 'Rejected successfully.'})
 
-    form.save()
+    # If Approved:
+    ClearanceApproval.objects.create(form=form, step=current_step, approved_by=request.user, note=note,
+                                     status='approved')
 
-    return Response({
-        'message': f'Clearance form {action}d successfully!',
-        'status': form.status,
-        'note': note,
-    })
+    # Find the next step dynamically
+    next_step = get_next_workflow_step(form)
+
+    if next_step:
+        form.current_step = next_step
+        form.save()
+        return Response({
+            'message': f'Approved! Moved to {next_step.name}.',
+            'status': form.overall_status,
+            'note': note,
+        })
+    else:
+        # No more steps!
+        form.current_step = None
+        form.overall_status = FormStatus.CLEARED_BY_REGISTRAR
+        form.save()
+        return Response({
+            'message': 'Final clearance granted!',
+            'status': form.overall_status,
+            'note': note,
+        })
+
+
+# ============================================================
+# ADMIN WORKFLOW MANAGEMENT
+# ============================================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def admin_workflow_steps(request):
+    if request.user.role != 'admin':
+        return Response({'detail': 'Only admin allowed.'}, status=403)
+
+    if request.method == 'GET':
+        steps = WorkflowStep.objects.all().order_by('order')
+        return Response(WorkflowStepSerializer(steps, many=True).data)
+
+    step = WorkflowStep.objects.create(
+        name=request.data.get('name'),
+        role_required=request.data.get('role_required'),
+        order=request.data.get('order')
+    )
+    return Response(WorkflowStepSerializer(step).data, status=201)
+
+
+@api_view(['DELETE', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def admin_workflow_step_detail(request, pk):
+    if request.user.role != 'admin':
+        return Response({'detail': 'Only admin allowed.'}, status=403)
+
+    step = WorkflowStep.objects.filter(id=pk).first()
+    if not step:
+        return Response({'detail': 'Not found'}, status=404)
+
+    if request.method == 'DELETE':
+        step.is_active = False  # Soft delete to protect active forms
+        step.save()
+        return Response(status=204)
+
+    if request.method == 'PATCH':
+        step.is_active = request.data.get('is_active', step.is_active)
+        step.order = request.data.get('order', step.order)
+        step.name = request.data.get('name', step.name)
+        step.save()
+        return Response(WorkflowStepSerializer(step).data)
 
 
 # ============================================================
@@ -315,5 +359,5 @@ def public_track(request):
         'full_name': form.full_name,
         'id_number': form.id_number,
         'department_name': form.department_name,
-        'status': form.status,
+        'status': form.overall_status,  # ✅ Changed to overall_status
     })
