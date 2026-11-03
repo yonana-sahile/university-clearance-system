@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from accounts.models import College, Department, Building
+from accounts.models import College, Department, Building, SystemSetting
 from admincsv.models import ValidStudent
 from payments.models import PaymentMethod
 
@@ -44,7 +44,6 @@ BUILDINGS = [
     ("Freshman Residence Hall", "FRESH-01"),
 ]
 
-# ✅ CHANGED THE PHONE NUMBER HERE
 PAYMENT_METHODS = [
     ("Telebirr Mobile Money", "Mekdela Amba University Revenue", "0967005077", "", "0967005077",
      "Dial *127# and send to 0967005077"),
@@ -90,7 +89,6 @@ class Command(BaseCommand):
             Building.objects.get_or_create(code=code, defaults={'name': name})
 
         # ---------- Payment methods ----------
-        # ✅ CHANGED TO update_or_create SO IT UPDATES EXISTING DATA
         for name, acc_name, acc_num, bank, phone, instr in PAYMENT_METHODS:
             PaymentMethod.objects.update_or_create(
                 name=name,
@@ -187,7 +185,18 @@ class Command(BaseCommand):
                 email='yonassahile8@gmail.com'
             )
 
+        # ---------- System Settings (Global Portal Lock) ----------
+        settings = SystemSetting.get_settings()
+        settings.is_clearance_open = True
+        settings.locked_message = (
+            'The clearance portal is currently locked by the administration. '
+            'Please check back later.'
+        )
+        settings.save()
+
+        # ---------- Success message ----------
         self.stdout.write(self.style.SUCCESS('✅ Seed data loaded!'))
-        self.stdout.write('Student login: AAA1234 / student123')
-        self.stdout.write('Staff login:   depthead_se / staff123')
-        self.stdout.write('Admin login:   admin_mau / staff123')
+        self.stdout.write(f'   Portal status: {"OPEN" if settings.is_clearance_open else "LOCKED"}')
+        self.stdout.write('   Student login: AAA1234 / student123')
+        self.stdout.write('   Staff login:   depthead_se / staff123')
+        self.stdout.write('   Admin login:   admin_mau / staff123')
