@@ -186,17 +186,29 @@ class Command(BaseCommand):
             )
 
         # ---------- System Settings (Global Portal Lock) ----------
-        settings = SystemSetting.get_settings()
-        settings.is_clearance_open = True
-        settings.locked_message = (
-            'The clearance portal is currently locked by the administration. '
-            'Please check back later.'
+        # ✅ CRITICAL FIX: Only set defaults on FIRST creation.
+        # On redeploys / cold spins, PRESERVE the admin's last lock/unlock choice.
+        settings, settings_created = SystemSetting.objects.get_or_create(
+            id=1,
+            defaults={
+                'is_clearance_open': True,
+                'locked_message': (
+                    'The clearance portal is currently locked by the administration. '
+                    'Please check back later.'
+                ),
+            }
         )
-        settings.save()
 
         # ---------- Success message ----------
         self.stdout.write(self.style.SUCCESS('✅ Seed data loaded!'))
-        self.stdout.write(f'   Portal status: {"OPEN" if settings.is_clearance_open else "LOCKED"}')
+        if settings_created:
+            self.stdout.write(self.style.SUCCESS(
+                f'   System settings created (portal starts {"OPEN" if settings.is_clearance_open else "LOCKED"})'
+            ))
+        else:
+            self.stdout.write(self.style.WARNING(
+                f'   System settings preserved (current portal state: {"OPEN" if settings.is_clearance_open else "LOCKED"})'
+            ))
         self.stdout.write('   Student login: AAA1234 / student123')
         self.stdout.write('   Staff login:   depthead_se / staff123')
         self.stdout.write('   Admin login:   admin_mau / staff123')
