@@ -19,6 +19,7 @@ export default function StudentAffairsPage() {
   const loadData = async () => {
     setLoading(true);
     try {
+      // Backend automatically filters to only show forms at the Student Affairs step
       const data = await apiFetch('forms');
       setForms(Array.isArray(data) ? data : []);
     } catch (err: any) {
@@ -31,7 +32,8 @@ export default function StudentAffairsPage() {
   const handleApprove = async (record: ClearanceForm) => {
     setApproving(record.id as number);
     try {
-      await apiFetch(`studentaffairs/action/${record.id}`, {
+      // ✅ FIXED: Changed endpoint to `staff/action/...`
+      await apiFetch(`staff/action/${record.id}`, {
         method: 'POST',
         body: JSON.stringify({
           action: 'approve',
@@ -58,44 +60,34 @@ export default function StudentAffairsPage() {
     { title: 'Department', dataIndex: 'department_name', key: 'department_name' },
     {
       title: 'Affairs Status',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'overall_status', // ✅ Use dynamic overall_status
+      key: 'overall_status',
       render: (st: string) => {
-        if (
-          [
-            'approved_studentaffairs',
-            'approved_dormitory',
-            'Cleared by Registrar',
-          ].includes(st)
-        ) {
-          return <Tag color="success">Affairs Cleared</Tag>;
-        }
         if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
-        return <Tag color="warning">Pending</Tag>;
+        return <Tag color="warning">Pending Review</Tag>;
       }
     },
     {
       title: 'Action',
       key: 'action',
       render: (_: any, record: ClearanceForm) => {
-        if (record.status === 'approved_dopcordinator') {
-          return (
-            <Button
-              type="primary"
-              size="small"
-              icon={<CheckOutlined />}
-              loading={approving === record.id}
-              onClick={() => handleApprove(record)}
-              style={{ background: '#10b981', border: 'none' }}
-            >
-              Approve Student Affairs
-            </Button>
-          );
+        if (record.overall_status === 'rejected' || record.overall_status === 'Cleared by Registrar') {
+          return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage</Text>;
         }
-        if (record.status === 'approved_studentaffairs') {
-          return <Tag color="success">Completed</Tag>;
-        }
-        return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage yet</Text>;
+
+        // ✅ FIXED: Always show the button for forms sent by the backend
+        return (
+          <Button
+            type="primary"
+            size="small"
+            icon={<CheckOutlined />}
+            loading={approving === record.id}
+            onClick={() => handleApprove(record)}
+            style={{ background: '#10b981', border: 'none' }}
+          >
+            Approve Student Affairs
+          </Button>
+        );
       }
     }
   ];
