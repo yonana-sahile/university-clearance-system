@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, Select, Typography, Alert, Row, Col, Space, message } from 'antd';
-import { SendOutlined, InfoCircleOutlined, FileTextOutlined } from '@ant-design/icons';
-import { apiFetch, getSession, getStoredColleges, getStoredDepartments } from '../../utils/api';
+import { SendOutlined, FileTextOutlined } from '@ant-design/icons';
+import { apiFetch, getSession } from '../../utils/api';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 interface Props {
   onSubmitted?: () => void;
@@ -14,20 +14,15 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
   const [form] = Form.useForm();
   const user = getSession();
 
-  const colleges = getStoredColleges();
-  const departments = getStoredDepartments();
-
   const handleFinish = async (values: any) => {
     setLoading(true);
     try {
-      const res = await apiFetch('forms/submit/', {
+      // ✅ UPDATED: We no longer send full_name, id_number, college, or department_name.
+      // The backend strictly forces these from the logged-in user's profile.
+      await apiFetch('forms/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: values.full_name || user?.full_name,
-          id_number: values.id_number || user?.id_number,
-          college: values.college,
-          department_name: values.department_name,
           program_level: values.program_level,
           enrollment_type: values.enrollment_type,
           year: values.year,
@@ -69,10 +64,11 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
         layout="vertical"
         onFinish={handleFinish}
         initialValues={{
-          full_name: user?.full_name || 'Yonas Sahile',
-          id_number: user?.id_number || 'AAA1234',
-          college: user?.college_name || 'College of Computing & Informatics',
-          department_name: user?.department_name || 'Software Engineering',
+          // ✅ UPDATED: Removed hardcoded fallbacks. Relies strictly on session.
+          full_name: user?.full_name || '---',
+          id_number: user?.id_number || '---',
+          college: user?.college_name || '---',
+          department_name: user?.department_name || '---',
           program_level: 'Undergraduate (B.Sc.)',
           enrollment_type: 'Regular',
           year: '4th Year',
@@ -96,13 +92,11 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
         <Row gutter={16}>
           <Col xs={24} sm={12}>
             <Form.Item name="college" label="College" rules={[{ required: true }]}>
-              {/* ✅ CHANGED TO READONLY INPUT SO STUDENTS CANNOT CHANGE THEIR COLLEGE */}
               <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12}>
             <Form.Item name="department_name" label="Department" rules={[{ required: true }]}>
-              {/* ✅ CHANGED TO READONLY INPUT SO STUDENTS CANNOT CHANGE THEIR DEPARTMENT */}
               <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
             </Form.Item>
           </Col>
