@@ -89,21 +89,19 @@ def student_forms(request):
 @permission_classes([IsAuthenticated])
 def submit_form(request):
     data = request.data
+    user = request.user
 
-    # 🚨 SECURITY FIX: Force department based on Student's Profile
-    student_dept_name = ""
-    if getattr(request.user, 'department', None):
-        student_dept_name = request.user.department.name
-    else:
-        student_dept_name = data.get('department_name', '')
-
+    # 🚨 CRITICAL SECURITY FIX: Force all identity fields from the logged-in user's profile.
+    # Never trust the frontend for full_name, id_number, college, or department_name.
     form = ClearanceForm.objects.create(
-        student=request.user,
-        full_name=data.get('full_name') or request.user.full_name(),
-        id_number=data.get('id_number') or request.user.id_number or '',
-        student_email=data.get('email') or request.user.email or '',
-        college=data.get('college', ''),
-        department_name=student_dept_name,
+        student=user,
+        full_name=user.full_name() or user.username,
+        id_number=user.id_number or '',
+        student_email=user.email or '',
+        college=user.college.name if getattr(user, 'college', None) else '',
+        department_name=user.department.name if getattr(user, 'department', None) else '',
+
+        # These are the only fields the student is allowed to fill out
         program_level=data.get('program_level', ''),
         enrollment_type=data.get('enrollment_type', ''),
         year=data.get('year', ''),
