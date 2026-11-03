@@ -605,11 +605,12 @@ export default function AdminDashboard() {
                 ]}
               />
             </Form.Item>
-            <Form.Item name="department" label="Department (Required for Dept Heads)">
+            <Form.Item name="department_id" label="Department (Required for Dept Heads & Registrars)">
+              {/* ✅ FIXED: Sends department_id instead of name to avoid collisions */}
               <Select
                 size="large"
                 style={{ borderRadius: 10 }}
-                options={departments.map(d => ({ label: d.name, value: d.name }))}
+                options={departments.map(d => ({ label: d.name, value: d.id }))}
                 allowClear
                 placeholder="Select a department"
                 showSearch
