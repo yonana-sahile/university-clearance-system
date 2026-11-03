@@ -71,7 +71,7 @@ export async function apiFetch(
 
   const res = await fetch(url, { ...options, headers });
 
-  // ✅ FIX: Parse the body FIRST so we can read the backend's error message
+  // ✅ Parse the body FIRST so we can read the backend's error message
   const contentType = res.headers.get("content-type") || "";
   const data = contentType.includes("application/json")
     ? await res.json()
@@ -141,25 +141,13 @@ export function setStoredForms(forms: ClearanceForm[]): void {
 
 // ---------- Reference data: colleges, departments, buildings ----------
 export function getStoredColleges(): College[] {
-  return lsRead<College[]>(LS_KEYS.colleges, [
-    { id: 1, name: "College of Computing & Informatics" },
-    { id: 2, name: "College of Engineering & Technology" },
-    { id: 3, name: "College of Natural Sciences" },
-    { id: 4, name: "College of Business & Economics" },
-    { id: 5, name: "College of Social Sciences & Humanities" },
-  ]);
+  // ✅ FIXED: Removed hardcoded fallbacks. Now returns [] if backend fails, forcing frontend to rely on API.
+  return lsRead<College[]>(LS_KEYS.colleges, []);
 }
 
 export function getStoredDepartments(): Department[] {
-  return lsRead<Department[]>(LS_KEYS.departments, [
-    { id: 1, college: 1, name: "Software Engineering" },
-    { id: 2, college: 1, name: "Computer Science" },
-    { id: 3, college: 1, name: "Information Technology" },
-    { id: 4, college: 2, name: "Civil Engineering" },
-    { id: 5, college: 2, name: "Electrical Engineering" },
-    { id: 6, college: 3, name: "Biology" },
-    { id: 7, college: 3, name: "Chemistry" },
-  ]);
+  // ✅ FIXED: Removed hardcoded fallbacks.
+  return lsRead<Department[]>(LS_KEYS.departments, []);
 }
 
 export function getStoredBuildings(): Building[] {
