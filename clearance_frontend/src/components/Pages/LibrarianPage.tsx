@@ -20,6 +20,7 @@ export default function LibrarianPage() {
   const loadData = async () => {
     setLoading(true);
     try {
+      // Backend automatically filters to only show forms at the Librarian step
       const data = await apiFetch('forms');
       setForms(Array.isArray(data) ? data : []);
     } catch (err: any) {
@@ -32,7 +33,8 @@ export default function LibrarianPage() {
   const handleApprove = async (record: ClearanceForm) => {
     setApproving(record.id as number);
     try {
-      await apiFetch(`librarian/action/${record.id}`, {
+      // ✅ FIXED: Changed endpoint to `staff/action/...`
+      await apiFetch(`staff/action/${record.id}`, {
         method: 'POST',
         body: JSON.stringify({
           action: 'approve',
@@ -71,29 +73,11 @@ export default function LibrarianPage() {
     },
     {
       title: 'Library Status',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'overall_status', // ✅ Use dynamic overall_status
+      key: 'overall_status',
       render: (st: string) => {
-        if (
-          [
-            'approved_library',
-            'approved_cafeteria',
-            'approved_psychology',
-            'approved_sportmaster',
-            'approved_campuspolice',
-            'approved_cooperationsharing',
-            'approved_dopcordinator',
-            'approved_studentaffairs',
-            'approved_dormitory',
-            'Cleared by Registrar',
-          ].includes(st)
-        ) {
-          return <Tag color="success">Library Approved</Tag>;
-        }
-        if (st === 'requires_library_payment') {
-          return <Tag color="warning">Pending Book Fine Payment</Tag>;
-        }
         if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
+        if (st === 'requires_payment') return <Tag color="warning">Pending Book Fine Payment</Tag>;
         return <Tag color="processing">Ready for Library Check</Tag>;
       }
     },
@@ -101,24 +85,23 @@ export default function LibrarianPage() {
       title: 'Actions',
       key: 'actions',
       render: (_: any, record: ClearanceForm) => {
-        if (record.status === 'approved_department') {
-          return (
-            <Button
-              type="primary"
-              size="small"
-              icon={<CheckOutlined />}
-              loading={approving === record.id}
-              onClick={() => handleApprove(record)}
-              style={{ background: '#10b981', border: 'none' }}
-            >
-              Approve Clearance
-            </Button>
-          );
+        if (record.overall_status === 'rejected' || record.overall_status === 'Cleared by Registrar') {
+          return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage</Text>;
         }
-        if (record.status === 'approved_library') {
-          return <Tag color="success">Completed</Tag>;
-        }
-        return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage yet</Text>;
+
+        // ✅ FIXED: Always show the button for forms sent by the backend
+        return (
+          <Button
+            type="primary"
+            size="small"
+            icon={<CheckOutlined />}
+            loading={approving === record.id}
+            onClick={() => handleApprove(record)}
+            style={{ background: '#10b981', border: 'none' }}
+          >
+            Approve Clearance
+          </Button>
+        );
       }
     }
   ];

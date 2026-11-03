@@ -28,6 +28,7 @@ export default function DormitoryPage() {
   const loadData = async () => {
     setLoading(true);
     try {
+      // Backend automatically filters to only show forms at the Dormitory step
       const [formsData, buildingsData] = await Promise.all([
         apiFetch('forms'),
         apiFetch('buildings').catch(() => ({ buildings: [] })),
@@ -45,7 +46,8 @@ export default function DormitoryPage() {
   const handleApproveDorm = async (record: ClearanceForm) => {
     setApproving(record.id as number);
     try {
-      await apiFetch(`dormitory/action/${record.id}`, {
+      // ✅ FIXED: Changed endpoint to `staff/action/...`
+      await apiFetch(`staff/action/${record.id}`, {
         method: 'POST',
         body: JSON.stringify({
           action: 'approve',
@@ -62,8 +64,7 @@ export default function DormitoryPage() {
   };
 
   const handleIssueDamageFine = () => {
-    // Backend endpoint for damage fines not yet implemented.
-    // Showing informational message instead of the previous localStorage hack.
+    // Backend endpoint for damage fines not yet implemented in dynamic workflow.
     message.info('Room damage fine issuance requires backend support.');
     setIsInspectModalOpen(false);
   };
@@ -96,16 +97,11 @@ export default function DormitoryPage() {
     },
     {
       title: 'Dorm Clearance',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'overall_status', // ✅ Use dynamic overall_status
+      key: 'overall_status',
       render: (st: string) => {
-        if (['approved_dormitory', 'Cleared by Registrar'].includes(st)) {
-          return <Tag color="success">Dorm Cleared</Tag>;
-        }
-        if (st === 'requires_dormitory_payment') {
-          return <Tag color="warning">Pending Damage Fine Payment</Tag>;
-        }
         if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
+        if (st === 'requires_payment') return <Tag color="warning">Pending Payment</Tag>;
         return <Tag color="processing">Ready for Inspection</Tag>;
       }
     },
@@ -113,37 +109,36 @@ export default function DormitoryPage() {
       title: 'Actions',
       key: 'actions',
       render: (_: any, record: ClearanceForm) => {
-        if (record.status === 'approved_studentaffairs') {
-          return (
-            <Space>
-              <Button
-                type="primary"
-                size="small"
-                icon={<CheckOutlined />}
-                loading={approving === record.id}
-                onClick={() => handleApproveDorm(record)}
-                style={{ background: '#10b981', border: 'none' }}
-              >
-                Clear Room
-              </Button>
-              <Button
-                danger
-                size="small"
-                icon={<ToolOutlined />}
-                onClick={() => {
-                  setInspectForm(record);
-                  setIsInspectModalOpen(true);
-                }}
-              >
-                Inspect Room Damage
-              </Button>
-            </Space>
-          );
+        if (record.overall_status === 'rejected' || record.overall_status === 'Cleared by Registrar') {
+          return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage</Text>;
         }
-        if (record.status === 'approved_dormitory') {
-          return <Tag color="success">Completed</Tag>;
-        }
-        return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage yet</Text>;
+
+        // ✅ FIXED: Always show the buttons for forms sent by the backend
+        return (
+          <Space>
+            <Button
+              type="primary"
+              size="small"
+              icon={<CheckOutlined />}
+              loading={approving === record.id}
+              onClick={() => handleApproveDorm(record)}
+              style={{ background: '#10b981', border: 'none' }}
+            >
+              Clear Room
+            </Button>
+            <Button
+              danger
+              size="small"
+              icon={<ToolOutlined />}
+              onClick={() => {
+                setInspectForm(record);
+                setIsInspectModalOpen(true);
+              }}
+            >
+              Inspect Room Damage
+            </Button>
+          </Space>
+        );
       }
     }
   ];
