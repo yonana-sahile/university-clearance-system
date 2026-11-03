@@ -33,6 +33,8 @@ export const GraduationDossierModal: React.FC<DossierProps> = ({
     form.id ?? 0
   ).padStart(5, '0')}`;
 
+  const totalOffices = stages.length;
+
   const handlePrint = () => {
     window.print();
   };
@@ -166,13 +168,12 @@ export const GraduationDossierModal: React.FC<DossierProps> = ({
               {user?.full_name || form.full_name || '—'}
             </div>
             ID Number:{' '}
-            <strong>{user?.id_number || form.id_number || '—'}</strong> •
-            College of Computing & Informatics • Department of Software
-            Engineering
+            <strong>{user?.id_number || form.id_number || '—'}</strong> •{' '}
+            {/* ✅ DYNAMIC: Replaced hardcoded College/Dept */}
+            {form.college} • {form.department_name}
             <br />
             has satisfactorily surrendered all property, fulfilled academic
-            requirements, and completed clearance from all eleven (11)
-            university offices.
+            requirements, and completed clearance from all {totalOffices} required university offices.
           </div>
 
           <Row
@@ -231,7 +232,7 @@ export const GraduationDossierModal: React.FC<DossierProps> = ({
           </Row>
         </div>
 
-        {/* DOCUMENT 2: 11-OFFICE CLEARANCE SUMMARY SLIP */}
+        {/* DOCUMENT 2: DYNAMIC OFFICE CLEARANCE SUMMARY SLIP */}
         <div
           style={{
             border: '1px solid #cbd5e1',
@@ -255,7 +256,8 @@ export const GraduationDossierModal: React.FC<DossierProps> = ({
               <div
                 style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}
               >
-                11-OFFICE CLEARANCE SUMMARY SHEET
+                {/* ✅ DYNAMIC: Use totalOffices instead of hardcoded "11" */}
+                {totalOffices}-OFFICE CLEARANCE SUMMARY SHEET
               </div>
               <div style={{ fontSize: 11, color: '#64748b' }}>
                 Form MAU-CLR-SUMMARY-2026
@@ -271,17 +273,19 @@ export const GraduationDossierModal: React.FC<DossierProps> = ({
             style={{ marginBottom: 14, fontSize: 12 }}
           >
             <Col span={12}>
-              <strong>Student:</strong> {user?.full_name || '—'} (
-              {user?.id_number || '—'})
+              <strong>Student:</strong> {user?.full_name || form.full_name || '—'} (
+              {user?.id_number || form.id_number || '—'})
             </Col>
             <Col span={12}>
               <strong>Email:</strong> {user?.email || '—'}
             </Col>
             <Col span={12}>
-              <strong>Department:</strong> Software Engineering
+              {/* ✅ DYNAMIC: Use form data */}
+              <strong>Department:</strong> {form.department_name}
             </Col>
             <Col span={12}>
-              <strong>Program:</strong> Undergraduate (B.Sc.)
+              {/* ✅ DYNAMIC: Use form data */}
+              <strong>Program:</strong> {form.program_level}
             </Col>
           </Row>
 
@@ -289,7 +293,7 @@ export const GraduationDossierModal: React.FC<DossierProps> = ({
             size="small"
             pagination={false}
             dataSource={stages.map((s, i) => ({
-              key: s.key,
+              key: s.id || s.key,
               no: i + 1,
               office: s.title,
               note: s.note,
@@ -341,7 +345,7 @@ export const GraduationDossierModal: React.FC<DossierProps> = ({
             <Tag color="green">RELEASE APPROVED</Tag>
           </div>
           <Paragraph style={{ margin: 0, fontSize: 12, color: '#166534' }}>
-            The bearer, <strong>{user?.full_name || '—'}</strong>, has fully
+            The bearer, <strong>{user?.full_name || form.full_name || '—'}</strong>, has fully
             settled all financial, academic, and property obligations to
             Mekdela Amba University. The Directorate of Student Records &
             Registrar is hereby authorized to release original student
