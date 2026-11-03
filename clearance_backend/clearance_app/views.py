@@ -11,6 +11,7 @@ from .serializers import (
     AppointmentSerializer,
     WorkflowStepSerializer,
 )
+from accounts.models import SystemSetting  # ✅ NEW IMPORT: Global lock/unlock setting
 
 
 # ============================================================
@@ -73,6 +74,17 @@ def student_forms(request):
 def submit_form(request):
     data = request.data
     user = request.user
+
+    # 🚨 NEW: Check if the portal is locked globally
+    system_settings = SystemSetting.get_settings()
+    if not system_settings.is_clearance_open:
+        return Response(
+            {
+                'detail': system_settings.locked_message or
+                          'The clearance portal is currently locked by the administration. Please check back later.'
+            },
+            status=403
+        )
 
     # Get the first active step dynamically
     first_step = WorkflowStep.objects.filter(is_active=True).order_by('order').first()
