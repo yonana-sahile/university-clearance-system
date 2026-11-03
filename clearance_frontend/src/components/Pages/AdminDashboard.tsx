@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, Table, Tag, Button, Input, Upload, Typography, Space, Row, Col,
   Statistic, Modal, Form, message, Popconfirm, Switch, Select, Tabs,
-  Tooltip, Empty, Divider
+  Tooltip, Empty, Divider, Alert
 } from 'antd';
 import {
   UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined,
   SearchOutlined, CodeOutlined, LockOutlined, UnlockOutlined, UserAddOutlined,
   BankOutlined, ApartmentOutlined, TeamOutlined, CheckCircleOutlined,
   UserOutlined, DatabaseOutlined, SafetyCertificateOutlined,
-  SafetyOutlined, FileTextOutlined
+  SafetyOutlined, FileTextOutlined, SettingOutlined
 } from '@ant-design/icons';
 import { apiFetch } from '../../utils/api';
 import type { ValidStudentCSV } from '../../types';
@@ -97,6 +97,7 @@ export default function AdminDashboard() {
   const [isAcademicsModalOpen, setIsAcademicsModalOpen] = useState(false);
   const [colleges, setColleges] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [workflowSteps, setWorkflowSteps] = useState<any[]>([]); // ✅ NEW: Workflow State
 
   const [clearanceReleased, setClearanceReleased] = useState<boolean>(() => {
     return localStorage.getItem('mau_clearance_released') === 'true';
@@ -130,8 +131,11 @@ export default function AdminDashboard() {
     try {
       const c = await apiFetch('admin/colleges');
       const d = await apiFetch('admin/departments');
+      const w = await apiFetch('admin/workflow').catch(() => []); // ✅ Fetch Workflow Steps
+
       setColleges(c || []);
       setDepartments(d || []);
+      setWorkflowSteps(w || []);
     } catch (err) {
       console.error('Failed to load academics', err);
     }
@@ -178,6 +182,23 @@ export default function AdminDashboard() {
       message.success('Department deleted!');
       loadAcademics();
     } catch (err: any) { message.error(err.message || 'Failed to delete department'); }
+  };
+
+  // ✅ NEW: Workflow Handlers
+  const handleAddWorkflowStep = async (values: any) => {
+    try {
+      await apiFetch('admin/workflow', { method: 'POST', body: JSON.stringify(values) });
+      message.success('Workflow step added!');
+      loadAcademics();
+    } catch (err: any) { message.error(err.message || 'Failed to add workflow step'); }
+  };
+
+  const handleDeleteWorkflowStep = async (id: number) => {
+    try {
+      await apiFetch(`admin/workflow/${id}`, { method: 'DELETE' });
+      message.success('Workflow step removed!');
+      loadAcademics();
+    } catch (err: any) { message.error(err.message || 'Failed to remove workflow step'); }
   };
 
   const downloadCSVTemplate = () => {
@@ -353,7 +374,7 @@ export default function AdminDashboard() {
               Student Management Console
             </Title>
             <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14 }}>
-              Manage eligible students, staff, and academic departments from one place
+              Manage eligible students, staff, academic departments, and clearance workflows
             </Text>
           </div>
         </div>
@@ -452,7 +473,7 @@ export default function AdminDashboard() {
                 </Button>
                 <Button icon={<ApartmentOutlined />} onClick={() => setIsAcademicsModalOpen(true)}
                   style={{ background: THEME.warning, color: '#fff', border: 'none', borderRadius: 8 }}>
-                  Academics
+                  Academics & Workflow
                 </Button>
                 <Button icon={<UserAddOutlined />} onClick={() => setIsStaffModalOpen(true)}
                   style={{ background: THEME.purple, color: '#fff', border: 'none', borderRadius: 8 }}>
@@ -606,7 +627,6 @@ export default function AdminDashboard() {
               />
             </Form.Item>
             <Form.Item name="department_id" label="Department (Required for Dept Heads & Registrars)">
-              {/* ✅ FIXED: Sends department_id instead of name to avoid collisions */}
               <Select
                 size="large"
                 style={{ borderRadius: 10 }}
@@ -630,7 +650,7 @@ export default function AdminDashboard() {
           </Form>
         </Modal>
 
-        {/* ─── MANAGE ACADEMICS MODAL ──────────────────────────── */}
+        {/* ─── MANAGE ACADEMICS & WORKFLOW MODAL ───────────────── */}
         <Modal
           title={
             <Space size={10}>
@@ -640,13 +660,13 @@ export default function AdminDashboard() {
               }}>
                 <BankOutlined />
               </div>
-              <Text strong>Manage Colleges & Departments</Text>
+              <Text strong>Manage Academics & Workflow</Text>
             </Space>
           }
           open={isAcademicsModalOpen}
           onCancel={() => setIsAcademicsModalOpen(false)}
           footer={null}
-          width={780}
+          width={800}
           style={{ borderRadius: 16 }}
         >
           <Tabs
@@ -731,6 +751,68 @@ export default function AdminDashboard() {
                           title: '', width: 70, align: 'right' as const,
                           render: (_: any, r: any) => (
                             <Popconfirm title="Delete this department?" onConfirm={() => handleDeleteDepartment(r.id)}>
+                              <Button size="small" danger icon={<DeleteOutlined />} style={{ borderRadius: 6 }} />
+                            </Popconfirm>
+                          ),
+                        },
+                      ]}
+                    />
+                  </div>
+                ),
+              },
+              {
+                key: 'workflow',
+                label: <Space size={6}><SettingOutlined /> Workflow Engine</Space>,
+                children: (
+                  <div>
+                    <Alert
+                      message="Dynamic Workflow Engine"
+                      description="Add, remove, or reorder clearance steps. The backend will automatically route students through these steps in the exact order specified below."
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: 20, borderRadius: 8 }}
+                    />
+                    <Form layout="inline" onFinish={handleAddWorkflowStep} style={{ marginBottom: 20, gap: 8, flexWrap: 'wrap' }}>
+                      <Form.Item name="name" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, minWidth: 180 }}>
+                        <Input placeholder="Step Name (e.g. Supermarket)" size="large" style={{ borderRadius: 10 }} />
+                      </Form.Item>
+                      <Form.Item name="role_required" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, minWidth: 180 }}>
+                        <Select placeholder="Role Required" size="large" style={{ borderRadius: 10 }} options={[
+                          { label: 'Department Head', value: 'departmenthead' },
+                          { label: 'Librarian', value: 'librarian' },
+                          { label: 'Cafeteria', value: 'cafeteria' },
+                          { label: 'Psychology', value: 'psychology' },
+                          { label: 'Sport Master', value: 'sportmaster' },
+                          { label: 'Campus Police', value: 'campuspolice' },
+                          { label: 'Coop Sharing', value: 'cooperationsharing' },
+                          { label: 'DOP Coordinator', value: 'dopcordinator' },
+                          { label: 'Student Affairs', value: 'studentaffairs' },
+                          { label: 'Dormitory', value: 'dormitory' },
+                          { label: 'Registrar', value: 'registrar' },
+                          { label: 'Supermarket', value: 'supermarket' }, // Example custom role
+                        ]} />
+                      </Form.Item>
+                      <Form.Item name="order" rules={[{ required: true, message: 'Required' }]} style={{ width: 100 }}>
+                        <Input type="number" placeholder="Order" size="large" style={{ borderRadius: 10 }} />
+                      </Form.Item>
+                      <Button type="primary" htmlType="submit" icon={<PlusOutlined />} size="large"
+                        style={{ borderRadius: 10, background: THEME.warning, border: 'none', fontWeight: 600 }}>
+                        Add Step
+                      </Button>
+                    </Form>
+                    <Table
+                      dataSource={workflowSteps}
+                      rowKey="id"
+                      size="small"
+                      pagination={false}
+                      columns={[
+                        { title: 'Order', dataIndex: 'order', width: 70, render: (o: number) => <Tag color="gold">{o}</Tag> },
+                        { title: 'Step Name', dataIndex: 'name', render: (n: string) => <Text strong>{n}</Text> },
+                        { title: 'Required Role', dataIndex: 'role_required', render: (r: string) => <Tag color="purple">{r}</Tag> },
+                        {
+                          title: '', width: 70, align: 'right' as const,
+                          render: (_: any, r: any) => (
+                            <Popconfirm title="Remove this step?" onConfirm={() => handleDeleteWorkflowStep(r.id)}>
                               <Button size="small" danger icon={<DeleteOutlined />} style={{ borderRadius: 6 }} />
                             </Popconfirm>
                           ),
