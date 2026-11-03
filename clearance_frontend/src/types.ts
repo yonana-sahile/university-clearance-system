@@ -1,4 +1,3 @@
-
 export type UserRole =
   | 'student'
   | 'departmenthead'
@@ -36,24 +35,35 @@ export interface User {
 }
 
 // ---------- Clearance workflow ----------
+// ✅ UPDATED: Simplified statuses for the dynamic engine
 export type FormStatus =
-  | 'pending_department'
-  | 'approved_department'
-  | 'approved_library'
-  | 'approved_cafeteria'
-  | 'approved_psychology'
-  | 'approved_sportmaster'
-  | 'approved_campuspolice'
-  | 'approved_cooperationsharing'
-  | 'approved_dopcordinator'
-  | 'approved_studentaffairs'
-  | 'approved_dormitory'
+  | 'in_progress'
   | 'Cleared by Registrar'
   | 'rejected'
-  | 'requires_library_payment'
-  | 'requires_cafeteria_payment'
-  | 'requires_dormitory_payment'
-  | 'pending_resubmission';
+  | 'requires_payment';
+
+// ✅ NEW: Dynamic Workflow Step
+export interface WorkflowStep {
+  id: number;
+  name: string;
+  role_required: string;
+  order: number;
+  is_active: boolean;
+}
+
+// ✅ NEW: Dynamic Approval History
+export interface ClearanceApproval {
+  id: number;
+  form: number;
+  step: number;
+  step_name?: string;
+  step_order?: number;
+  approved_by: number | null;
+  approved_by_name?: string;
+  note: string;
+  status: string;
+  timestamp: string;
+}
 
 export interface ClearanceForm {
   id: number | string;
@@ -68,35 +78,14 @@ export interface ClearanceForm {
   year: string;
   semester: string;
   reason: string;
-  status: FormStatus;
   created_at: string;
   updated_at: string;
   can_resubmit?: boolean;
 
-  // Department feedback notes (one pair per office)
-  note?: string;
-  department_note?: string;
-  department_approved_by?: string;
-  library_note?: string;
-  library_approved_by?: string;
-  cafeteria_note?: string;
-  cafeteria_approved_by?: string;
-  psychology_note?: string;
-  psychology_approved_by?: string;
-  sportmaster_note?: string;
-  sportmaster_approved_by?: string;
-  campuspolice_note?: string;
-  campuspolice_approved_by?: string;
-  cooperationsharing_note?: string;
-  cooperationsharing_approved_by?: string;
-  dopcordinator_note?: string;
-  dopcoordinator_approved_by?: string;
-  studentaffairs_note?: string;
-  studentaffairs_approved_by?: string;
-  dormitory_note?: string;
-  dormitory_approved_by?: string;
-  registrar_note?: string;
-  registrar_approved_by?: string;
+  // ✅ NEW DYNAMIC FIELDS
+  overall_status: FormStatus;
+  current_step?: WorkflowStep | null;
+  approvals?: ClearanceApproval[];
 
   // Building info if applicable
   building?: {
