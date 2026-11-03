@@ -97,23 +97,49 @@ export default function AdminDashboard() {
   const [isAcademicsModalOpen, setIsAcademicsModalOpen] = useState(false);
   const [colleges, setColleges] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
-  const [workflowSteps, setWorkflowSteps] = useState<any[]>([]); // ✅ NEW: Workflow State
+  const [workflowSteps, setWorkflowSteps] = useState<any[]>([]);
 
-  const [clearanceReleased, setClearanceReleased] = useState<boolean>(() => {
-    return localStorage.getItem('mau_clearance_released') === 'true';
-  });
-
-  const handleToggleClearance = (checked: boolean) => {
-    setClearanceReleased(checked);
-    localStorage.setItem('mau_clearance_released', String(checked));
-    if (checked) message.success('Clearance Portal is now UNLOCKED for students!');
-    else message.warning('Clearance Portal is now LOCKED.');
-  };
+  // ✅ GLOBAL PORTAL STATE (now from backend, not localStorage)
+  const [clearanceReleased, setClearanceReleased] = useState<boolean>(false);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [toggleLoading, setToggleLoading] = useState(false);
 
   useEffect(() => {
     loadStudents();
     loadAcademics();
+    loadSystemSettings();
   }, []);
+
+  // ✅ NEW: Fetch global portal state from backend
+  const loadSystemSettings = async () => {
+    try {
+      const res = await apiFetch('system/settings');
+      setClearanceReleased(!!res.is_clearance_open);
+    } catch (err: any) {
+      console.error('Failed to load system settings', err);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  // ✅ NEW: Toggle via API (updates DB → affects ALL users globally)
+  const handleToggleClearance = async (checked: boolean) => {
+    setToggleLoading(true);
+    try {
+      const res = await apiFetch('admin/toggle-clearance', {
+        method: 'POST',
+        body: JSON.stringify({ is_clearance_open: checked }),
+      });
+      setClearanceReleased(!!res.is_clearance_open);
+      message.success(res.message || `Clearance portal is now ${checked ? 'OPEN' : 'LOCKED'} for ALL users.`);
+    } catch (err: any) {
+      message.error(err.message || 'Failed to update portal state.');
+      // Revert UI on error
+      setClearanceReleased(!checked);
+    } finally {
+      setToggleLoading(false);
+    }
+  };
 
   const loadStudents = async () => {
     setLoading(true);
@@ -131,7 +157,7 @@ export default function AdminDashboard() {
     try {
       const c = await apiFetch('admin/colleges');
       const d = await apiFetch('admin/departments');
-      const w = await apiFetch('admin/workflow').catch(() => []); // ✅ Fetch Workflow Steps
+      const w = await apiFetch('admin/workflow').catch(() => []);
 
       setColleges(c || []);
       setDepartments(d || []);
@@ -184,7 +210,6 @@ export default function AdminDashboard() {
     } catch (err: any) { message.error(err.message || 'Failed to delete department'); }
   };
 
-  // ✅ NEW: Workflow Handlers
   const handleAddWorkflowStep = async (values: any) => {
     try {
       await apiFetch('admin/workflow', { method: 'POST', body: JSON.stringify(values) });
@@ -407,8 +432,8 @@ export default function AdminDashboard() {
                 </Title>
                 <Text style={{ color: clearanceReleased ? '#15803d' : '#b91c1c', fontSize: 13 }}>
                   {clearanceReleased
-                    ? 'Students can log in and submit clearance forms.'
-                    : 'Students are blocked from logging in. Unlock to start the season.'}
+                    ? 'All students globally can log in and submit clearance forms.'
+                    : 'All students globally are blocked. Unlock to start the season.'}
                 </Text>
               </div>
             </Space>
@@ -423,6 +448,7 @@ export default function AdminDashboard() {
               <Switch
                 checked={clearanceReleased}
                 onChange={handleToggleClearance}
+                loading={settingsLoading || toggleLoading}
                 style={{ backgroundColor: clearanceReleased ? THEME.success : THEME.danger }}
               />
             </div>
@@ -789,7 +815,7 @@ export default function AdminDashboard() {
                           { label: 'Student Affairs', value: 'studentaffairs' },
                           { label: 'Dormitory', value: 'dormitory' },
                           { label: 'Registrar', value: 'registrar' },
-                          { label: 'Supermarket', value: 'supermarket' }, // Example custom role
+                          { label: 'Supermarket', value: 'supermarket' },
                         ]} />
                       </Form.Item>
                       <Form.Item name="order" rules={[{ required: true, message: 'Required' }]} style={{ width: 100 }}>

@@ -9,7 +9,7 @@ import {
   SafetyCertificateOutlined, UserOutlined, WarningOutlined, QrcodeOutlined,
   CompassOutlined, CheckSquareOutlined, HistoryOutlined, PhoneOutlined,
   ShareAltOutlined, InfoCircleOutlined, TrophyOutlined, ThunderboltOutlined,
-  FileDoneOutlined, SendOutlined
+  FileDoneOutlined, SendOutlined, LockOutlined
 } from '@ant-design/icons';
 import confetti from 'canvas-confetti';
 import { QRCodeSVG } from 'qrcode.react';
@@ -32,7 +32,7 @@ const { Title, Text, Paragraph } = Typography;
 
 export default function StudentDashboard() {
   const [form, setForm] = useState<ClearanceForm | null>(null);
-  const [workflow, setWorkflow] = useState<any[]>([]); // ✅ NEW: Dynamic Workflow State
+  const [workflow, setWorkflow] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [filterStatus, setFilterStatus] = useState<'all' | 'approved' | 'pending'>('all');
@@ -43,6 +43,10 @@ export default function StudentDashboard() {
   const [isOfficeModalOpen, setIsOfficeModalOpen] = useState(false);
   const [isDossierOpen, setIsDossierOpen] = useState(false);
   const [selectedChatRoom, setSelectedChatRoom] = useState<any>(null);
+
+  // ✅ NEW: Global portal lock state
+  const [portalLocked, setPortalLocked] = useState(false);
+  const [portalLockedMessage, setPortalLockedMessage] = useState('');
 
   // Graduation Checklist State
   const [checklist, setChecklist] = useState<Record<string, boolean>>({
@@ -58,8 +62,20 @@ export default function StudentDashboard() {
 
   const user = getSession();
 
+  // ✅ NEW: Fetch portal lock status from backend
+  const loadPortalStatus = async () => {
+    try {
+      const res = await apiFetch('system/settings');
+      setPortalLocked(!res.is_clearance_open);
+      setPortalLockedMessage(res.locked_message || 'The clearance portal is currently locked by the administration.');
+    } catch {
+      /* silent */
+    }
+  };
+
   useEffect(() => {
     loadStudentForm();
+    loadPortalStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -73,7 +89,7 @@ export default function StudentDashboard() {
       if (forms.length > 0) {
         setForm(forms[0]);
       }
-      setWorkflow(dynamicWorkflow); // ✅ Save dynamic steps
+      setWorkflow(dynamicWorkflow);
     } catch (err) {
       console.error(err);
     } finally {
@@ -91,7 +107,6 @@ export default function StudentDashboard() {
   };
 
   // ✅ DYNAMIC STAGES ENGINE
-  // Combines the backend workflow steps with the student's approval history
   const stages = workflow.map((step) => {
     const approval = form?.approvals?.find((a: any) => a.step === step.id && a.status === 'approved');
     const isApproved = !!approval;
@@ -173,6 +188,26 @@ export default function StudentDashboard() {
 
   return (
     <div style={{ maxWidth: 1300, margin: '0 auto', padding: '24px 16px 60px' }}>
+
+      {/* ✅ NEW: GLOBAL LOCK BANNER */}
+      {portalLocked && (
+        <Alert
+          message="🔒 Clearance Portal is Currently Locked"
+          description={portalLockedMessage}
+          type="warning"
+          showIcon
+          style={{ marginBottom: 24, borderRadius: 14, border: '1px solid #fde68a' }}
+          action={
+            <Button
+              size="small"
+              onClick={() => { loadStudentForm(); loadPortalStatus(); }}
+              style={{ borderRadius: 8 }}
+            >
+              Refresh
+            </Button>
+          }
+        />
+      )}
 
       {/* 1. HERO BANNER */}
       <Card
@@ -424,16 +459,28 @@ export default function StudentDashboard() {
                     <FileTextOutlined style={{ fontSize: 56, color: '#f59e0b', marginBottom: 16 }} />
                     <Title level={3}>No Active Clearance Application</Title>
                     <Paragraph type="secondary" style={{ maxWidth: 500, margin: '0 auto 20px' }}>
-                      You have not submitted a clearance application for this semester yet. Get started by completing your student information form.
+                      {portalLocked
+                        ? portalLockedMessage
+                        : 'You have not submitted a clearance application for this semester yet. Get started by completing your student information form.'}
                     </Paragraph>
-                    <Button
-                      type="primary"
-                      size="large"
-                      onClick={() => setActiveTab('apply')}
-                      style={{ borderRadius: 12, background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', border: 'none', fontWeight: 700 }}
-                    >
-                      Submit Clearance Application Now
-                    </Button>
+                    {portalLocked ? (
+                      <Button
+                        icon={<ReloadOutlined />}
+                        onClick={() => { loadStudentForm(); loadPortalStatus(); }}
+                        style={{ borderRadius: 12 }}
+                      >
+                        Refresh Portal Status
+                      </Button>
+                    ) : (
+                      <Button
+                        type="primary"
+                        size="large"
+                        onClick={() => setActiveTab('apply')}
+                        style={{ borderRadius: 12, background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', border: 'none', fontWeight: 700 }}
+                      >
+                        Submit Clearance Application Now
+                      </Button>
+                    )}
                   </Card>
                 ) : (
                   <div>
@@ -759,7 +806,24 @@ export default function StudentDashboard() {
                 Apply / Resubmit Clearance
               </span>
             ),
-            children: <ClearanceFormSubmission onSubmitted={() => { loadStudentForm(); setActiveTab('overview'); }} />
+            children: portalLocked ? (
+              <Card style={{ textAlign: 'center', padding: 60, borderRadius: 20, border: '2px dashed #fbbf24', background: '#fffbeb' }}>
+                <LockOutlined style={{ fontSize: 64, color: '#f59e0b', marginBottom: 16 }} />
+                <Title level={3} style={{ color: '#92400e' }}>Clearance Portal is Locked</Title>
+                <Paragraph type="secondary" style={{ maxWidth: 500, margin: '0 auto 20px' }}>
+                  {portalLockedMessage}
+                </Paragraph>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={() => { loadStudentForm(); loadPortalStatus(); }}
+                  style={{ borderRadius: 10 }}
+                >
+                  Refresh Portal Status
+                </Button>
+              </Card>
+            ) : (
+              <ClearanceFormSubmission onSubmitted={() => { loadStudentForm(); setActiveTab('overview'); }} />
+            )
           },
           {
             key: 'costsharing',

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Select, Typography, Alert, Row, Col, Space, message } from 'antd';
-import { SendOutlined, FileTextOutlined } from '@ant-design/icons';
+import { SendOutlined, FileTextOutlined, LockOutlined } from '@ant-design/icons';
 import { apiFetch, getSession } from '../../utils/api';
 
 const { Title, Text } = Typography;
@@ -11,14 +11,24 @@ interface Props {
 
 export default function ClearanceFormSubmission({ onSubmitted }: Props) {
   const [loading, setLoading] = useState(false);
+  const [portalLocked, setPortalLocked] = useState(false);
+  const [portalLockedMessage, setPortalLockedMessage] = useState('');
   const [form] = Form.useForm();
   const user = getSession();
+
+  // ✅ NEW: Check portal status on mount
+  useEffect(() => {
+    apiFetch('system/settings')
+      .then(res => {
+        setPortalLocked(!res.is_clearance_open);
+        setPortalLockedMessage(res.locked_message || '');
+      })
+      .catch(() => { /* silent */ });
+  }, []);
 
   const handleFinish = async (values: any) => {
     setLoading(true);
     try {
-      // ✅ UPDATED: We no longer send full_name, id_number, college, or department_name.
-      // The backend strictly forces these from the logged-in user's profile.
       await apiFetch('forms/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -40,6 +50,45 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
       setLoading(false);
     }
   };
+
+  // ✅ NEW: If portal is locked, show lock screen instead of the form
+  if (portalLocked) {
+    return (
+      <Card
+        style={{
+          maxWidth: 800,
+          margin: '0 auto',
+          textAlign: 'center',
+          padding: 60,
+          borderRadius: 20,
+          border: '2px dashed #fbbf24',
+          background: '#fffbeb',
+        }}
+      >
+        <LockOutlined style={{ fontSize: 64, color: '#f59e0b', marginBottom: 16 }} />
+        <Title level={3} style={{ color: '#92400e' }}>
+          Clearance Portal is Currently Locked
+        </Title>
+        <Text style={{ color: '#78350f', fontSize: 14, display: 'block', maxWidth: 500, margin: '0 auto 24px' }}>
+          {portalLockedMessage || 'The administration has temporarily locked the clearance submission portal.'}
+        </Text>
+        <Button
+          type="primary"
+          onClick={() => {
+            apiFetch('system/settings')
+              .then(res => {
+                setPortalLocked(!res.is_clearance_open);
+                setPortalLockedMessage(res.locked_message || '');
+              })
+              .catch(() => {});
+          }}
+          style={{ borderRadius: 10, height: 42, background: '#f59e0b', border: 'none', fontWeight: 700 }}
+        >
+          Refresh Portal Status
+        </Button>
+      </Card>
+    );
+  }
 
   return (
     <Card
@@ -64,7 +113,6 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
         layout="vertical"
         onFinish={handleFinish}
         initialValues={{
-          // ✅ UPDATED: Removed hardcoded fallbacks. Relies strictly on session.
           full_name: user?.full_name || '---',
           id_number: user?.id_number || '---',
           college: user?.college_name || '---',
@@ -156,17 +204,20 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
           size="large"
           block
           loading={loading}
-          icon={<SendOutlined />}
+          disabled={portalLocked}
+          icon={portalLocked ? <LockOutlined /> : <SendOutlined />}
           style={{
             height: 48,
             borderRadius: 12,
-            background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+            background: portalLocked
+              ? '#94a3b8'
+              : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
             fontWeight: 700,
             border: 'none',
-            boxShadow: '0 6px 16px rgba(37,99,235,0.3)'
+            boxShadow: portalLocked ? 'none' : '0 6px 16px rgba(37,99,235,0.3)'
           }}
         >
-          Submit Application to Department
+          {portalLocked ? 'Portal is Locked' : 'Submit Application to Department'}
         </Button>
       </Form>
     </Card>
