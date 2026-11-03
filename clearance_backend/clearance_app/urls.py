@@ -11,6 +11,8 @@ urlpatterns = [
     path('forms', views.list_forms),
     path('disputes', views.disputes),
     path('appointments', views.appointments),
-    path('<str:role>/action/<int:form_id>', views.staff_action),
-    path('<str:role>/<int:form_id>/action', views.staff_action),  # Alias
+    path('staff/action/<int:form_id>', views.staff_action),
+    path('staff/<int:form_id>/action', views.staff_action),
+    path('admin/workflow', views.admin_workflow_steps),
+    path('admin/workflow/<int:pk>', views.admin_workflow_step_detail),
 ]
