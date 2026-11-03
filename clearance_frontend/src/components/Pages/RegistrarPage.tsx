@@ -19,6 +19,7 @@ export default function RegistrarPage() {
   const loadData = async () => {
     setLoading(true);
     try {
+      // Backend automatically filters to only show forms at the Registrar step
       const data = await apiFetch('forms');
       setForms(Array.isArray(data) ? data : []);
     } catch (err: any) {
@@ -31,11 +32,12 @@ export default function RegistrarPage() {
   const handleFinalClearance = async (record: ClearanceForm) => {
     setApproving(record.id as number);
     try {
-      await apiFetch(`registrar/action/${record.id}`, {
+      // ✅ FIXED: Changed endpoint to `staff/action/...`
+      await apiFetch(`staff/action/${record.id}`, {
         method: 'POST',
         body: JSON.stringify({
           action: 'approve',
-          note: 'Final clearance verified across all 11 campus offices. Official certificate issued.',
+          note: 'Final clearance verified across all campus offices. Official certificate issued.',
         }),
       });
       message.success(
@@ -54,12 +56,11 @@ export default function RegistrarPage() {
     (f.id_number || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const readyForRegistrarCount = forms.filter(
-    f => f.status === 'approved_dormitory'
-  ).length;
-  const clearedCount = forms.filter(
-    f => f.status === 'Cleared by Registrar'
-  ).length;
+  // Since the backend only sends forms currently at the Registrar step, they are all "ready"
+  const readyForRegistrarCount = forms.filter(f => f.overall_status !== 'rejected').length;
+
+  // Cleared forms are no longer in this queue, so this is 0 for the active view
+  const clearedCount = forms.filter(f => f.overall_status === 'Cleared by Registrar').length;
 
   const columns = [
     { title: 'Student Name', dataIndex: 'full_name', key: 'full_name' },
@@ -67,50 +68,43 @@ export default function RegistrarPage() {
     { title: 'Department', dataIndex: 'department_name', key: 'department_name' },
     {
       title: 'Current Stage',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'overall_status', // ✅ Use dynamic overall_status
+      key: 'overall_status',
       render: (st: string) => {
         if (st === 'Cleared by Registrar')
           return <Tag color="success">🎉 Cleared by Registrar</Tag>;
-        if (st === 'approved_dormitory')
-          return <Tag color="gold">⚡ Ready for Registrar Final Seal</Tag>;
         if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
-        return (
-          <Tag color="processing">
-            {st.replace(/_/g, ' ').toUpperCase()}
-          </Tag>
-        );
+
+        // Since the backend sends it here, it's ready for the registrar
+        return <Tag color="gold">⚡ Ready for Registrar Final Seal</Tag>;
       }
     },
     {
       title: 'Action',
       key: 'action',
       render: (_: any, record: ClearanceForm) => {
-        if (record.status === 'approved_dormitory') {
-          return (
-            <Button
-              type="primary"
-              size="small"
-              icon={<SafetyCertificateOutlined />}
-              loading={approving === record.id}
-              onClick={() => handleFinalClearance(record)}
-              style={{
-                background:
-                  'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                border: 'none'
-              }}
-            >
-              Issue Final Clearance
-            </Button>
-          );
-        }
-        if (record.status === 'Cleared by Registrar') {
+        if (record.overall_status === 'Cleared by Registrar') {
           return <Tag color="success">Certificate Issued</Tag>;
         }
+        if (record.overall_status === 'rejected') {
+          return <Text type="secondary" style={{ fontSize: 12 }}>Rejected</Text>;
+        }
+
+        // ✅ FIXED: Always show the button for forms sent by the backend
         return (
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            Not at your stage yet
-          </Text>
+          <Button
+            type="primary"
+            size="small"
+            icon={<SafetyCertificateOutlined />}
+            loading={approving === record.id}
+            onClick={() => handleFinalClearance(record)}
+            style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              border: 'none'
+            }}
+          >
+            Issue Final Clearance
+          </Button>
         );
       }
     }
@@ -150,7 +144,7 @@ export default function RegistrarPage() {
         <Col xs={12} sm={8}>
           <Card style={{ borderRadius: 16 }} styles={{ body: { textAlign: 'center' } }}>
             <Statistic
-              title="Graduates Cleared"
+              title="Graduates Cleared (In Queue)"
               value={clearedCount}
               styles={{ content: { color: '#10b981', fontWeight: 800 } }}
             />
@@ -173,8 +167,7 @@ export default function RegistrarPage() {
           loading={loading}
           pagination={{ pageSize: 8 }}
           locale={{
-            emptyText:
-              'No students pending registrar clearance at this time.'
+            emptyText: 'No students pending registrar clearance at this time.'
           }}
         />
       </Card>
