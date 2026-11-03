@@ -1,10 +1,30 @@
 from rest_framework import serializers
-from .models import ClearanceForm, Dispute, Appointment
+from .models import ClearanceForm, Dispute, Appointment, WorkflowStep, ClearanceApproval
+
+
+class WorkflowStepSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkflowStep
+        fields = '__all__'
+
+
+class ClearanceApprovalSerializer(serializers.ModelSerializer):
+    approved_by_name = serializers.CharField(source='approved_by.full_name', read_only=True)
+    step_name = serializers.CharField(source='step.name', read_only=True)
+    step_order = serializers.IntegerField(source='step.order', read_only=True)
+
+    class Meta:
+        model = ClearanceApproval
+        fields = '__all__'
 
 
 class ClearanceFormSerializer(serializers.ModelSerializer):
     student_id = serializers.IntegerField(source='student.id', read_only=True)
     building = serializers.SerializerMethodField()
+
+    # ✅ NEW: Nest the dynamic step and approvals history
+    current_step = WorkflowStepSerializer(read_only=True)
+    approvals = ClearanceApprovalSerializer(many=True, read_only=True)
 
     class Meta:
         model = ClearanceForm
