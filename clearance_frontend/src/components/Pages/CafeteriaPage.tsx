@@ -20,6 +20,7 @@ export default function CafeteriaPage() {
   const loadData = async () => {
     setLoading(true);
     try {
+      // Backend automatically filters to only show forms at the Cafeteria step
       const data = await apiFetch('forms');
       setForms(Array.isArray(data) ? data : []);
     } catch (err: any) {
@@ -32,7 +33,8 @@ export default function CafeteriaPage() {
   const handleApprove = async (record: ClearanceForm) => {
     setApproving(record.id as number);
     try {
-      await apiFetch(`cafeteria/action/${record.id}`, {
+      // ✅ FIXED: Changed endpoint from `cafeteria/action/...` to `staff/action/...`
+      await apiFetch(`staff/action/${record.id}`, {
         method: 'POST',
         body: JSON.stringify({
           action: 'approve',
@@ -71,24 +73,10 @@ export default function CafeteriaPage() {
     },
     {
       title: 'Cafeteria Clearance',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'overall_status', // ✅ Use dynamic overall_status
+      key: 'overall_status',
       render: (st: string) => {
-        if (
-          [
-            'approved_cafeteria',
-            'approved_psychology',
-            'approved_sportmaster',
-            'approved_campuspolice',
-            'approved_cooperationsharing',
-            'approved_dopcordinator',
-            'approved_studentaffairs',
-            'approved_dormitory',
-            'Cleared by Registrar',
-          ].includes(st)
-        ) {
-          return <Tag color="success">Cafeteria Approved</Tag>;
-        }
+        // Since the backend only sends forms at the Cafeteria stage, they are all pending
         if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
         return <Tag color="processing">Awaiting Cafeteria Review</Tag>;
       }
@@ -97,26 +85,24 @@ export default function CafeteriaPage() {
       title: 'Actions',
       key: 'actions',
       render: (_: any, record: ClearanceForm) => {
-        // Show Approve button only when the form is at approved_library stage
-        // (cafeteria is the next stage after library)
-        if (record.status === 'approved_library' || record.status === 'requires_cafeteria_payment') {
-          return (
-            <Button
-              type="primary"
-              size="small"
-              icon={<CheckOutlined />}
-              loading={approving === record.id}
-              onClick={() => handleApprove(record)}
-              style={{ background: '#10b981', border: 'none' }}
-            >
-              Clear Cafeteria Status
-            </Button>
-          );
+        // If it's rejected or cleared, we don't show the approve button
+        if (record.overall_status === 'rejected' || record.overall_status === 'Cleared by Registrar') {
+          return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage</Text>;
         }
-        if (record.status === 'approved_cafeteria') {
-          return <Tag color="success">Completed</Tag>;
-        }
-        return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage yet</Text>;
+
+        // ✅ FIXED: The backend ensures this form is at the Cafeteria step, so we always show the button
+        return (
+          <Button
+            type="primary"
+            size="small"
+            icon={<CheckOutlined />}
+            loading={approving === record.id}
+            onClick={() => handleApprove(record)}
+            style={{ background: '#10b981', border: 'none' }}
+          >
+            Clear Cafeteria Status
+          </Button>
+        );
       }
     }
   ];
