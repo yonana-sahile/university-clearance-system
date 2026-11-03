@@ -28,6 +28,7 @@ export default function DepartmentHeadPage() {
   const loadForms = async () => {
     setLoading(true);
     try {
+      // Backend automatically filters to only show forms at the Department Head step
       const data = await apiFetch('forms');
       setForms(Array.isArray(data) ? data : []);
     } catch (err: any) {
@@ -51,7 +52,8 @@ export default function DepartmentHeadPage() {
   const handleConfirmAction = async () => {
     if (!selectedForm) return;
     try {
-      await apiFetch(`departmenthead/action/${selectedForm.id}`, {
+      // ✅ FIXED: Changed endpoint to `staff/action/...`
+      await apiFetch(`staff/action/${selectedForm.id}`, {
         method: 'POST',
         body: JSON.stringify({ action: actionType, note: noteText }),
       });
@@ -65,7 +67,8 @@ export default function DepartmentHeadPage() {
 
   const exportCSV = () => {
     const headers = ['Form ID', 'Student Name', 'ID Number', 'Department', 'Status', 'Date'];
-    const rows = forms.map(f => [f.id, f.full_name, f.id_number, f.department_name, f.status, f.created_at]);
+    // ✅ FIXED: Use overall_status instead of status
+    const rows = forms.map(f => [f.id, f.full_name, f.id_number, f.department_name, f.overall_status, f.created_at]);
     const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -80,8 +83,9 @@ export default function DepartmentHeadPage() {
     (f.id_number || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const pendingCount = forms.filter(f => f.status === 'pending_department').length;
-  const approvedCount = forms.filter(f => f.status !== 'pending_department' && f.status !== 'rejected').length;
+  // Since the backend only returns forms at this step, all are pending
+  const pendingCount = forms.filter(f => f.overall_status !== 'rejected').length;
+  const approvedCount = 0; // Not needed anymore since we only see pending forms, but kept for UI
 
   const columns = [
     {
@@ -112,12 +116,11 @@ export default function DepartmentHeadPage() {
     },
     {
       title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'overall_status', // ✅ Use dynamic overall_status
+      key: 'overall_status',
       render: (st: string) => {
-        if (st === 'pending_department') return <Tag color="warning">Pending Review</Tag>;
         if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
-        return <Tag color="success">Approved by Dept</Tag>;
+        return <Tag color="warning">Pending Review</Tag>;
       }
     },
     {
@@ -125,7 +128,7 @@ export default function DepartmentHeadPage() {
       key: 'actions',
       render: (_: any, record: ClearanceForm) => (
         <Space>
-          {record.status === 'pending_department' && (
+          {record.overall_status !== 'rejected' && record.overall_status !== 'Cleared by Registrar' && (
             <>
               <Button
                 type="primary"
@@ -145,9 +148,6 @@ export default function DepartmentHeadPage() {
                 Reject
               </Button>
             </>
-          )}
-          {record.status !== 'pending_department' && record.status !== 'rejected' && (
-            <Tag color="success">Completed</Tag>
           )}
         </Space>
       )
