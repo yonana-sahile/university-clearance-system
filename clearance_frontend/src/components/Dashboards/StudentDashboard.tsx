@@ -32,6 +32,7 @@ const { Title, Text, Paragraph } = Typography;
 
 export default function StudentDashboard() {
   const [form, setForm] = useState<ClearanceForm | null>(null);
+  const [workflow, setWorkflow] = useState<any[]>([]); // ✅ NEW: Dynamic Workflow State
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [filterStatus, setFilterStatus] = useState<'all' | 'approved' | 'pending'>('all');
@@ -57,7 +58,6 @@ export default function StudentDashboard() {
 
   const user = getSession();
 
-  // ✅ FIX: Removed [user] dependency to prevent infinite loading loop
   useEffect(() => {
     loadStudentForm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -68,9 +68,12 @@ export default function StudentDashboard() {
     try {
       const res = await apiFetch('student/dashboard/');
       const forms = res.forms || [];
+      const dynamicWorkflow = res.workflow || [];
+
       if (forms.length > 0) {
         setForm(forms[0]);
       }
+      setWorkflow(dynamicWorkflow); // ✅ Save dynamic steps
     } catch (err) {
       console.error(err);
     } finally {
@@ -87,112 +90,45 @@ export default function StudentDashboard() {
     setIsCertificateOpen(true);
   };
 
-  // 11 Clearance Stages Definition
-  const stages = [
-    {
-      key: 'department',
-      title: '1. Department Head',
-      office: 'Software Engineering',
-      contact: 'depthead@mau.edu.et',
-      phone: '+251 33 221 4050',
-      approved: form?.status && form.status !== 'pending_department' && form.status !== 'rejected',
-      note: form?.note || form?.department_approved_by || 'Graduation curriculum and project verified.'
-    },
-    {
-      key: 'library',
-      title: '2. Main Library',
-      office: 'Circulation Desk, Library Wing B',
-      contact: 'library@mau.edu.et',
-      phone: '+251 33 221 4051',
-      approved: form?.status && !['pending_department', 'approved_department', 'requires_library_payment', 'rejected'].includes(form.status),
-      note: form?.library_note || 'All borrowed books & reference items returned.'
-    },
-    {
-      key: 'cafeteria',
-      title: '3. Student Cafeteria',
-      office: 'Catering Office, Student Lounge',
-      contact: 'cafeteria@mau.edu.et',
-      phone: '+251 33 221 4052',
-      approved: form?.status && !['pending_department', 'approved_department', 'approved_library', 'requires_cafeteria_payment', 'rejected'].includes(form.status),
-      note: form?.cafeteria_note || 'Dining meal punches & utensils cleared.'
-    },
-    {
-      key: 'psychology',
-      title: '4. Counseling & Guidance',
-      office: 'Student Services Building, Rm 104',
-      contact: 'guidance@mau.edu.et',
-      phone: '+251 33 221 4053',
-      approved: form?.status && ['approved_psychology', 'approved_sportmaster', 'approved_campuspolice', 'approved_cooperationsharing', 'approved_dopcordinator', 'approved_studentaffairs', 'approved_dormitory', 'Cleared by Registrar'].includes(form.status),
-      note: form?.psychology_note || 'Exit debriefing completed.'
-    },
-    {
-      key: 'sportmaster',
-      title: '5. Sport Master',
-      office: 'Athletic Center, Equipment Room',
-      contact: 'sport@mau.edu.et',
-      phone: '+251 33 221 4054',
-      approved: form?.status && ['approved_sportmaster', 'approved_campuspolice', 'approved_cooperationsharing', 'approved_dopcordinator', 'approved_studentaffairs', 'approved_dormitory', 'Cleared by Registrar'].includes(form.status),
-      note: form?.sportmaster_note || 'Sport kit and gym locker key verified.'
-    },
-    {
-      key: 'campuspolice',
-      title: '6. Campus Police & Security',
-      office: 'Main Gate Security Office',
-      contact: 'police@mau.edu.et',
-      phone: '+251 33 221 4055',
-      approved: form?.status && ['approved_campuspolice', 'approved_cooperationsharing', 'approved_dopcordinator', 'approved_studentaffairs', 'approved_dormitory', 'Cleared by Registrar'].includes(form.status),
-      note: form?.campuspolice_note || 'No active discipline or campus infractions.'
-    },
-    {
-      key: 'cooperationsharing',
-      title: '7. Cost Sharing Agency',
-      office: 'Finance Directorate, Block 3',
-      contact: 'costsharing@mau.edu.et',
-      phone: '+251 33 221 4056',
-      approved: form?.status && ['approved_cooperationsharing', 'approved_dopcordinator', 'approved_studentaffairs', 'approved_dormitory', 'Cleared by Registrar'].includes(form.status),
-      note: form?.cooperationsharing_note || 'Cost sharing liability contract signed.'
-    },
-    {
-      key: 'dopcordinator',
-      title: '8. DOP Coordinator',
-      office: 'Dean of Program Coordinator Office',
-      contact: 'dop@mau.edu.et',
-      phone: '+251 33 221 4057',
-      approved: form?.status && ['approved_dopcordinator', 'approved_studentaffairs', 'approved_dormitory', 'Cleared by Registrar'].includes(form.status),
-      note: form?.dopcordinator_note || 'Academic program requirements fulfilled.'
-    },
-    {
-      key: 'studentaffairs',
-      title: '9. Student Affairs Dean',
-      office: 'Dean of Students Directorate',
-      contact: 'studentaffairs@mau.edu.et',
-      phone: '+251 33 221 4058',
-      approved: form?.status && ['approved_studentaffairs', 'approved_dormitory', 'Cleared by Registrar'].includes(form.status),
-      note: form?.studentaffairs_note || 'Student welfare records finalized.'
-    },
-    {
-      key: 'dormitory',
-      title: '10. Dormitory Proctor',
-      office: 'Block 14 Proctor Office',
-      contact: 'proctor@mau.edu.et',
-      phone: '+251 33 221 4059',
-      approved: form?.status && ['approved_dormitory', 'Cleared by Registrar'].includes(form.status),
-      note: form?.dormitory_note || 'Room inspection, beddings & keys returned.'
-    },
-    {
-      key: 'registrar',
-      title: '11. University Registrar',
-      office: 'Main Administration Building, 1st Floor',
-      contact: 'registrar@mau.edu.et',
-      phone: '+251 33 221 4000',
-      approved: form?.status === 'Cleared by Registrar',
-      note: form?.registrar_note || 'Final graduation authorization and certificate issued.'
-    },
-  ];
+  // ✅ DYNAMIC STAGES ENGINE
+  // Combines the backend workflow steps with the student's approval history
+  const stages = workflow.map((step) => {
+    const approval = form?.approvals?.find((a: any) => a.step === step.id && a.status === 'approved');
+    const isApproved = !!approval;
+    const isCurrent = form?.current_step?.id === step.id;
 
+    let phone = '+251 33 221 4000';
+    let office = step.name;
+
+    if (step.role_required === 'departmenthead') phone = '+251 33 221 4050';
+    if (step.role_required === 'librarian') phone = '+251 33 221 4051';
+    if (step.role_required === 'cafeteria') phone = '+251 33 221 4052';
+    if (step.role_required === 'psychology') phone = '+251 33 221 4053';
+    if (step.role_required === 'sportmaster') phone = '+251 33 221 4054';
+    if (step.role_required === 'campuspolice') phone = '+251 33 221 4055';
+    if (step.role_required === 'cooperationsharing') phone = '+251 33 221 4056';
+    if (step.role_required === 'dopcordinator') phone = '+251 33 221 4057';
+    if (step.role_required === 'studentaffairs') phone = '+251 33 221 4058';
+    if (step.role_required === 'dormitory') phone = '+251 33 221 4059';
+
+    return {
+      id: step.id,
+      key: step.role_required,
+      title: `${step.order}. ${step.name}`,
+      office: office,
+      contact: `${step.role_required}@mau.edu.et`,
+      phone: phone,
+      approved: isApproved,
+      isCurrent: isCurrent,
+      note: isApproved ? approval.note : (isCurrent ? 'Awaiting action at this office...' : 'Pending previous approvals.'),
+      approvedBy: isApproved ? approval.approved_by_name : null
+    };
+  });
+
+  const totalSteps = stages.length;
   const approvedCount = stages.filter(s => s.approved).length;
-  const progressPercent = Math.round((approvedCount / 11) * 100);
-  const isFullyCleared = approvedCount === 11 || form?.status === 'Cleared by Registrar';
+  const progressPercent = totalSteps === 0 ? 0 : Math.round((approvedCount / totalSteps) * 100);
+  const isFullyCleared = form?.overall_status === 'Cleared by Registrar' || (totalSteps > 0 && approvedCount === totalSteps);
 
   // Filtered Stages
   const filteredStages = stages.filter(s => {
@@ -206,7 +142,7 @@ export default function StudentDashboard() {
   const checklistPercent = Math.round((checklistCheckedCount / 8) * 100);
 
   // Status Badge Helper
-  const getStatusBadge = (status?: FormStatus) => {
+  const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'Cleared by Registrar':
         return (
@@ -220,9 +156,7 @@ export default function StudentDashboard() {
             ❌ Clearance Action Required / Resubmit
           </Tag>
         );
-      case 'requires_library_payment':
-      case 'requires_cafeteria_payment':
-      case 'requires_dormitory_payment':
+      case 'requires_payment':
         return (
           <Tag color="warning" style={{ fontSize: 13, padding: '5px 14px', borderRadius: 20, fontWeight: 700 }}>
             💳 Pending Department Dues Payment
@@ -231,7 +165,7 @@ export default function StudentDashboard() {
       default:
         return (
           <Tag color="processing" style={{ fontSize: 13, padding: '5px 14px', borderRadius: 20, fontWeight: 700 }}>
-            ⏳ Sequential Review In Progress ({approvedCount}/11 Cleared)
+            ⏳ Sequential Review In Progress ({approvedCount}/{totalSteps} Cleared)
           </Tag>
         );
     }
@@ -281,20 +215,20 @@ export default function StudentDashboard() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <Title level={2} style={{ color: '#ffffff', margin: 0, fontWeight: 800, letterSpacing: -0.5 }}>
-                    {user?.full_name || 'Yonas Sahile'}
+                    {user?.full_name || 'Student Name'}
                   </Title>
                   <Tag color="gold" style={{ margin: 0, fontWeight: 700, borderRadius: 12 }}>
-                    4th Year Senior
+                    Graduating Student
                   </Tag>
                 </div>
                 <Text style={{ color: '#94a3b8', fontSize: 14 }}>
-                  ID: <strong style={{ color: '#fbbf24' }}>{user?.id_number || 'AAA1234'}</strong> • {user?.department_name || 'Software Engineering'} • <span style={{ color: '#cbd5e1' }}>{user?.email || 'yonassahile8@gmail.com'}</span>
+                  ID: <strong style={{ color: '#fbbf24' }}>{user?.id_number || '---'}</strong> • {user?.department_name || '---'} • <span style={{ color: '#cbd5e1' }}>{user?.email || '---'}</span>
                 </Text>
               </div>
             </div>
 
             <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              {getStatusBadge(form?.status)}
+              {getStatusBadge(form?.overall_status)}
               <Tag color="cyan" style={{ borderRadius: 20, padding: '4px 12px' }}>
                 Ref: #CLR-2026-{(form?.id || 1001)}
               </Tag>
@@ -395,7 +329,7 @@ export default function StudentDashboard() {
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 28, fontWeight: 800, color: '#0f172a' }}>{approvedCount}</span>
-              <span style={{ fontSize: 14, color: '#64748b' }}>/ 11 Offices</span>
+              <span style={{ fontSize: 14, color: '#64748b' }}>/ {totalSteps} Offices</span>
             </div>
             <Progress
               percent={progressPercent}
@@ -414,16 +348,16 @@ export default function StudentDashboard() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>Pending Balance</Text>
-              <DollarOutlined style={{ color: form?.status?.includes('payment') ? '#f59e0b' : '#10b981', fontSize: 18 }} />
+              <DollarOutlined style={{ color: form?.overall_status === 'requires_payment' ? '#f59e0b' : '#10b981', fontSize: 18 }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 28, fontWeight: 800, color: form?.status?.includes('payment') ? '#d97706' : '#10b981' }}>
-                {form?.status?.includes('payment') ? '350.00' : '0.00'}
+              <span style={{ fontSize: 28, fontWeight: 800, color: form?.overall_status === 'requires_payment' ? '#d97706' : '#10b981' }}>
+                {form?.overall_status === 'requires_payment' ? '350.00' : '0.00'}
               </span>
               <span style={{ fontSize: 14, color: '#64748b' }}>ETB</span>
             </div>
-            <Text style={{ fontSize: 12, color: form?.status?.includes('payment') ? '#b45309' : '#10b981', fontWeight: 600, display: 'block', marginTop: 6 }}>
-              {form?.status?.includes('payment') ? '⚠️ Overdue fine at Library' : '✓ All Department Dues Settled'}
+            <Text style={{ fontSize: 12, color: form?.overall_status === 'requires_payment' ? '#b45309' : '#10b981', fontWeight: 600, display: 'block', marginTop: 6 }}>
+              {form?.overall_status === 'requires_payment' ? '⚠️ Overdue fine at Library' : '✓ All Department Dues Settled'}
             </Text>
           </Card>
         </Col>
@@ -438,7 +372,7 @@ export default function StudentDashboard() {
               <CompassOutlined style={{ color: '#3b82f6', fontSize: 18 }} />
             </div>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {isFullyCleared ? 'Registrar Completed' : stages.find(s => !s.approved)?.title || 'All Completed'}
+              {isFullyCleared ? 'Registrar Completed' : stages.find(s => s.isCurrent)?.title || 'Not Submitted'}
             </div>
             <Text style={{ fontSize: 12, color: '#64748b', display: 'block', marginTop: 6 }}>
               {isFullyCleared ? 'Graduation verified' : 'Awaiting officer sign-off'}
@@ -504,7 +438,7 @@ export default function StudentDashboard() {
                 ) : (
                   <div>
                     {/* DUES PAYMENT ALERT */}
-                    {form.status?.includes('payment') && (
+                    {form.overall_status === 'requires_payment' && (
                       <Alert
                         message="Department Dues Payment Required"
                         description="Main Library records indicate an outstanding balance of 350.00 ETB for an overdue book. Please submit your payment slip through the Payments portal to continue."
@@ -552,7 +486,7 @@ export default function StudentDashboard() {
                               <Text style={{ color: '#475569', fontSize: 13 }}>
                                 {isFullyCleared
                                   ? "Congratulations! Your university clearance is 100% completed. You are authorized to graduate and collect your temporary degree from the Registrar."
-                                  : `Next required sign-off is at ${stages.find(s => !s.approved)?.title || 'Next Office'}. Make sure all requirements for this department are fulfilled.`
+                                  : `Next required sign-off is at ${stages.find(s => s.isCurrent)?.title || 'Next Office'}. Make sure all requirements for this department are fulfilled.`
                                 }
                               </Text>
                             </div>
@@ -574,7 +508,7 @@ export default function StudentDashboard() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
                       <div>
                         <Title level={4} style={{ margin: 0, fontWeight: 800 }}>
-                          11-Office Verification Timeline
+                          {totalSteps}-Office Verification Timeline
                         </Title>
                         <Text type="secondary" style={{ fontSize: 13 }}>
                           Progressively cleared in official university workflow sequence
@@ -612,13 +546,13 @@ export default function StudentDashboard() {
                     {/* STAGE CARDS GRID */}
                     <Row gutter={[16, 16]}>
                       {filteredStages.map((stage) => (
-                        <Col xs={24} sm={12} lg={8} key={stage.key}>
+                        <Col xs={24} sm={12} lg={8} key={stage.id}>
                           <Card
                             hoverable
                             style={{
                               borderRadius: 16,
-                              border: stage.approved ? '1px solid #bbf7d0' : '1px solid #fde68a',
-                              background: stage.approved ? '#f0fdf4' : '#fffbeb',
+                              border: stage.approved ? '1px solid #bbf7d0' : (stage.isCurrent ? '2px solid #f59e0b' : '1px solid #fde68a'),
+                              background: stage.approved ? '#f0fdf4' : (stage.isCurrent ? '#fffbeb' : '#ffffff'),
                               boxShadow: '0 4px 14px rgba(0,0,0,0.02)',
                               transition: 'all 0.25s ease'
                             }}
@@ -637,9 +571,13 @@ export default function StudentDashboard() {
                                 <Tag color="success" style={{ margin: 0, borderRadius: 12, fontWeight: 700 }}>
                                   <CheckCircleOutlined /> Cleared
                                 </Tag>
-                              ) : (
+                              ) : stage.isCurrent ? (
                                 <Tag color="warning" style={{ margin: 0, borderRadius: 12, fontWeight: 700 }}>
-                                  <ClockCircleOutlined /> Pending
+                                  <ClockCircleOutlined /> Action Required
+                                </Tag>
+                              ) : (
+                                <Tag color="default" style={{ margin: 0, borderRadius: 12, fontWeight: 700 }}>
+                                  Pending
                                 </Tag>
                               )}
                             </div>
@@ -651,9 +589,11 @@ export default function StudentDashboard() {
                               padding: '8px 12px',
                               borderRadius: 8,
                               marginBottom: 12,
-                              border: stage.approved ? '1px solid #dcfce7' : '1px solid #fef3c7'
+                              border: stage.approved ? '1px solid #dcfce7' : '1px solid #fef3c7',
+                              minHeight: 50
                             }}>
                               <strong>Officer Note:</strong> {stage.note}
+                              {stage.approvedBy && <div style={{ marginTop: 4, fontSize: 10, color: '#64748b' }}>Signed by: {stage.approvedBy}</div>}
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: '#64748b' }}>
@@ -667,7 +607,7 @@ export default function StudentDashboard() {
                                     name: stage.title,
                                     staff_role: stage.key,
                                     staff_name: 'Office Representative',
-                                    student: { id: 101, full_name: user?.full_name || 'Yonas Sahile', id_number: user?.id_number || 'AAA1234' }
+                                    student: { id: 101, full_name: user?.full_name || 'Student', id_number: user?.id_number || '---' }
                                   });
                                   setActiveTab('chat');
                                 }}
@@ -919,16 +859,16 @@ export default function StudentDashboard() {
       >
         <div style={{ textAlign: 'center', padding: '20px 10px' }}>
           <div style={{ padding: 16, background: '#ffffff', borderRadius: 16, display: 'inline-block', boxShadow: '0 4px 14px rgba(0,0,0,0.08)' }}>
-            <QRCodeSVG value={`MAU-CLR-2026-${user?.id_number || 'AAA1234'}-${user?.full_name || 'Yonas Sahile'}`} size={180} />
+            <QRCodeSVG value={`MAU-CLR-2026-${user?.id_number || '---'}-${user?.full_name || 'Student'}`} size={180} />
           </div>
           <Title level={4} style={{ marginTop: 16, marginBottom: 4 }}>
-            {user?.full_name || 'Yonas Sahile'}
+            {user?.full_name || 'Student'}
           </Title>
           <Text type="secondary" style={{ display: 'block', fontSize: 13 }}>
-            ID: {user?.id_number || 'AAA1234'} • {user?.department_name || 'Software Engineering'}
+            ID: {user?.id_number || '---'} • {user?.department_name || '---'}
           </Text>
           <Tag color={isFullyCleared ? 'success' : 'warning'} style={{ marginTop: 10, borderRadius: 12 }}>
-            Status: {isFullyCleared ? '100% Cleared by Registrar' : `${approvedCount} of 11 Approved`}
+            Status: {isFullyCleared ? '100% Cleared by Registrar' : `${approvedCount} of ${totalSteps} Approved`}
           </Tag>
         </div>
       </Modal>
@@ -955,10 +895,10 @@ export default function StudentDashboard() {
           </div>
 
           <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-            <Col span={12}><Text strong>Student Name:</Text> {user?.full_name || 'Yonas Sahile'}</Col>
-            <Col span={12}><Text strong>Student ID:</Text> {user?.id_number || 'AAA1234'}</Col>
-            <Col span={12}><Text strong>College:</Text> College of Computing & Informatics</Col>
-            <Col span={12}><Text strong>Department:</Text> Software Engineering</Col>
+            <Col span={12}><Text strong>Student Name:</Text> {user?.full_name || '---'}</Col>
+            <Col span={12}><Text strong>Student ID:</Text> {user?.id_number || '---'}</Col>
+            <Col span={12}><Text strong>College:</Text> {user?.college_name || '---'}</Col>
+            <Col span={12}><Text strong>Department:</Text> {user?.department_name || '---'}</Col>
             <Col span={12}><Text strong>Academic Year:</Text> 2026</Col>
             <Col span={12}><Text strong>Clearance Reference:</Text> #CLR-2026-{(form?.id || 1001)}</Col>
           </Row>
@@ -967,7 +907,7 @@ export default function StudentDashboard() {
             size="small"
             pagination={false}
             dataSource={stages.map((s, i) => ({
-              key: s.key,
+              key: s.id,
               no: i + 1,
               office: s.title,
               status: s.approved ? 'CLEARED' : 'PENDING',
