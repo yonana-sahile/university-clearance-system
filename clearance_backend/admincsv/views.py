@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import ValidStudent
 from .serializers import ValidStudentSerializer
+from accounts.models import College, Department # ✅ IMPORT THESE
 
 
 @api_view(['GET', 'POST'])
@@ -11,12 +12,21 @@ def valid_students_view(request):
     if request.method == 'POST':
         items = request.data.get('students', [])
         for item in items:
+            # ✅ FIXED: Look up the College and Department by name
+            college_name = item.get('college', '').strip()
+            department_name = item.get('department', '').strip()
+
+            college = College.objects.filter(name__iexact=college_name).first() if college_name else None
+            department = Department.objects.filter(name__iexact=department_name).first() if department_name else None
+
             ValidStudent.objects.update_or_create(
                 id_number=item['id_number'],
                 defaults={
                     'first_name': item.get('first_name', ''),
                     'last_name': item.get('last_name', ''),
                     'email': item.get('email', ''),
+                    'college': college,          # ✅ Save the FK
+                    'department': department,    # ✅ Save the FK
                     'year_of_admission': item.get('year_of_admission', ''),
                     'status': item.get('status', 'active'),
                 }
