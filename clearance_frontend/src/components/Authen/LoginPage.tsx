@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Form, Input, Select, Alert, message, Typography } from 'antd';
+import { Form, Input, Select, Alert, message, Typography, Spin } from 'antd';
 import {
   GraduationCap, User, Shield, Lock, Mail,
   ArrowRight, CheckCircle, Key
@@ -18,12 +18,25 @@ export default function LoginPage() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
-  // LOCK FEATURE STATE
-  const [clearanceReleased, setClearanceReleased] = useState<boolean>(() => {
-    return localStorage.getItem('mau_clearance_released') === 'true';
-  });
+  // ✅ NEW: Global Lock State (Defaults to locked until API responds)
+  const [clearanceReleased, setClearanceReleased] = useState<boolean>(false);
+  const [settingsLoading, setSettingsLoading] = useState<boolean>(true);
 
   const isStudent = selectedRole === 'student';
+
+  // ✅ NEW: Fetch the real global lock status from the backend
+  useEffect(() => {
+    apiFetch('system/settings')
+      .then((res) => {
+        setClearanceReleased(!!res.is_clearance_open);
+      })
+      .catch((err) => {
+        console.error('Failed to load system settings', err);
+      })
+      .finally(() => {
+        setSettingsLoading(false);
+      });
+  }, []);
 
   const roles = [
     { label: '🎓 Student', value: 'student' },
@@ -149,13 +162,20 @@ export default function LoginPage() {
             </div>
 
             <div className="mau-hero-footer">
-              <div className={`mau-live-status ${clearanceReleased ? 'status-open' : 'status-locked'}`}>
-                {clearanceReleased ? (
-                  <><CheckCircle size={14} style={{ color: '#22c55e' }} /> <span>Clearance is RELEASED & OPEN</span></>
-                ) : (
-                  <><Lock size={14} style={{ color: '#ffd000' }} /> <span>Clearance Window: LOCKED</span></>
-                )}
-              </div>
+              {/* ✅ UPDATED: Show loading state for the status badge */}
+              {settingsLoading ? (
+                <div className="mau-live-status status-loading" style={{ background: 'rgba(12, 8, 2, 0.9)', color: '#ffd000', border: '1.5px solid #ffd000' }}>
+                  <Spin size="small" style={{ marginRight: 8 }} /> Checking Portal Status...
+                </div>
+              ) : (
+                <div className={`mau-live-status ${clearanceReleased ? 'status-open' : 'status-locked'}`}>
+                  {clearanceReleased ? (
+                    <><CheckCircle size={14} style={{ color: '#22c55e' }} /> <span>Clearance is RELEASED & OPEN</span></>
+                  ) : (
+                    <><Lock size={14} style={{ color: '#ffd000' }} /> <span>Clearance Window: LOCKED</span></>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -166,7 +186,13 @@ export default function LoginPage() {
              <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>2026/2027 A.Y.</span>
           </div>
 
-          {!clearanceReleased ? (
+          {settingsLoading ? (
+            // ✅ NEW: Loading State
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300 }}>
+              <Spin size="large" />
+              <Text type="secondary" style={{ marginTop: 16 }}>Connecting to University Servers...</Text>
+            </div>
+          ) : !clearanceReleased ? (
             // LOCK SCREEN
             <div className="mau-login-lock-cover">
               <div className="mau-cover-icon-circle">
