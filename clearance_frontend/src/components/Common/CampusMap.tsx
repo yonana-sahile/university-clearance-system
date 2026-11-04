@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  MapContainer, TileLayer, Marker, Popup, ScaleControl, Polyline, useMap,
+  MapContainer, TileLayer, Marker, Popup, ScaleControl, Polyline, Circle, useMap,
 } from 'react-leaflet';
 import { Button, Space, message, Card, Tag, Tooltip } from 'antd';
 import {
@@ -47,7 +47,6 @@ function MapController({
   const map = useMap();
   const lastTrackedLocRef = useRef<[number, number] | null>(null);
 
-  // ✅ AUTO-FIT: When user location first arrives, zoom out to show BOTH markers
   useEffect(() => {
     if (shouldFitBounds && userLoc) {
       const bounds = L.latLngBounds([userLoc, destLoc]);
@@ -56,7 +55,6 @@ function MapController({
     }
   }, [shouldFitBounds, userLoc, destLoc, map, onFitDone]);
 
-  // ✅ FLY TO USER when tracking starts (feels instant, like Yango)
   useEffect(() => {
     if (isTracking && userLoc && !lastTrackedLocRef.current) {
       map.flyTo(userLoc, 17, { duration: 1.5 });
@@ -67,7 +65,6 @@ function MapController({
     }
   }, [isTracking, userLoc, map]);
 
-  // ✅ AUTO-FOLLOW: Pan the map as the user moves (only while tracking)
   useEffect(() => {
     if (!isTracking || !userLoc || !lastTrackedLocRef.current) return;
     const [prevLat, prevLng] = lastTrackedLocRef.current;
@@ -77,12 +74,11 @@ function MapController({
     }
   }, [isTracking, userLoc, map]);
 
-  // ✅ MANUAL FOCUS (via recenter buttons)
   useEffect(() => {
     if (!manualFocus) return;
     const { type } = manualFocus;
     if (type === 'user' && userLoc) {
-      map.flyTo(userLoc, 17, { duration: 1 });
+      map.flyTo(userLoc, 18, { duration: 1 }); // Tighter zoom for user location
     } else if (type === 'dest') {
       map.flyTo(destLoc, 17, { duration: 1 });
     } else if (type === 'both' && userLoc) {
@@ -106,6 +102,7 @@ interface CampusMapProps {
 export default function CampusMap({ lat, lng, name, address, height = 320 }: CampusMapProps) {
   const [mapType, setMapType] = useState<'street' | 'satellite'>('satellite');
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
+  const [accuracy, setAccuracy] = useState<number>(0); // ✅ NEW: GPS accuracy in meters
   const [distance, setDistance] = useState<number | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -117,10 +114,18 @@ export default function CampusMap({ lat, lng, name, address, height = 320 }: Cam
 
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
+  // ─── GPS Settings for Maximum Accuracy ─────────────────────────────
+  const GPS_OPTIONS = {
+    enableHighAccuracy: true, // Force the device to use GPS, not just Wi-Fi/IP
+    maximumAge: 0,            // Do not use cached locations; get a fresh reading
+    timeout: 15000,           // Wait up to 15s for a strong signal
+  };
+
   // ─── Reset state when destination changes ──────────────────────────
   useEffect(() => {
     setUserLoc(null);
     setDistance(null);
+    setAccuracy(0);
     setHasInitialFit(false);
     hasArrivedRef.current = false;
     if (isTracking) setIsTracking(false);
@@ -146,6 +151,7 @@ export default function CampusMap({ lat, lng, name, address, height = 320 }: Cam
         const cLat = pos.coords.latitude;
         const cLng = pos.coords.longitude;
         setUserLoc([cLat, cLng]);
+        setAccuracy(pos.coords.accuracy); // ✅ Save accuracy radius
         const d = calculateDistance(cLat, cLng);
         setDistance(d);
 
@@ -164,11 +170,11 @@ export default function CampusMap({ lat, lng, name, address, height = 320 }: Cam
         if (err.code === 1) {
           message.error('Location permission denied. Please enable GPS in your browser settings.');
         } else {
-          message.error('Unable to get your location. Please try again.');
+          message.error('Unable to get your location. Please go near a window or outside.');
         }
         setIsTracking(false);
       },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+      GPS_OPTIONS
     );
 
     return () => {
@@ -187,17 +193,29 @@ export default function CampusMap({ lat, lng, name, address, height = 320 }: Cam
       return;
     }
     setIsLocating(true);
-    message.loading({ content: 'Getting your location...', key: 'locate' });
+    message.loading({ content: 'Getting exact GPS location...', key: 'locate' });
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const cLat = pos.coords.latitude;
         const cLng = pos.coords.longitude;
         setUserLoc([cLat, cLng]);
+        setAccuracy(pos.coords.accuracy); // ✅ Save accuracy radius
         setDistance(calculateDistance(cLat, cLng));
         setHasInitialFit(false); // trigger re-fit
+
         setIsLocating(false);
-        message.success({ content: 'Location found! Tap "Start Live Navigation" for turn-by-turn.', key: 'locate', duration: 4 });
+
+        // ✅ Warn if accuracy is poor (likely on a laptop with Wi-Fi location)
+        if (pos.coords.accuracy > 1000) {
+          message.warning({
+            content: 'Location found, but accuracy is low. Tip: Open this on your phone for exact GPS!',
+            key: 'locate',
+            duration: 6
+          });
+        } else {
+          message.success({ content: 'Exact location found!', key: 'locate', duration: 4 });
+        }
       },
       (err) => {
         setIsLocating(false);
@@ -207,13 +225,12 @@ export default function CampusMap({ lat, lng, name, address, height = 320 }: Cam
           message.error({ content: 'Could not get your location. Please try again.', key: 'locate' });
         }
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      GPS_OPTIONS
     );
   };
 
   const handleStartTracking = () => {
     if (!userLoc) {
-      // If no location yet, get it first
       handleShowMyLocation();
       return;
     }
@@ -287,7 +304,7 @@ export default function CampusMap({ lat, lng, name, address, height = 320 }: Cam
           </Space.Compact>
         </div>
 
-        {/* ── Right Side: Recenter Buttons (below toggle) ───────── */}
+        {/* ── Right Side: Recenter Buttons ───────────────────────── */}
         {userLoc && (
           <div style={{ position: 'absolute', top: 50, right: 10, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <Tooltip title="Recenter to me" placement="left">
@@ -380,11 +397,20 @@ export default function CampusMap({ lat, lng, name, address, height = 320 }: Cam
             manualFocus={manualFocus}
           />
 
-          {/* Dashed line showing direction (only when close enough to make sense) */}
+          {/* Dashed line showing direction */}
           {userLoc && distance !== null && distance < 20000 && (
             <Polyline
               positions={[userLoc, [lat, lng]]}
               pathOptions={{ color: '#2563eb', weight: 3, dashArray: '8, 8', opacity: 0.7 }}
+            />
+          )}
+
+          {/* ✅ NEW: Accuracy Circle (shows the margin of error just like Google Maps) */}
+          {userLoc && accuracy > 0 && (
+            <Circle
+              center={userLoc}
+              radius={accuracy}
+              pathOptions={{ color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.15, weight: 1 }}
             />
           )}
 
@@ -487,7 +513,6 @@ export default function CampusMap({ lat, lng, name, address, height = 320 }: Cam
         </Button>
       </Space.Compact>
 
-      {/* Inline keyframe for hint bubble pulse */}
       <style>{`
         @keyframes pulse {
           0%, 100% { transform: translateX(-50%) scale(1); }
