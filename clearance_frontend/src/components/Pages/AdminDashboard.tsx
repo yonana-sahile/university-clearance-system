@@ -99,7 +99,7 @@ export default function AdminDashboard() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [workflowSteps, setWorkflowSteps] = useState<any[]>([]);
 
-  // ✅ GLOBAL PORTAL STATE (now from backend, not localStorage)
+  // ✅ GLOBAL PORTAL STATE
   const [clearanceReleased, setClearanceReleased] = useState<boolean>(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [toggleLoading, setToggleLoading] = useState(false);
@@ -110,7 +110,6 @@ export default function AdminDashboard() {
     loadSystemSettings();
   }, []);
 
-  // ✅ NEW: Fetch global portal state from backend
   const loadSystemSettings = async () => {
     try {
       const res = await apiFetch('system/settings');
@@ -122,7 +121,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // ✅ NEW: Toggle via API (updates DB → affects ALL users globally)
   const handleToggleClearance = async (checked: boolean) => {
     setToggleLoading(true);
     try {
@@ -134,7 +132,6 @@ export default function AdminDashboard() {
       message.success(res.message || `Clearance portal is now ${checked ? 'OPEN' : 'LOCKED'} for ALL users.`);
     } catch (err: any) {
       message.error(err.message || 'Failed to update portal state.');
-      // Revert UI on error
       setClearanceReleased(!checked);
     } finally {
       setToggleLoading(false);
@@ -285,7 +282,8 @@ export default function AdminDashboard() {
       const newStudent = {
         id_number: values.id_number, first_name: values.first_name,
         last_name: values.last_name, college: values.college,
-        department: values.department, year_of_admission: values.year_of_admission || '2022',
+        department: values.department,
+        year_of_admission: values.year_of_admission, // ✅ Uses the typed value
         status: 'active',
       };
       await apiFetch('admin/valid-students', { method: 'POST', body: JSON.stringify({ students: [newStudent] }) });
@@ -330,6 +328,7 @@ export default function AdminDashboard() {
     { title: 'Full Name', dataIndex: 'full_name', key: 'full_name', render: (n: string) => <Text strong>{n}</Text> },
     { title: 'College', dataIndex: 'college', key: 'college', render: (c: string) => <Text style={{ fontSize: 12, color: THEME.textMuted }}>{c}</Text> },
     { title: 'Department', dataIndex: 'department', key: 'department' },
+    { title: 'Year / Level', dataIndex: 'year_of_admission', key: 'year_of_admission' }, // ✅ Display Year in table
     {
       title: 'Status', dataIndex: 'status', key: 'status',
       render: (st: string) => st === 'active'
@@ -597,6 +596,16 @@ export default function AdminDashboard() {
             <Form.Item name="department" label="Department" rules={[{ required: true }]}>
               <Input placeholder="Computer Science" size="large" style={{ borderRadius: 10 }} />
             </Form.Item>
+
+            {/* ✅ NEW: Year of Admission Input */}
+            <Form.Item
+              name="year_of_admission"
+              label="Year of Admission / Academic Level"
+              rules={[{ required: true, message: 'Please enter the academic year or level' }]}
+            >
+              <Input placeholder="e.g. 2024, 7th Year, 8th Year" size="large" style={{ borderRadius: 10 }} />
+            </Form.Item>
+
             <Button
               type="primary" htmlType="submit" block size="large"
               style={{
