@@ -94,7 +94,7 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, attrs):
         identifier = attrs.get('username') or attrs.get('email')
         password = attrs.get('password')
-        selected_role = attrs.get('role')  # ✅ Get the role from the frontend dropdown
+        selected_role = attrs.get('role')  # ✅ Get the role from the dropdown
 
         if not identifier or not password:
             raise serializers.ValidationError('Username/email and password required.')
@@ -119,12 +119,11 @@ class LoginSerializer(serializers.Serializer):
         if not user:
             raise AuthenticationFailed('Incorrect username or password.')
 
-        # 🚨 NEW: Strict Role Validation
-        # Ensure the role selected in the dropdown matches the actual database role
+        # 🚨 CRITICAL SECURITY FIX: Generic error message
+        # Never reveal that the password was correct but the role was wrong.
+        # This prevents hackers from figuring out valid credentials.
         if selected_role and user.role != selected_role:
-            raise AuthenticationFailed(
-                f"Access Denied: This account is registered as '{user.role}', not '{selected_role}'. Please select the correct portal role."
-            )
+            raise AuthenticationFailed('Incorrect username or password.')
 
         attrs['user'] = user
         return attrs
