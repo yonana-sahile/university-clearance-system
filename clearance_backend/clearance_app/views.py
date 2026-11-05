@@ -107,6 +107,9 @@ def submit_form(request):
         semester=data.get('semester', ''),
         reason=data.get('reason', ''),
 
+        # ✅ NEW: Save the student's pre-clearance checklist declarations
+        pre_clearance_checks=data.get('pre_clearance_checks', {}),
+
         # ✅ DYNAMIC FIELDS
         overall_status=FormStatus.IN_PROGRESS,
         current_step=first_step
