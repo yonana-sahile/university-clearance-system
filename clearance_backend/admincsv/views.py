@@ -1,9 +1,10 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 from .models import ValidStudent
 from .serializers import ValidStudentSerializer
-from accounts.models import College, Department # ✅ IMPORT THESE
+from accounts.models import College, Department
 
 
 @api_view(['GET', 'POST'])
@@ -12,7 +13,7 @@ def valid_students_view(request):
     if request.method == 'POST':
         items = request.data.get('students', [])
         for item in items:
-            # ✅ FIXED: Look up the College and Department by name
+            # ✅ Look up the College and Department by name
             college_name = item.get('college', '').strip()
             department_name = item.get('department', '').strip()
 
@@ -58,3 +59,28 @@ def csv_statistics(request):
             students.filter(is_registered=True).count() / max(students.count(), 1) * 100
         ),
     })
+
+
+# ============================================================
+# ✅ NEW: ADMIN STUDENT DETAIL (Toggle Status & Delete)
+# ============================================================
+@api_view(['PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def valid_student_detail(request, pk):
+    # Ensure only admins can do this
+    if request.user.role != 'admin':
+        return Response({'detail': 'Only admin can modify student records.'}, status=403)
+
+    student = get_object_or_404(ValidStudent, id=pk)
+
+    if request.method == 'PATCH':
+        new_status = request.data.get('status')
+        if new_status in ['active', 'inactive', 'graduated', 'suspended']:
+            student.status = new_status
+            student.save()
+            return Response({'message': 'Status updated successfully.', 'status': student.status})
+        return Response({'detail': 'Invalid status provided.'}, status=400)
+
+    if request.method == 'DELETE':
+        student.delete()
+        return Response({'message': 'Student deleted successfully.'}, status=204)
