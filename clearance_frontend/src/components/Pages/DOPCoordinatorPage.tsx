@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Tag, Button, Input, Typography, message } from 'antd';
-import { CheckOutlined, SearchOutlined } from '@ant-design/icons';
+import { Card, Table, Tag, Button, Input, Typography, message, Modal, Space } from 'antd';
+import { CheckOutlined, SearchOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { apiFetch } from '../../utils/api';
 import type { ClearanceForm } from '../../types';
+import StaffChecklistManager from '../Staff/StaffChecklistManager'; // ✅ NEW
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 export default function DOPCoordinatorPage() {
   const [forms, setForms] = useState<ClearanceForm[]>([]);
@@ -12,14 +13,21 @@ export default function DOPCoordinatorPage() {
   const [search, setSearch] = useState('');
   const [approving, setApproving] = useState<number | null>(null);
 
+  // ✅ NEW: State to hold dynamic checklist items
+  const [staffChecklist, setStaffChecklist] = useState<any[]>([]);
+
+  // ✅ NEW: Confirmation Modal State
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [selectedForm, setSelectedForm] = useState<ClearanceForm | null>(null);
+
   useEffect(() => {
     loadData();
+    loadStaffChecklist();
   }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // Backend automatically filters to only show forms at the DOP step
       const data = await apiFetch('forms');
       setForms(Array.isArray(data) ? data : []);
     } catch (err: any) {
@@ -29,18 +37,33 @@ export default function DOPCoordinatorPage() {
     }
   };
 
-  const handleApprove = async (record: ClearanceForm) => {
-    setApproving(record.id as number);
+  const loadStaffChecklist = async () => {
     try {
-      // ✅ FIXED: Changed endpoint to `staff/action/...`
-      await apiFetch(`staff/action/${record.id}`, {
+      const data = await apiFetch('staff/checklist');
+      setStaffChecklist(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load checklist', err);
+    }
+  };
+
+  const handleApproveClick = (record: ClearanceForm) => {
+    setSelectedForm(record);
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleConfirmApprove = async () => {
+    if (!selectedForm) return;
+    setApproving(selectedForm.id as number);
+    try {
+      await apiFetch(`staff/action/${selectedForm.id}`, {
         method: 'POST',
         body: JSON.stringify({
           action: 'approve',
           note: 'Degree program curriculum & course fulfillment confirmed.',
         }),
       });
-      message.success(`DOP clearance approved for ${record.full_name}!`);
+      message.success(`DOP clearance approved for ${selectedForm.full_name}!`);
+      setIsConfirmModalOpen(false);
       loadData();
     } catch (err: any) {
       message.error(err.message || 'Approval failed');
@@ -60,7 +83,7 @@ export default function DOPCoordinatorPage() {
     { title: 'Department', dataIndex: 'department_name', key: 'department_name' },
     {
       title: 'Degree Program Status',
-      dataIndex: 'overall_status', // ✅ Use dynamic overall_status
+      dataIndex: 'overall_status',
       key: 'overall_status',
       render: (st: string) => {
         if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
@@ -74,15 +97,12 @@ export default function DOPCoordinatorPage() {
         if (record.overall_status === 'rejected' || record.overall_status === 'Cleared by Registrar') {
           return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage</Text>;
         }
-
-        // ✅ FIXED: Always show the button for forms sent by the backend
         return (
           <Button
             type="primary"
             size="small"
             icon={<CheckOutlined />}
-            loading={approving === record.id}
-            onClick={() => handleApprove(record)}
+            onClick={() => handleApproveClick(record)}
             style={{ background: '#10b981', border: 'none' }}
           >
             Approve Degree Program
@@ -91,6 +111,39 @@ export default function DOPCoordinatorPage() {
       }
     }
   ];
+
+  // ✅ Helper to render student declarations dynamically
+  const renderStudentDeclarations = (form: ClearanceForm | null) => {
+    if (!form) return null;
+    const checks = (form as any)?.pre_clearance_checks || {};
+
+    const myCheckedItems = staffChecklist.filter(item => checks[`item_${item.id}`]);
+    const legacyChecked = Object.keys(checks).filter(k => k.startsWith('dop_') && checks[k]);
+
+    if (myCheckedItems.length === 0 && legacyChecked.length === 0) {
+      return (
+        <div style={{ background: '#fffbeb', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #fde68a' }}>
+          <Text strong style={{ color: '#b45309' }}>⚠️ Student did not make any DOP declarations.</Text>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #bbf7d0' }}>
+        <Text strong style={{ display: 'block', marginBottom: 8, color: '#166534' }}>
+          📋 Student Declares They Have Completed:
+        </Text>
+        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#15803d' }}>
+          {myCheckedItems.map(item => (
+            <li key={item.id}>✅ {item.label}</li>
+          ))}
+          {legacyChecked.map(key => (
+            <li key={key}>✅ {key.replace('dop_', '').replace(/_/g, ' ').toUpperCase()}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 16px' }}>
@@ -115,6 +168,25 @@ export default function DOPCoordinatorPage() {
           locale={{ emptyText: 'No students pending DOP clearance at this time.' }}
         />
       </Card>
+
+      {/* ✅ NEW: CONFIRMATION MODAL */}
+      <Modal
+        title={<Space><CheckCircleOutlined style={{ color: '#10b981' }} /><span>Confirm Degree Program Clearance</span></Space>}
+        open={isConfirmModalOpen}
+        onCancel={() => setIsConfirmModalOpen(false)}
+        onOk={handleConfirmApprove}
+        okText="Confirm Approval"
+        okButtonProps={{ style: { background: '#10b981', border: 'none' }, loading: approving === selectedForm?.id }}
+      >
+        <Paragraph>
+          Are you sure you want to clear the DOP record for <strong>{selectedForm?.full_name}</strong>?
+        </Paragraph>
+
+        {renderStudentDeclarations(selectedForm)}
+      </Modal>
+
+      {/* ✅ NEW: STAFF CHECKLIST MANAGER */}
+      <StaffChecklistManager />
     </div>
   );
 }
