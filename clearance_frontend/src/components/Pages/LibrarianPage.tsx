@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, Table, Tag, Button, Input, Typography, message, Tabs, Modal, Space, Row, Col, Checkbox
 } from 'antd';
-import { CheckOutlined, SearchOutlined, WarningOutlined, BookOutlined, ToolOutlined } from '@ant-design/icons';
+import { CheckOutlined, SearchOutlined, WarningOutlined, BookOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { apiFetch } from '../../utils/api';
 import type { ClearanceForm } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
@@ -15,11 +15,15 @@ export default function LibrarianPage() {
   const [search, setSearch] = useState('');
   const [approving, setApproving] = useState<number | null>(null);
 
-  // ✅ NEW: Inspection Modal State
+  // ✅ NEW: Approve Confirmation Modal State
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [approveForm, setApproveForm] = useState<ClearanceForm | null>(null);
+
+  // ✅ Inspection Modal State
   const [isInspectModalOpen, setIsInspectModalOpen] = useState(false);
   const [inspectForm, setInspectForm] = useState<ClearanceForm | null>(null);
   const [libraryIssues, setLibraryIssues] = useState<string[]>([]);
-  const [fineAmount, setFineAmount] = useState(500); // Default fine
+  const [fineAmount, setFineAmount] = useState(500);
 
   useEffect(() => {
     loadData();
@@ -38,17 +42,24 @@ export default function LibrarianPage() {
   };
 
   // ✅ 1. Approve if everything is clean
-  const handleApprove = async (record: ClearanceForm) => {
-    setApproving(record.id as number);
+  const handleApproveClick = (record: ClearanceForm) => {
+    setApproveForm(record);
+    setIsApproveModalOpen(true);
+  };
+
+  const handleConfirmApprove = async () => {
+    if (!approveForm) return;
+    setApproving(approveForm.id as number);
     try {
-      await apiFetch(`staff/action/${record.id}`, {
+      await apiFetch(`staff/action/${approveForm.id}`, {
         method: 'POST',
         body: JSON.stringify({
           action: 'approve',
           note: 'Library account clear. All books returned, zero outstanding fines.',
         }),
       });
-      message.success(`Library clearance approved for ${record.full_name}!`);
+      message.success(`Library clearance approved for ${approveForm.full_name}!`);
+      setIsApproveModalOpen(false);
       loadData();
     } catch (err: any) {
       message.error(err.message || 'Approval failed');
@@ -135,8 +146,7 @@ export default function LibrarianPage() {
               type="primary"
               size="small"
               icon={<CheckOutlined />}
-              loading={approving === record.id}
-              onClick={() => handleApprove(record)}
+              onClick={() => handleApproveClick(record)}
               style={{ background: '#10b981', border: 'none' }}
             >
               Clear Library Record
@@ -201,7 +211,46 @@ export default function LibrarianPage() {
         ]}
       />
 
-      {/* ✅ NEW: FUNCTIONAL LIBRARY INSPECTION MODAL */}
+      {/* ✅ NEW: APPROVE CONFIRMATION MODAL */}
+      <Modal
+        title={
+          <Space>
+            <CheckCircleOutlined style={{ color: '#10b981' }} />
+            <span>Confirm Library Clearance</span>
+          </Space>
+        }
+        open={isApproveModalOpen}
+        onCancel={() => setIsApproveModalOpen(false)}
+        onOk={handleConfirmApprove}
+        okText="Confirm Approval"
+        okButtonProps={{ style: { background: '#10b981', border: 'none' }, loading: approving === approveForm?.id }}
+      >
+        <Paragraph>
+          Are you sure you want to clear the library record for <strong>{approveForm?.full_name}</strong>?
+        </Paragraph>
+
+        {/* ✅ SHOW STUDENT DECLARATIONS FILTERED FOR LIBRARY */}
+        {(approveForm as any)?.pre_clearance_checks && Object.keys((approveForm as any).pre_clearance_checks).filter(k => k.startsWith('lib_') && (approveForm as any).pre_clearance_checks[k]).length > 0 ? (
+          <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #bbf7d0' }}>
+            <Text strong style={{ display: 'block', marginBottom: 8, color: '#166534' }}>
+              📋 Student Declares They Have Completed:
+            </Text>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#15803d' }}>
+              {Object.keys((approveForm as any).pre_clearance_checks)
+                .filter(k => k.startsWith('lib_') && (approveForm as any).pre_clearance_checks[k])
+                .map((key) => (
+                  <li key={key}>✅ {key.replace('lib_', '').replace(/_/g, ' ').toUpperCase()}</li>
+                ))}
+            </ul>
+          </div>
+        ) : (
+          <div style={{ background: '#fffbeb', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #fde68a' }}>
+            <Text strong style={{ color: '#b45309' }}>⚠️ Student did not make any library declarations.</Text>
+          </div>
+        )}
+      </Modal>
+
+      {/* ✅ FUNCTIONAL INSPECTION MODAL */}
       <Modal
         title={
           <Space>
@@ -218,6 +267,22 @@ export default function LibrarianPage() {
         <Paragraph type="secondary">
           Check any unreturned items or unpaid fines. Submitting this will reject the student's clearance and require them to pay the fine before resubmitting.
         </Paragraph>
+
+        {/* ✅ SHOW STUDENT DECLARATIONS IN INSPECT MODAL TOO */}
+        {(inspectForm as any)?.pre_clearance_checks && Object.keys((inspectForm as any).pre_clearance_checks).filter(k => k.startsWith('lib_') && (inspectForm as any).pre_clearance_checks[k]).length > 0 && (
+          <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 16, border: '1px solid #e2e8f0' }}>
+            <Text strong style={{ fontSize: 13, color: '#1e3a8a', display: 'block', marginBottom: 4 }}>
+              Student Declares:
+            </Text>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: '#475569' }}>
+              {Object.keys((inspectForm as any).pre_clearance_checks)
+                .filter(k => k.startsWith('lib_') && (inspectForm as any).pre_clearance_checks[k])
+                .map((key) => (
+                  <li key={key}>✅ {key.replace('lib_', '').replace(/_/g, ' ').toUpperCase()}</li>
+                ))}
+            </ul>
+          </div>
+        )}
 
         <Checkbox.Group
           onChange={(checked) => setLibraryIssues(checked as string[])}
