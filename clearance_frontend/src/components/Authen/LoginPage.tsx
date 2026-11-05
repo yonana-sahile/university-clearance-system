@@ -18,13 +18,13 @@ export default function LoginPage() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
-  // ✅ NEW: Global Lock State (Defaults to locked until API responds)
+  // ✅ Global Lock State (Defaults to locked until API responds)
   const [clearanceReleased, setClearanceReleased] = useState<boolean>(false);
   const [settingsLoading, setSettingsLoading] = useState<boolean>(true);
 
   const isStudent = selectedRole === 'student';
 
-  // ✅ NEW: Fetch the real global lock status from the backend
+  // ✅ Fetch the real global lock status from the backend
   useEffect(() => {
     apiFetch('system/settings')
       .then((res) => {
@@ -88,7 +88,10 @@ export default function LoginPage() {
           registrar: '/registrar',
           admin: '/admin',
         };
-        navigate(roleRoutes[selectedRole] || '/student');
+
+        // ✅ FIXED: Navigate based on the ACTUAL backend role, not the dropdown
+        const actualRole = res.user.role || selectedRole;
+        navigate(roleRoutes[actualRole] || '/student');
       }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check credentials.');
@@ -162,7 +165,7 @@ export default function LoginPage() {
             </div>
 
             <div className="mau-hero-footer">
-              {/* ✅ UPDATED: Show loading state for the status badge */}
+              {/* ✅ Show loading state for the status badge */}
               {settingsLoading ? (
                 <div className="mau-live-status status-loading" style={{ background: 'rgba(12, 8, 2, 0.9)', color: '#ffd000', border: '1.5px solid #ffd000' }}>
                   <Spin size="small" style={{ marginRight: 8 }} /> Checking Portal Status...
@@ -187,7 +190,7 @@ export default function LoginPage() {
           </div>
 
           {settingsLoading ? (
-            // ✅ NEW: Loading State
+            // ✅ Loading State
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300 }}>
               <Spin size="large" />
               <Text type="secondary" style={{ marginTop: 16 }}>Connecting to University Servers...</Text>
