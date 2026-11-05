@@ -1,30 +1,65 @@
 from rest_framework import serializers
-from .models import PaymentMethod, PaymentRecord, DueRecord
+from .models import (
+    ClearanceForm, Dispute, Appointment, WorkflowStep,
+    ClearanceApproval, ChecklistItem
+)
 
 
-class PaymentMethodSerializer(serializers.ModelSerializer):
+class WorkflowStepSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PaymentMethod
+        model = WorkflowStep
         fields = '__all__'
 
 
-class PaymentRecordSerializer(serializers.ModelSerializer):
-    student_id = serializers.CharField(source='student_number', read_only=True)   # expose as student_id
-    payment_method_name = serializers.SerializerMethodField()
-    verified_by_name = serializers.SerializerMethodField()
+class ClearanceApprovalSerializer(serializers.ModelSerializer):
+    approved_by_name = serializers.CharField(source='approved_by.full_name', read_only=True)
+    step_name = serializers.CharField(source='step.name', read_only=True)
+    step_order = serializers.IntegerField(source='step.order', read_only=True)
 
     class Meta:
-        model = PaymentRecord
+        model = ClearanceApproval
         fields = '__all__'
 
-    def get_payment_method_name(self, obj):
-        return obj.payment_method.name if obj.payment_method else None
 
-    def get_verified_by_name(self, obj):
-        return obj.verified_by.full_name() if obj.verified_by else None
+class ClearanceFormSerializer(serializers.ModelSerializer):
+    student_id = serializers.IntegerField(source='student.id', read_only=True)
+    building = serializers.SerializerMethodField()
 
+    # ✅ Nest the dynamic step and approvals history
+    current_step = WorkflowStepSerializer(read_only=True)
+    approvals = ClearanceApprovalSerializer(many=True, read_only=True)
 
-class DueRecordSerializer(serializers.ModelSerializer):
     class Meta:
-        model = DueRecord
+        model = ClearanceForm
+        fields = '__all__'  # ✅ This automatically includes pre_clearance_checks
+
+    def get_building(self, obj):
+        if not obj.building:
+            return None
+        return {
+            'id': obj.building.id,
+            'name': obj.building.name,
+            'code': obj.building.code,
+        }
+
+
+class DisputeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Dispute
+        fields = '__all__'
+        read_only_fields = [
+            'student', 'ref', 'status', 'resolution_note',
+            'reviewed_by', 'created_at', 'updated_at',
+        ]
+
+
+class AppointmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appointment
+        fields = '__all__'
+        read_only_fields = ['student', 'ref', 'token_number', 'created_at']
+
+class ChecklistItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChecklistItem
         fields = '__all__'

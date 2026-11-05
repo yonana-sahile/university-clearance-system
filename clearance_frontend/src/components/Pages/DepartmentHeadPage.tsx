@@ -9,6 +9,7 @@ import {
 import { apiFetch } from '../../utils/api';
 import type { ClearanceForm } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
+import StaffChecklistManager from '../Staff/StaffChecklistManager'; // ✅ NEW
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -21,8 +22,12 @@ export default function DepartmentHeadPage() {
   const [actionType, setActionType] = useState<'approve' | 'reject'>('approve');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // ✅ NEW: State to hold dynamic checklist items for this staff member
+  const [staffChecklist, setStaffChecklist] = useState<any[]>([]);
+
   useEffect(() => {
     loadForms();
+    loadStaffChecklist();
   }, []);
 
   const loadForms = async () => {
@@ -34,6 +39,15 @@ export default function DepartmentHeadPage() {
       message.error(err.message || 'Failed to load forms');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStaffChecklist = async () => {
+    try {
+      const data = await apiFetch('staff/checklist');
+      setStaffChecklist(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load checklist', err);
     }
   };
 
@@ -229,21 +243,33 @@ export default function DepartmentHeadPage() {
           Student: <strong>{selectedForm?.full_name}</strong> ({selectedForm?.id_number})
         </Paragraph>
 
-        {/* ✅ NEW: SHOW STUDENT DECLARATIONS FILTERED FOR DEPT HEAD */}
-        {(selectedForm as any)?.pre_clearance_checks && Object.keys((selectedForm as any).pre_clearance_checks).filter(k => k.startsWith('dept_') && (selectedForm as any).pre_clearance_checks[k]).length > 0 && (
-          <div style={{ background: '#f8fafc', padding: 16, borderRadius: 10, marginBottom: 16, border: '1px solid #e2e8f0' }}>
-            <Text strong style={{ display: 'block', marginBottom: 8, color: '#1e3a8a' }}>
-              📋 Student Pre-Clearance Declarations:
-            </Text>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#475569' }}>
-              {Object.keys((selectedForm as any).pre_clearance_checks)
-                .filter(k => k.startsWith('dept_') && (selectedForm as any).pre_clearance_checks[k])
-                .map((key) => (
-                  <li key={key}>{key.replace('dept_', '').replace(/_/g, ' ').toUpperCase()} - Checked</li>
+        {/* ✅ NEW: DYNAMIC STUDENT DECLARATIONS */}
+        {(() => {
+          const checks = (selectedForm as any)?.pre_clearance_checks || {};
+          // Find which of MY checklist items the student checked
+          const myCheckedItems = staffChecklist.filter(item => checks[`item_${item.id}`]);
+
+          // Also support legacy hardcoded items if they exist
+          const legacyChecked = Object.keys(checks).filter(k => k.startsWith('dept_') && checks[k]);
+
+          if (myCheckedItems.length === 0 && legacyChecked.length === 0) return null;
+
+          return (
+            <div style={{ background: '#f8fafc', padding: 16, borderRadius: 10, marginBottom: 16, border: '1px solid #e2e8f0' }}>
+              <Text strong style={{ display: 'block', marginBottom: 8, color: '#1e3a8a' }}>
+                📋 Student Pre-Clearance Declarations:
+              </Text>
+              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#475569' }}>
+                {myCheckedItems.map(item => (
+                  <li key={item.id}>{item.label} - Checked ✅</li>
                 ))}
-            </ul>
-          </div>
-        )}
+                {legacyChecked.map(key => (
+                  <li key={key}>{key.replace('dept_', '').replace(/_/g, ' ').toUpperCase()} - Checked ✅</li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
 
         <Form.Item label="Officer Feedback Note">
           <Input.TextArea
@@ -254,6 +280,9 @@ export default function DepartmentHeadPage() {
           />
         </Form.Item>
       </Modal>
+
+      {/* ✅ NEW: STAFF CHECKLIST MANAGER */}
+      <StaffChecklistManager />
     </div>
   );
 }
