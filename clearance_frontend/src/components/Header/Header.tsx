@@ -146,7 +146,6 @@ export default function Header() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  // ✅ Always navigate to API settings page — no login required
   const handleOpenSettings = () => {
     setMobileOpen(false);
     navigate("/settings/api-keys");
@@ -215,6 +214,15 @@ export default function Header() {
       </a>
     );
   };
+
+  // ✅ NEW: Check if the user's role is one of the known defaults
+  const KNOWN_ROLES = [
+    'student', 'admin', 'departmenthead', 'librarian', 'cafeteria',
+    'dormitory', 'psychology', 'sportmaster', 'campuspolice',
+    'cooperationsharing', 'dopcordinator', 'studentaffairs', 'registrar'
+  ];
+
+  const isCustomRole = user && user.role && !KNOWN_ROLES.includes(user.role);
 
   return (
     <header className="header">
@@ -442,6 +450,15 @@ export default function Header() {
             />
           )}
 
+          {/* ✅ NEW: DYNAMIC FALLBACK FOR CUSTOM ROLES (e.g. Supermarket) */}
+          {isCustomRole && (
+            <NavLinkItem
+              to={`/${user.role}`}
+              label={`${user.role.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())} Portal`}
+              icon={<Shield size={15} style={{ color: '#8b5cf6' }} />}
+            />
+          )}
+
           {/* MOBILE ONLY FOOTER ACTION BAR */}
           <div className="mobile-nav-divider mobile-only" />
           <div className="mobile-action-bar mobile-only">
@@ -516,7 +533,6 @@ export default function Header() {
                 </Button>
               )}
             </div>
-            {/* Mobile API Settings shortcut */}
             <div style={{ display: "flex", gap: 8, width: "100%", marginTop: 4 }}>
               <Button
                 size="middle"
@@ -565,7 +581,6 @@ export default function Header() {
             </Badge>
           </Tooltip>
 
-          {/* ✅ Settings gear — always navigates to /settings/api-keys */}
           <Tooltip title="Developer API Settings">
             <Button
               type="text"
@@ -659,7 +674,6 @@ export default function Header() {
           setAdminUsernameInput("");
           setAdminPasswordInput("");
         }}
-        // ✅ REMOVED onOk and okText to use custom footer
         footer={
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
             <Link
@@ -725,7 +739,6 @@ export default function Header() {
               style={{ marginBottom: 12, borderRadius: 8 }}
             />
           )}
-          {/* ❌ SECURITY ALERT REMOVED HERE */}
         </div>
       </Modal>
     </header>
