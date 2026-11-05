@@ -69,7 +69,6 @@ class RegisterSerializer(serializers.Serializer):
         from admincsv.models import ValidStudent
         valid = ValidStudent.objects.get(id_number__iexact=validated_data['id_number'])
 
-        # 🚨 CRITICAL FIX: Assign the department and college from the ValidStudent record
         user = User.objects.create_user(
             username=validated_data['id_number'],
             email=validated_data['email'],
@@ -78,8 +77,8 @@ class RegisterSerializer(serializers.Serializer):
             last_name=validated_data['last_name'],
             role='student',
             id_number=valid.id_number,
-            department=valid.department,  # 👈 Added
-            college=valid.college,  # 👈 Added
+            department=valid.department,
+            college=valid.college,
         )
         valid.is_registered = True
         valid.save(update_fields=['is_registered'])
@@ -95,6 +94,7 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, attrs):
         identifier = attrs.get('username') or attrs.get('email')
         password = attrs.get('password')
+        selected_role = attrs.get('role')  # ✅ Get the role from the frontend dropdown
 
         if not identifier or not password:
             raise serializers.ValidationError('Username/email and password required.')
@@ -118,6 +118,13 @@ class LoginSerializer(serializers.Serializer):
 
         if not user:
             raise AuthenticationFailed('Incorrect username or password.')
+
+        # 🚨 NEW: Strict Role Validation
+        # Ensure the role selected in the dropdown matches the actual database role
+        if selected_role and user.role != selected_role:
+            raise AuthenticationFailed(
+                f"Access Denied: This account is registered as '{user.role}', not '{selected_role}'. Please select the correct portal role."
+            )
 
         attrs['user'] = user
         return attrs
