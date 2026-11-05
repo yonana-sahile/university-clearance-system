@@ -18,14 +18,40 @@ export default function LoginPage() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
-  // ✅ Global Lock State (Defaults to locked until API responds)
+  // ✅ Dynamic Roles State
+  const [roles, setRoles] = useState<{ label: string; value: string }[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(true);
+
+  // ✅ Global Lock State
   const [clearanceReleased, setClearanceReleased] = useState<boolean>(false);
   const [settingsLoading, setSettingsLoading] = useState<boolean>(true);
 
   const isStudent = selectedRole === 'student';
 
-  // ✅ Fetch the real global lock status from the backend
+  // ✅ Helper to format role strings into beautiful labels
+  const formatRoleLabel = (roleValue: string) => {
+    const roleMap: Record<string, string> = {
+      student: '🎓 Student',
+      departmenthead: '🏢 Department Head',
+      librarian: '📚 Librarian',
+      cafeteria: '🍽️ Cafeteria Admin',
+      dormitory: '🏠 Dormitory Manager',
+      psychology: '🧠 Counseling / Psychology',
+      sportmaster: '🏆 Sport Master',
+      campuspolice: '👮 Campus Police',
+      cooperationsharing: '🤝 Cooperation & Sharing',
+      dopcordinator: '📜 Degree Program Coordinator',
+      studentaffairs: '🏛️ Student Affairs',
+      registrar: '🎓 Registrar Office',
+      admin: '⚙️ System Administrator',
+    };
+    // If it's a known role, use the map. If it's a custom role (like supermarket), format it dynamically.
+    return roleMap[roleValue] || `🛡️ ${roleValue.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}`;
+  };
+
+  // ✅ Fetch Global Lock Status & Dynamic Roles
   useEffect(() => {
+    // 1. Check Portal Status
     apiFetch('system/settings')
       .then((res) => {
         setClearanceReleased(!!res.is_clearance_open);
@@ -36,23 +62,27 @@ export default function LoginPage() {
       .finally(() => {
         setSettingsLoading(false);
       });
-  }, []);
 
-  const roles = [
-    { label: '🎓 Student', value: 'student' },
-    { label: '🏢 Department Head', value: 'departmenthead' },
-    { label: '📚 Librarian', value: 'librarian' },
-    { label: '🍽️ Cafeteria Admin', value: 'cafeteria' },
-    { label: '🏠 Dormitory Manager', value: 'dormitory' },
-    { label: '🧠 Counseling / Psychology', value: 'psychology' },
-    { label: '🏆 Sport Master', value: 'sportmaster' },
-    { label: '👮 Campus Police', value: 'campuspolice' },
-    { label: '🤝 Cooperation & Sharing', value: 'cooperationsharing' },
-    { label: '📜 Degree Program Coordinator', value: 'dopcordinator' },
-    { label: '🏛️ Student Affairs', value: 'studentaffairs' },
-    { label: '🎓 Registrar Office', value: 'registrar' },
-    { label: '⚙️ System Administrator', value: 'admin' },
-  ];
+    // 2. Fetch Active Roles from Workflow
+    apiFetch('public/roles')
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const formattedRoles = data.map((r: string) => ({
+            label: formatRoleLabel(r),
+            value: r,
+          }));
+          setRoles(formattedRoles);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load roles', err);
+        // Fallback to student just in case
+        setRoles([{ label: '🎓 Student', value: 'student' }]);
+      })
+      .finally(() => {
+        setRolesLoading(false);
+      });
+  }, []);
 
   const handleFinish = async (values: any) => {
     setLoading(true);
@@ -89,9 +119,12 @@ export default function LoginPage() {
           admin: '/admin',
         };
 
-        // ✅ FIXED: Navigate based on the ACTUAL backend role, not the dropdown
+        // ✅ Navigate based on the ACTUAL backend role, not just the dropdown
         const actualRole = res.user.role || selectedRole;
-        navigate(roleRoutes[actualRole] || '/student');
+
+        // If it's a custom role (e.g., supermarket), send them to the dynamic route
+        const destination = roleRoutes[actualRole] || `/${actualRole}`;
+        navigate(destination);
       }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check credentials.');
@@ -99,6 +132,9 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Combined Loading state for the initial page load
+  const pageLoading = settingsLoading || rolesLoading;
 
   return (
     <div className="mau-login-wrapper mau-theme-adey-abeba">
@@ -165,7 +201,6 @@ export default function LoginPage() {
             </div>
 
             <div className="mau-hero-footer">
-              {/* ✅ Show loading state for the status badge */}
               {settingsLoading ? (
                 <div className="mau-live-status status-loading" style={{ background: 'rgba(12, 8, 2, 0.9)', color: '#ffd000', border: '1.5px solid #ffd000' }}>
                   <Spin size="small" style={{ marginRight: 8 }} /> Checking Portal Status...
@@ -189,14 +224,12 @@ export default function LoginPage() {
              <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>2026/2027 A.Y.</span>
           </div>
 
-          {settingsLoading ? (
-            // ✅ Loading State
+          {pageLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300 }}>
               <Spin size="large" />
               <Text type="secondary" style={{ marginTop: 16 }}>Connecting to University Servers...</Text>
             </div>
           ) : !clearanceReleased ? (
-            // LOCK SCREEN
             <div className="mau-login-lock-cover">
               <div className="mau-cover-icon-circle">
                 <Lock size={46} className="mau-cover-lock-icon" />
@@ -208,7 +241,6 @@ export default function LoginPage() {
               </p>
             </div>
           ) : (
-            // LOGIN FORM
             <div>
               <div className="mau-form-header">
                 <h2 className="mau-form-title">Sign in to Portal</h2>
@@ -226,6 +258,7 @@ export default function LoginPage() {
                     options={roles}
                     size="large"
                     style={{ width: '100%', borderRadius: 10 }}
+                    placeholder="Select your role"
                   />
                 </div>
 
