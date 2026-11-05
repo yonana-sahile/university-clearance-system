@@ -659,22 +659,43 @@ export default function Header() {
           setAdminUsernameInput("");
           setAdminPasswordInput("");
         }}
-        onOk={handleAdminAuthSubmit}
-        confirmLoading={adminAuthenticating}
-        okText="Unlock Admin Portal"
-        okButtonProps={{
-          style: {
-            background: "#2563eb",
-            borderRadius: 8,
-            fontWeight: 700,
-          },
-        }}
-        cancelButtonProps={{ style: { borderRadius: 8 } }}
+        // ✅ REMOVED onOk and okText to use custom footer
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+            <Link
+              to="/forgot-password"
+              onClick={() => setAdminAuthOpen(false)}
+              style={{ fontSize: 13, color: '#2563eb', fontWeight: 600 }}
+            >
+              Forgot password?
+            </Link>
+            <Space>
+              <Button
+                onClick={() => {
+                  setAdminAuthOpen(false);
+                  setAdminAuthError("");
+                  setAdminUsernameInput("");
+                  setAdminPasswordInput("");
+                }}
+                style={{ borderRadius: 8 }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                onClick={handleAdminAuthSubmit}
+                loading={adminAuthenticating}
+                style={{ background: '#2563eb', borderRadius: 8, fontWeight: 700 }}
+              >
+                Unlock Admin Portal
+              </Button>
+            </Space>
+          </div>
+        }
       >
         <div style={{ padding: "12px 0" }}>
           <p style={{ color: "#475569", marginBottom: 16 }}>
-            Enter your administrator credentials to access the University
-            Admin Console.
+            Enter your administrator credentials to access the University Admin Console.
           </p>
           <Input
             placeholder="Admin username"
@@ -684,11 +705,7 @@ export default function Header() {
               setAdminAuthError("");
             }}
             onPressEnter={handleAdminAuthSubmit}
-            style={{
-              borderRadius: 8,
-              marginBottom: 12,
-              padding: "8px 12px",
-            }}
+            style={{ borderRadius: 8, marginBottom: 12, padding: "8px 12px" }}
           />
           <Input.Password
             placeholder="Admin password"
@@ -698,11 +715,7 @@ export default function Header() {
               setAdminAuthError("");
             }}
             onPressEnter={handleAdminAuthSubmit}
-            style={{
-              borderRadius: 8,
-              marginBottom: 12,
-              padding: "8px 12px",
-            }}
+            style={{ borderRadius: 8, marginBottom: 12, padding: "8px 12px" }}
           />
           {adminAuthError && (
             <Alert
@@ -712,13 +725,7 @@ export default function Header() {
               style={{ marginBottom: 12, borderRadius: 8 }}
             />
           )}
-          <Alert
-            type="info"
-            title="Use your staff admin credentials"
-            description="Example: admin_mau / staff123 — the same credentials you use on the main login page."
-            showIcon
-            style={{ borderRadius: 8 }}
-          />
+          {/* ❌ SECURITY ALERT REMOVED HERE */}
         </div>
       </Modal>
     </header>
