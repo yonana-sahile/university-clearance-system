@@ -3,6 +3,7 @@ import { Card, Table, Tag, Button, Input, Typography, message, Modal, Space } fr
 import { CheckOutlined, SearchOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { apiFetch } from '../../utils/api';
 import type { ClearanceForm } from '../../types';
+import StaffChecklistManager from '../Staff/StaffChecklistManager'; // ✅ NEW
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -12,12 +13,15 @@ export default function StudentAffairsPage() {
   const [search, setSearch] = useState('');
   const [approving, setApproving] = useState<number | null>(null);
 
-  // ✅ NEW: Confirmation Modal State
+  // ✅ NEW: State to hold dynamic checklist items
+  const [staffChecklist, setStaffChecklist] = useState<any[]>([]);
+
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [selectedForm, setSelectedForm] = useState<ClearanceForm | null>(null);
 
   useEffect(() => {
     loadData();
+    loadStaffChecklist();
   }, []);
 
   const loadData = async () => {
@@ -32,13 +36,20 @@ export default function StudentAffairsPage() {
     }
   };
 
-  // ✅ 1. Open Modal on Click
+  const loadStaffChecklist = async () => {
+    try {
+      const data = await apiFetch('staff/checklist');
+      setStaffChecklist(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load checklist', err);
+    }
+  };
+
   const handleApproveClick = (record: ClearanceForm) => {
     setSelectedForm(record);
     setIsConfirmModalOpen(true);
   };
 
-  // ✅ 2. Approve via API
   const handleConfirmApprove = async () => {
     if (!selectedForm) return;
     setApproving(selectedForm.id as number);
@@ -100,6 +111,39 @@ export default function StudentAffairsPage() {
     }
   ];
 
+  // ✅ Helper to render student declarations dynamically
+  const renderStudentDeclarations = (form: ClearanceForm | null) => {
+    if (!form) return null;
+    const checks = (form as any)?.pre_clearance_checks || {};
+
+    const myCheckedItems = staffChecklist.filter(item => checks[`item_${item.id}`]);
+    const legacyChecked = Object.keys(checks).filter(k => k.startsWith('sa_') && checks[k]);
+
+    if (myCheckedItems.length === 0 && legacyChecked.length === 0) {
+      return (
+        <div style={{ background: '#fffbeb', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #fde68a' }}>
+          <Text strong style={{ color: '#b45309' }}>⚠️ Student did not make any Student Affairs declarations.</Text>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #bbf7d0' }}>
+        <Text strong style={{ display: 'block', marginBottom: 8, color: '#166534' }}>
+          📋 Student Declares They Have Completed:
+        </Text>
+        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#15803d' }}>
+          {myCheckedItems.map(item => (
+            <li key={item.id}>✅ {item.label}</li>
+          ))}
+          {legacyChecked.map(key => (
+            <li key={key}>✅ {key.replace('sa_', '').replace(/_/g, ' ').toUpperCase()}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 16px' }}>
       <Title level={2} style={{ fontWeight: 800 }}>Student Affairs Clearance Portal</Title>
@@ -124,7 +168,6 @@ export default function StudentAffairsPage() {
         />
       </Card>
 
-      {/* ✅ NEW: CONFIRMATION MODAL */}
       <Modal
         title={<Space><CheckCircleOutlined style={{ color: '#10b981' }} /><span>Confirm Student Affairs Clearance</span></Space>}
         open={isConfirmModalOpen}
@@ -137,26 +180,11 @@ export default function StudentAffairsPage() {
           Are you sure you want to clear the affairs record for <strong>{selectedForm?.full_name}</strong>?
         </Paragraph>
 
-        {/* ✅ SHOW STUDENT DECLARATIONS FILTERED FOR SA */}
-        {(selectedForm as any)?.pre_clearance_checks && Object.keys((selectedForm as any).pre_clearance_checks).filter(k => k.startsWith('sa_') && (selectedForm as any).pre_clearance_checks[k]).length > 0 ? (
-          <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #bbf7d0' }}>
-            <Text strong style={{ display: 'block', marginBottom: 8, color: '#166534' }}>
-              📋 Student Declares They Have Completed:
-            </Text>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#15803d' }}>
-              {Object.keys((selectedForm as any).pre_clearance_checks)
-                .filter(k => k.startsWith('sa_') && (selectedForm as any).pre_clearance_checks[k])
-                .map((key) => (
-                  <li key={key}>✅ {key.replace('sa_', '').replace(/_/g, ' ').toUpperCase()}</li>
-                ))}
-            </ul>
-          </div>
-        ) : (
-          <div style={{ background: '#fffbeb', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #fde68a' }}>
-            <Text strong style={{ color: '#b45309' }}>⚠️ Student did not make any Student Affairs declarations.</Text>
-          </div>
-        )}
+        {renderStudentDeclarations(selectedForm)}
       </Modal>
+
+      {/* ✅ NEW: STAFF CHECKLIST MANAGER */}
+      <StaffChecklistManager />
     </div>
   );
 }
