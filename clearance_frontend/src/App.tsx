@@ -43,6 +43,9 @@ import AdminDashboard from './components/Pages/AdminDashboard';
 import DeveloperApiPortal from './components/Pages/DeveloperApiPortal';
 import APIKeysPage from './components/Pages/APIKeysPage';
 
+// ✅ NEW: Generic Staff Page for dynamic roles
+import GenericStaffPage from './components/Pages/GenericStaffPage';
+
 // Theme Context
 interface ThemeContextType {
   theme: 'light' | 'dark';
@@ -112,6 +115,7 @@ export function App() {
                   } />
                   <Route path="/payment" element={<StudentPaymentPage />} />
 
+                  {/* ✅ Hardcoded Staff Portals (these have custom logic like fines) */}
                   <Route path="/departmenthead" element={<DepartmentHeadPage />} />
                   <Route path="/librarian" element={<LibrarianPage />} />
                   <Route path="/cafeteria" element={<CafeteriaPage />} />
@@ -124,6 +128,9 @@ export function App() {
                   <Route path="/studentaffairs" element={<StudentAffairsPage />} />
                   <Route path="/registrar" element={<RegistrarPage />} />
                   <Route path="/admin" element={<AdminDashboard />} />
+
+                  {/* ✅ NEW: Dynamic Route for any custom role (e.g. /supermarket, /security) */}
+                  <Route path="/:staffRole" element={<GenericStaffPage />} />
 
                   {/* Fallback */}
                   <Route path="*" element={<Navigate to="/" replace />} />
