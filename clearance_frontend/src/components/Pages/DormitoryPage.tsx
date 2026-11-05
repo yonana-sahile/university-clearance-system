@@ -17,7 +17,6 @@ export default function DormitoryPage() {
   const [search, setSearch] = useState('');
   const [approving, setApproving] = useState<number | null>(null);
 
-  // Inspection Modal State
   const [isInspectModalOpen, setIsInspectModalOpen] = useState(false);
   const [inspectForm, setInspectForm] = useState<ClearanceForm | null>(null);
   const [damageItems, setDamageItems] = useState<string[]>([]);
@@ -44,7 +43,6 @@ export default function DormitoryPage() {
     }
   };
 
-  // ✅ 1. Approves the room if everything is clean
   const handleApproveDorm = async (record: ClearanceForm) => {
     setApproving(record.id as number);
     try {
@@ -64,7 +62,6 @@ export default function DormitoryPage() {
     }
   };
 
-  // ✅ 2. Issues a fine and rejects the form
   const handleIssueDamageFine = async () => {
     if (!inspectForm) return;
 
@@ -80,7 +77,7 @@ export default function DormitoryPage() {
       await apiFetch(`staff/action/${inspectForm.id}`, {
         method: 'POST',
         body: JSON.stringify({
-          action: 'reject', // Rejecting forces the student to resubmit
+          action: 'reject',
           note: noteText,
         }),
       });
@@ -159,7 +156,7 @@ export default function DormitoryPage() {
               icon={<ToolOutlined />}
               onClick={() => {
                 setInspectForm(record);
-                setDamageItems([]); // Reset form state
+                setDamageItems([]);
                 setDamageFine(1500);
                 setIsInspectModalOpen(true);
               }}
@@ -229,7 +226,6 @@ export default function DormitoryPage() {
         ]}
       />
 
-      {/* ✅ FUNCTIONAL INSPECTION MODAL */}
       <Modal
         title={
           <Space>
@@ -246,6 +242,22 @@ export default function DormitoryPage() {
         <Paragraph type="secondary">
           Check any damaged or missing room items. Submitting this will reject the student's clearance and require them to pay the fine before resubmitting.
         </Paragraph>
+
+        {/* ✅ NEW: SHOW STUDENT DECLARATIONS FILTERED FOR DORMITORY */}
+        {(inspectForm as any)?.pre_clearance_checks && Object.keys((inspectForm as any).pre_clearance_checks).filter(k => k.startsWith('dorm_') && (inspectForm as any).pre_clearance_checks[k]).length > 0 && (
+          <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 16, border: '1px solid #e2e8f0' }}>
+            <Text strong style={{ fontSize: 13, color: '#1e3a8a', display: 'block', marginBottom: 4 }}>
+              Student Declares:
+            </Text>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: '#475569' }}>
+              {Object.keys((inspectForm as any).pre_clearance_checks)
+                .filter(k => k.startsWith('dorm_') && (inspectForm as any).pre_clearance_checks[k])
+                .map((key) => (
+                  <li key={key}>✅ {key.replace('dorm_', '').replace(/_/g, ' ').toUpperCase()}</li>
+                ))}
+            </ul>
+          </div>
+        )}
 
         <Checkbox.Group
           onChange={(checked) => setDamageItems(checked as string[])}

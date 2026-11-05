@@ -28,7 +28,6 @@ export default function DepartmentHeadPage() {
   const loadForms = async () => {
     setLoading(true);
     try {
-      // Backend automatically filters to only show forms at the Department Head step
       const data = await apiFetch('forms');
       setForms(Array.isArray(data) ? data : []);
     } catch (err: any) {
@@ -52,7 +51,6 @@ export default function DepartmentHeadPage() {
   const handleConfirmAction = async () => {
     if (!selectedForm) return;
     try {
-      // ✅ FIXED: Changed endpoint to `staff/action/...`
       await apiFetch(`staff/action/${selectedForm.id}`, {
         method: 'POST',
         body: JSON.stringify({ action: actionType, note: noteText }),
@@ -67,7 +65,6 @@ export default function DepartmentHeadPage() {
 
   const exportCSV = () => {
     const headers = ['Form ID', 'Student Name', 'ID Number', 'Department', 'Status', 'Date'];
-    // ✅ FIXED: Use overall_status instead of status
     const rows = forms.map(f => [f.id, f.full_name, f.id_number, f.department_name, f.overall_status, f.created_at]);
     const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -83,9 +80,8 @@ export default function DepartmentHeadPage() {
     (f.id_number || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  // Since the backend only returns forms at this step, all are pending
   const pendingCount = forms.filter(f => f.overall_status !== 'rejected').length;
-  const approvedCount = 0; // Not needed anymore since we only see pending forms, but kept for UI
+  const approvedCount = 0;
 
   const columns = [
     {
@@ -116,7 +112,7 @@ export default function DepartmentHeadPage() {
     },
     {
       title: 'Status',
-      dataIndex: 'overall_status', // ✅ Use dynamic overall_status
+      dataIndex: 'overall_status',
       key: 'overall_status',
       render: (st: string) => {
         if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
@@ -169,29 +165,17 @@ export default function DepartmentHeadPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={8}>
           <Card style={{ borderRadius: 16 }} styles={{ body: { textAlign: 'center' } }}>
-            <Statistic
-              title="Total Submissions"
-              value={forms.length}
-              styles={{ content: { color: '#2563eb', fontWeight: 800 } }}
-            />
+            <Statistic title="Total Submissions" value={forms.length} styles={{ content: { color: '#2563eb', fontWeight: 800 } }} />
           </Card>
         </Col>
         <Col xs={12} sm={8}>
           <Card style={{ borderRadius: 16 }} styles={{ body: { textAlign: 'center' } }}>
-            <Statistic
-              title="Pending Dept Review"
-              value={pendingCount}
-              styles={{ content: { color: '#f59e0b', fontWeight: 800 } }}
-            />
+            <Statistic title="Pending Dept Review" value={pendingCount} styles={{ content: { color: '#f59e0b', fontWeight: 800 } }} />
           </Card>
         </Col>
         <Col xs={12} sm={8}>
           <Card style={{ borderRadius: 16 }} styles={{ body: { textAlign: 'center' } }}>
-            <Statistic
-              title="Dept Cleared"
-              value={approvedCount}
-              styles={{ content: { color: '#10b981', fontWeight: 800 } }}
-            />
+            <Statistic title="Dept Cleared" value={approvedCount} styles={{ content: { color: '#10b981', fontWeight: 800 } }} />
           </Card>
         </Col>
       </Row>
@@ -244,6 +228,23 @@ export default function DepartmentHeadPage() {
         <Paragraph>
           Student: <strong>{selectedForm?.full_name}</strong> ({selectedForm?.id_number})
         </Paragraph>
+
+        {/* ✅ NEW: SHOW STUDENT DECLARATIONS FILTERED FOR DEPT HEAD */}
+        {(selectedForm as any)?.pre_clearance_checks && Object.keys((selectedForm as any).pre_clearance_checks).filter(k => k.startsWith('dept_') && (selectedForm as any).pre_clearance_checks[k]).length > 0 && (
+          <div style={{ background: '#f8fafc', padding: 16, borderRadius: 10, marginBottom: 16, border: '1px solid #e2e8f0' }}>
+            <Text strong style={{ display: 'block', marginBottom: 8, color: '#1e3a8a' }}>
+              📋 Student Pre-Clearance Declarations:
+            </Text>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#475569' }}>
+              {Object.keys((selectedForm as any).pre_clearance_checks)
+                .filter(k => k.startsWith('dept_') && (selectedForm as any).pre_clearance_checks[k])
+                .map((key) => (
+                  <li key={key}>{key.replace('dept_', '').replace(/_/g, ' ').toUpperCase()} - Checked</li>
+                ))}
+            </ul>
+          </div>
+        )}
+
         <Form.Item label="Officer Feedback Note">
           <Input.TextArea
             rows={3}
