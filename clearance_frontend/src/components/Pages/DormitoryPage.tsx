@@ -6,6 +6,7 @@ import { CheckOutlined, SearchOutlined, ToolOutlined, WarningOutlined } from '@a
 import { apiFetch } from '../../utils/api';
 import type { ClearanceForm, Building } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
+import StaffChecklistManager from '../Staff/StaffChecklistManager'; // ✅ NEW
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -17,6 +18,9 @@ export default function DormitoryPage() {
   const [search, setSearch] = useState('');
   const [approving, setApproving] = useState<number | null>(null);
 
+  // ✅ NEW: State to hold dynamic checklist items for this staff member
+  const [staffChecklist, setStaffChecklist] = useState<any[]>([]);
+
   const [isInspectModalOpen, setIsInspectModalOpen] = useState(false);
   const [inspectForm, setInspectForm] = useState<ClearanceForm | null>(null);
   const [damageItems, setDamageItems] = useState<string[]>([]);
@@ -24,6 +28,7 @@ export default function DormitoryPage() {
 
   useEffect(() => {
     loadData();
+    loadStaffChecklist();
   }, []);
 
   const loadData = async () => {
@@ -40,6 +45,15 @@ export default function DormitoryPage() {
       message.error(err.message || 'Failed to load data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStaffChecklist = async () => {
+    try {
+      const data = await apiFetch('staff/checklist');
+      setStaffChecklist(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load checklist', err);
     }
   };
 
@@ -169,6 +183,33 @@ export default function DormitoryPage() {
     }
   ];
 
+  // ✅ Helper to render student declarations dynamically
+  const renderStudentDeclarations = (form: ClearanceForm | null) => {
+    if (!form) return null;
+    const checks = (form as any)?.pre_clearance_checks || {};
+
+    const myCheckedItems = staffChecklist.filter(item => checks[`item_${item.id}`]);
+    const legacyChecked = Object.keys(checks).filter(k => k.startsWith('dorm_') && checks[k]);
+
+    if (myCheckedItems.length === 0 && legacyChecked.length === 0) return null;
+
+    return (
+      <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 16, border: '1px solid #e2e8f0' }}>
+        <Text strong style={{ fontSize: 13, color: '#1e3a8a', display: 'block', marginBottom: 4 }}>
+          Student Declares:
+        </Text>
+        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: '#475569' }}>
+          {myCheckedItems.map(item => (
+            <li key={item.id}>✅ {item.label}</li>
+          ))}
+          {legacyChecked.map(key => (
+            <li key={key}>✅ {key.replace('dorm_', '').replace(/_/g, ' ').toUpperCase()}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 16px' }}>
       <div style={{ marginBottom: 24 }}>
@@ -243,21 +284,7 @@ export default function DormitoryPage() {
           Check any damaged or missing room items. Submitting this will reject the student's clearance and require them to pay the fine before resubmitting.
         </Paragraph>
 
-        {/* ✅ NEW: SHOW STUDENT DECLARATIONS FILTERED FOR DORMITORY */}
-        {(inspectForm as any)?.pre_clearance_checks && Object.keys((inspectForm as any).pre_clearance_checks).filter(k => k.startsWith('dorm_') && (inspectForm as any).pre_clearance_checks[k]).length > 0 && (
-          <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 16, border: '1px solid #e2e8f0' }}>
-            <Text strong style={{ fontSize: 13, color: '#1e3a8a', display: 'block', marginBottom: 4 }}>
-              Student Declares:
-            </Text>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: '#475569' }}>
-              {Object.keys((inspectForm as any).pre_clearance_checks)
-                .filter(k => k.startsWith('dorm_') && (inspectForm as any).pre_clearance_checks[k])
-                .map((key) => (
-                  <li key={key}>✅ {key.replace('dorm_', '').replace(/_/g, ' ').toUpperCase()}</li>
-                ))}
-            </ul>
-          </div>
-        )}
+        {renderStudentDeclarations(inspectForm)}
 
         <Checkbox.Group
           onChange={(checked) => setDamageItems(checked as string[])}
@@ -287,6 +314,9 @@ export default function DormitoryPage() {
           />
         </div>
       </Modal>
+
+      {/* ✅ NEW: STAFF CHECKLIST MANAGER */}
+      <StaffChecklistManager />
     </div>
   );
 }

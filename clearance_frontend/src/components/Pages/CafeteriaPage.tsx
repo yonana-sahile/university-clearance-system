@@ -4,6 +4,7 @@ import { CheckOutlined, SearchOutlined, CheckCircleOutlined, InfoCircleOutlined 
 import { apiFetch } from '../../utils/api';
 import type { ClearanceForm } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
+import StaffChecklistManager from '../Staff/StaffChecklistManager'; // ✅ NEW
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -13,12 +14,16 @@ export default function CafeteriaPage() {
   const [search, setSearch] = useState('');
   const [approving, setApproving] = useState<number | null>(null);
 
-  // ✅ NEW: Confirmation Modal State
+  // ✅ NEW: State to hold dynamic checklist items
+  const [staffChecklist, setStaffChecklist] = useState<any[]>([]);
+
+  // ✅ Confirmation Modal State
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [selectedForm, setSelectedForm] = useState<ClearanceForm | null>(null);
 
   useEffect(() => {
     loadData();
+    loadStaffChecklist();
   }, []);
 
   const loadData = async () => {
@@ -33,13 +38,20 @@ export default function CafeteriaPage() {
     }
   };
 
-  // ✅ 1. Open the confirmation modal
+  const loadStaffChecklist = async () => {
+    try {
+      const data = await apiFetch('staff/checklist');
+      setStaffChecklist(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load checklist', err);
+    }
+  };
+
   const handleApproveClick = (record: ClearanceForm) => {
     setSelectedForm(record);
     setIsConfirmModalOpen(true);
   };
 
-  // ✅ 2. Actually approve the form
   const handleConfirmApprove = async () => {
     if (!selectedForm) return;
     setApproving(selectedForm.id as number);
@@ -114,6 +126,39 @@ export default function CafeteriaPage() {
     }
   ];
 
+  // ✅ Helper to render student declarations dynamically
+  const renderStudentDeclarations = (form: ClearanceForm | null) => {
+    if (!form) return null;
+    const checks = (form as any)?.pre_clearance_checks || {};
+
+    const myCheckedItems = staffChecklist.filter(item => checks[`item_${item.id}`]);
+    const legacyChecked = Object.keys(checks).filter(k => k.startsWith('cafe_') && checks[k]);
+
+    if (myCheckedItems.length === 0 && legacyChecked.length === 0) {
+      return (
+        <div style={{ background: '#fffbeb', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #fde68a' }}>
+          <Text strong style={{ color: '#b45309' }}>⚠️ Student did not make any cafeteria declarations.</Text>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #bbf7d0' }}>
+        <Text strong style={{ display: 'block', marginBottom: 8, color: '#166534' }}>
+          📋 Student Declares They Have Completed:
+        </Text>
+        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#15803d' }}>
+          {myCheckedItems.map(item => (
+            <li key={item.id}>✅ {item.label}</li>
+          ))}
+          {legacyChecked.map(key => (
+            <li key={key}>✅ {key.replace('cafe_', '').replace(/_/g, ' ').toUpperCase()}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 16px' }}>
       <div style={{ marginBottom: 24 }}>
@@ -155,7 +200,6 @@ export default function CafeteriaPage() {
         ]}
       />
 
-      {/* ✅ NEW: CONFIRMATION MODAL WITH STUDENT DECLARATIONS */}
       <Modal
         title={
           <Space>
@@ -173,26 +217,11 @@ export default function CafeteriaPage() {
           Are you sure you want to clear the cafeteria status for <strong>{selectedForm?.full_name}</strong>?
         </Paragraph>
 
-        {/* ✅ SHOW STUDENT DECLARATIONS FILTERED FOR CAFETERIA */}
-        {(selectedForm as any)?.pre_clearance_checks && Object.keys((selectedForm as any).pre_clearance_checks).filter(k => k.startsWith('cafe_') && (selectedForm as any).pre_clearance_checks[k]).length > 0 ? (
-          <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #bbf7d0' }}>
-            <Text strong style={{ display: 'block', marginBottom: 8, color: '#166534' }}>
-              📋 Student Declares They Have Completed:
-            </Text>
-            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#15803d' }}>
-              {Object.keys((selectedForm as any).pre_clearance_checks)
-                .filter(k => k.startsWith('cafe_') && (selectedForm as any).pre_clearance_checks[k])
-                .map((key) => (
-                  <li key={key}>✅ {key.replace('cafe_', '').replace(/_/g, ' ').toUpperCase()}</li>
-                ))}
-            </ul>
-          </div>
-        ) : (
-          <div style={{ background: '#fffbeb', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #fde68a' }}>
-            <Text strong style={{ color: '#b45309' }}>⚠️ Student did not make any cafeteria declarations.</Text>
-          </div>
-        )}
+        {renderStudentDeclarations(selectedForm)}
       </Modal>
+
+      {/* ✅ NEW: STAFF CHECKLIST MANAGER */}
+      <StaffChecklistManager />
     </div>
   );
 }
