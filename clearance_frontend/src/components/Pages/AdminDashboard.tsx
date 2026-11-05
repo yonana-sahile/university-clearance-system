@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, Table, Tag, Button, Input, Upload, Typography, Space, Row, Col,
   Statistic, Modal, Form, message, Popconfirm, Switch, Select, Tabs,
-  Tooltip, Empty, Divider, Alert
+  Tooltip, Empty, Divider, Alert, AutoComplete // ✅ NEW: AutoComplete added
 } from 'antd';
 import {
   UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined,
@@ -283,7 +283,7 @@ export default function AdminDashboard() {
         id_number: values.id_number, first_name: values.first_name,
         last_name: values.last_name, college: values.college,
         department: values.department,
-        year_of_admission: values.year_of_admission, // ✅ Uses the typed value
+        year_of_admission: values.year_of_admission,
         status: 'active',
       };
       await apiFetch('admin/valid-students', { method: 'POST', body: JSON.stringify({ students: [newStudent] }) });
@@ -328,7 +328,7 @@ export default function AdminDashboard() {
     { title: 'Full Name', dataIndex: 'full_name', key: 'full_name', render: (n: string) => <Text strong>{n}</Text> },
     { title: 'College', dataIndex: 'college', key: 'college', render: (c: string) => <Text style={{ fontSize: 12, color: THEME.textMuted }}>{c}</Text> },
     { title: 'Department', dataIndex: 'department', key: 'department' },
-    { title: 'Year / Level', dataIndex: 'year_of_admission', key: 'year_of_admission' }, // ✅ Display Year in table
+    { title: 'Year / Level', dataIndex: 'year_of_admission', key: 'year_of_admission' },
     {
       title: 'Status', dataIndex: 'status', key: 'status',
       render: (st: string) => st === 'active'
@@ -590,11 +590,27 @@ export default function AdminDashboard() {
                 </Form.Item>
               </Col>
             </Row>
+
+            {/* ✅ FIXED: College is now a Dropdown to prevent typos */}
             <Form.Item name="college" label="College" rules={[{ required: true }]}>
-              <Input placeholder="College of Computing & Informatics" size="large" style={{ borderRadius: 10 }} />
+              <Select
+                size="large"
+                style={{ borderRadius: 10 }}
+                placeholder="Select a college"
+                options={colleges.map(c => ({ label: c.name, value: c.name }))}
+                showSearch
+              />
             </Form.Item>
+
+            {/* ✅ FIXED: Department is now a Dropdown to prevent typos */}
             <Form.Item name="department" label="Department" rules={[{ required: true }]}>
-              <Input placeholder="Computer Science" size="large" style={{ borderRadius: 10 }} />
+              <Select
+                size="large"
+                style={{ borderRadius: 10 }}
+                placeholder="Select a department"
+                options={departments.map(d => ({ label: d.name, value: d.name }))}
+                showSearch
+              />
             </Form.Item>
 
             {/* ✅ NEW: Year of Admission Input */}
@@ -647,20 +663,33 @@ export default function AdminDashboard() {
             <Form.Item name="password" label="Password" rules={[{ required: true }]}>
               <Input.Password size="large" style={{ borderRadius: 10 }} />
             </Form.Item>
+
+            {/* ✅ CHANGED to AutoComplete so you can type custom roles */}
             <Form.Item name="role" label="Role" rules={[{ required: true }]}>
-              <Select
+              <AutoComplete
+                placeholder="Select or type custom role (e.g. supermarket)"
                 size="large"
-                style={{ borderRadius: 10 }}
+                style={{ width: '100%', borderRadius: 10 }}
                 options={[
-                  { label: 'Department Head', value: 'departmenthead' },
-                  { label: 'Librarian', value: 'librarian' },
-                  { label: 'Registrar', value: 'registrar' },
-                  { label: 'Cafeteria', value: 'cafeteria' },
-                  { label: 'Dormitory', value: 'dormitory' },
-                  { label: 'Psychology', value: 'psychology' },
+                  { value: 'departmenthead', label: 'Department Head' },
+                  { value: 'librarian', label: 'Librarian' },
+                  { value: 'registrar', label: 'Registrar' },
+                  { value: 'cafeteria', label: 'Cafeteria' },
+                  { value: 'dormitory', label: 'Dormitory' },
+                  { value: 'psychology', label: 'Psychology' },
+                  { value: 'sportmaster', label: 'Sport Master' },
+                  { value: 'campuspolice', label: 'Campus Police' },
+                  { value: 'cooperationsharing', label: 'Coop Sharing' },
+                  { value: 'dopcordinator', label: 'DOP Coordinator' },
+                  { value: 'studentaffairs', label: 'Student Affairs' },
                 ]}
+                filterOption={(inputValue, option) =>
+                  (option?.label as string)?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1 ||
+                  (option?.value as string)?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                }
               />
             </Form.Item>
+
             <Form.Item name="department_id" label="Department (Required for Dept Heads & Registrars)">
               <Select
                 size="large"
@@ -811,22 +840,34 @@ export default function AdminDashboard() {
                       <Form.Item name="name" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, minWidth: 180 }}>
                         <Input placeholder="Step Name (e.g. Supermarket)" size="large" style={{ borderRadius: 10 }} />
                       </Form.Item>
+
+                      {/* ✅ CHANGED to AutoComplete so you can type custom roles */}
                       <Form.Item name="role_required" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, minWidth: 180 }}>
-                        <Select placeholder="Role Required" size="large" style={{ borderRadius: 10 }} options={[
-                          { label: 'Department Head', value: 'departmenthead' },
-                          { label: 'Librarian', value: 'librarian' },
-                          { label: 'Cafeteria', value: 'cafeteria' },
-                          { label: 'Psychology', value: 'psychology' },
-                          { label: 'Sport Master', value: 'sportmaster' },
-                          { label: 'Campus Police', value: 'campuspolice' },
-                          { label: 'Coop Sharing', value: 'cooperationsharing' },
-                          { label: 'DOP Coordinator', value: 'dopcordinator' },
-                          { label: 'Student Affairs', value: 'studentaffairs' },
-                          { label: 'Dormitory', value: 'dormitory' },
-                          { label: 'Registrar', value: 'registrar' },
-                          { label: 'Supermarket', value: 'supermarket' },
-                        ]} />
+                        <AutoComplete
+                          placeholder="Role (e.g. supermarket)"
+                          size="large"
+                          style={{ width: '100%', borderRadius: 10 }}
+                          options={[
+                            { value: 'departmenthead', label: 'Department Head' },
+                            { value: 'librarian', label: 'Librarian' },
+                            { value: 'cafeteria', label: 'Cafeteria' },
+                            { value: 'psychology', label: 'Psychology' },
+                            { value: 'sportmaster', label: 'Sport Master' },
+                            { value: 'campuspolice', label: 'Campus Police' },
+                            { value: 'cooperationsharing', label: 'Coop Sharing' },
+                            { value: 'dopcordinator', label: 'DOP Coordinator' },
+                            { value: 'studentaffairs', label: 'Student Affairs' },
+                            { value: 'dormitory', label: 'Dormitory' },
+                            { value: 'registrar', label: 'Registrar' },
+                            { value: 'supermarket', label: 'Supermarket' },
+                          ]}
+                          filterOption={(inputValue, option) =>
+                            (option?.label as string)?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1 ||
+                            (option?.value as string)?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                          }
+                        />
                       </Form.Item>
+
                       <Form.Item name="order" rules={[{ required: true, message: 'Required' }]} style={{ width: 100 }}>
                         <Input type="number" placeholder="Order" size="large" style={{ borderRadius: 10 }} />
                       </Form.Item>
@@ -847,7 +888,7 @@ export default function AdminDashboard() {
                         {
                           title: '', width: 70, align: 'right' as const,
                           render: (_: any, r: any) => (
-                            <Popconfirm title="Remove this step?" onConfirm={() => handleDeleteWorkflowStep(r.id)}>
+                            <Popconfirm title="Remove this step permanently?" onConfirm={() => handleDeleteWorkflowStep(r.id)}>
                               <Button size="small" danger icon={<DeleteOutlined />} style={{ borderRadius: 6 }} />
                             </Popconfirm>
                           ),
