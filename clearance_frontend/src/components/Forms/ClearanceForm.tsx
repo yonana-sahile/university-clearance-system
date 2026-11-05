@@ -7,16 +7,17 @@ const { Title, Text } = Typography;
 
 interface Props {
   onSubmitted?: () => void;
+  preClearanceChecks?: Record<string, boolean>; // ✅ NEW: Accept the checks from the dashboard
 }
 
-export default function ClearanceFormSubmission({ onSubmitted }: Props) {
+export default function ClearanceFormSubmission({ onSubmitted, preClearanceChecks }: Props) {
   const [loading, setLoading] = useState(false);
   const [portalLocked, setPortalLocked] = useState(false);
   const [portalLockedMessage, setPortalLockedMessage] = useState('');
   const [form] = Form.useForm();
   const user = getSession();
 
-  // ✅ NEW: Check portal status on mount
+  // ✅ Check portal status on mount
   useEffect(() => {
     apiFetch('system/settings')
       .then(res => {
@@ -37,7 +38,8 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
           enrollment_type: values.enrollment_type,
           year: values.year,
           semester: values.semester,
-          reason: values.reason
+          reason: values.reason,
+          pre_clearance_checks: preClearanceChecks // ✅ NEW: Send the checks to the backend
         })
       });
 
@@ -51,7 +53,7 @@ export default function ClearanceFormSubmission({ onSubmitted }: Props) {
     }
   };
 
-  // ✅ NEW: If portal is locked, show lock screen instead of the form
+  // ✅ If portal is locked, show lock screen instead of the form
   if (portalLocked) {
     return (
       <Card
