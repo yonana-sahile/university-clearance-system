@@ -4,14 +4,15 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
 
-from .models import ClearanceForm, FormStatus, Dispute, Appointment, WorkflowStep, ClearanceApproval
-from .serializers import (
-    ClearanceFormSerializer,
-    DisputeSerializer,
-    AppointmentSerializer,
-    WorkflowStepSerializer,
+from .models import (
+    ClearanceForm, FormStatus, Dispute, Appointment,
+    WorkflowStep, ClearanceApproval, ChecklistItem
 )
-from accounts.models import SystemSetting  # ✅ Global lock/unlock setting
+from .serializers import (
+    ClearanceFormSerializer, DisputeSerializer, AppointmentSerializer,
+    WorkflowStepSerializer, ChecklistItemSerializer
+)
+from accounts.models import SystemSetting
 
 
 # ============================================================
@@ -22,21 +23,17 @@ def get_next_workflow_step(form):
     Finds the next active step.
     If a step was deleted or disabled, it safely skips to the next valid one.
     """
-    # ✅ FIXED: Ensure we only look at approvals where the step still exists.
-    # If a step was permanently deleted, we ignore it and look at the last valid step.
     last_approval = form.approvals.filter(
         status='approved',
         step__isnull=False
     ).order_by('-step__order').first()
 
     if last_approval and last_approval.step:
-        # Find the next active step after the last valid approved step
         return WorkflowStep.objects.filter(
             is_active=True,
             order__gt=last_approval.step.order
         ).order_by('order').first()
     else:
-        # If no approvals yet (or all past steps were deleted), start from the first active step
         return WorkflowStep.objects.filter(is_active=True).order_by('order').first()
 
 
@@ -51,7 +48,6 @@ def student_dashboard(request):
         id_number=request.user.id_number
     ).order_by('-id')
 
-    # ✅ Return the dynamic workflow steps so the frontend can draw the timeline
     workflow = WorkflowStep.objects.filter(is_active=True).order_by('order')
 
     return Response({
@@ -80,7 +76,6 @@ def submit_form(request):
     data = request.data
     user = request.user
 
-    # 🚨 Check if the portal is locked globally
     system_settings = SystemSetting.get_settings()
     if not system_settings.is_clearance_open:
         return Response(
@@ -91,7 +86,6 @@ def submit_form(request):
             status=403
         )
 
-    # Get the first active step dynamically
     first_step = WorkflowStep.objects.filter(is_active=True).order_by('order').first()
 
     form = ClearanceForm.objects.create(
@@ -107,10 +101,9 @@ def submit_form(request):
         semester=data.get('semester', ''),
         reason=data.get('reason', ''),
 
-        # ✅ NEW: Save the student's pre-clearance checklist declarations
+        # ✅ Save the student's pre-clearance checklist declarations
         pre_clearance_checks=data.get('pre_clearance_checks', {}),
 
-        # ✅ DYNAMIC FIELDS
         overall_status=FormStatus.IN_PROGRESS,
         current_step=first_step
     )
@@ -136,7 +129,6 @@ def sign_cost_sharing(request, form_id):
     guarantor_phone = request.data.get('guarantor_phone', '')
     guarantor_woreda = request.data.get('guarantor_woreda', '')
 
-    # Save as a generic approval/note
     cost_sharing_step = WorkflowStep.objects.filter(role_required='cooperationsharing').first()
 
     ClearanceApproval.objects.create(
@@ -154,7 +146,7 @@ def sign_cost_sharing(request, form_id):
 
 
 # ============================================================
-# DISPUTES
+# DISPUTES & APPOINTMENTS
 # ============================================================
 
 @api_view(['GET', 'POST'])
@@ -180,10 +172,6 @@ def disputes(request):
         'dispute': DisputeSerializer(dispute).data,
     }, status=201)
 
-
-# ============================================================
-# APPOINTMENTS
-# ============================================================
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -213,7 +201,7 @@ def appointments(request):
 
 
 # ============================================================
-# STAFF ENDPOINTS (DYNAMIC)
+# STAFF ENDPOINTS
 # ============================================================
 
 @api_view(['GET'])
@@ -228,19 +216,16 @@ def list_forms(request):
     elif role == 'admin':
         forms = ClearanceForm.objects.all().order_by('-id')
     else:
-        # ✅ DYNAMIC: Only show forms currently at this staff member's step (works with custom roles!)
         forms = ClearanceForm.objects.filter(
             current_step__role_required=role,
             overall_status=FormStatus.IN_PROGRESS
         ).order_by('-id')
 
-        # 🚨 DEPARTMENT HEAD ISOLATION
         if role == 'departmenthead':
             if not request.user.department:
                 return Response([])
             forms = forms.filter(department_name__iexact=request.user.department.name)
 
-        # 🚨 REGISTRAR COLLEGE ISOLATION
         elif role == 'registrar':
             if getattr(request.user, 'college', None):
                 forms = forms.filter(college__iexact=request.user.college.name)
@@ -258,16 +243,13 @@ def staff_action(request, form_id):
 
     current_step = form.current_step
 
-    # If the current step got deleted by Admin, re-route the student safely
     if not current_step:
         current_step = get_next_workflow_step(form)
         form.current_step = current_step
 
-    # ✅ Works with ANY custom role!
     if not current_step or (request.user.role != current_step.role_required and request.user.role != 'admin'):
         return Response({'detail': 'You are not authorized to approve this stage.'}, status=403)
 
-    # 🚨 EXTRA VALIDATION: Department Head / Registrar
     if request.user.role == 'departmenthead':
         if not request.user.department or form.department_name.lower() != request.user.department.name.lower():
             return Response({'detail': 'This form belongs to another department.'}, status=403)
@@ -287,11 +269,9 @@ def staff_action(request, form_id):
         form.save()
         return Response({'message': 'Rejected successfully.'})
 
-    # If Approved:
     ClearanceApproval.objects.create(form=form, step=current_step, approved_by=request.user, note=note,
                                      status='approved')
 
-    # Find the next step dynamically
     next_step = get_next_workflow_step(form)
 
     if next_step:
@@ -303,7 +283,6 @@ def staff_action(request, form_id):
             'note': note,
         })
     else:
-        # No more steps!
         form.current_step = None
         form.overall_status = FormStatus.CLEARED_BY_REGISTRAR
         form.save()
@@ -347,8 +326,6 @@ def admin_workflow_step_detail(request, pk):
         return Response({'detail': 'Not found'}, status=404)
 
     if request.method == 'DELETE':
-        # ✅ FIXED: Hard delete. Removes it permanently from the database.
-        # Because ClearanceForm.current_step is SET_NULL, active students will safely skip it.
         step.delete()
         return Response(status=204)
 
@@ -386,3 +363,56 @@ def public_track(request):
         'enrollment_type': form.enrollment_type,
         'status': form.overall_status,
     })
+
+
+# ============================================================
+# ✅ NEW: DYNAMIC PRE-CLEARANCE CHECKLIST ENDPOINTS
+# ============================================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def staff_checklist(request):
+    """
+    Staff can view and add checklist items for their own role.
+    """
+    if request.method == 'GET':
+        items = ChecklistItem.objects.filter(role=request.user.role, is_active=True).order_by('order')
+        return Response(ChecklistItemSerializer(items, many=True).data)
+
+    if request.method == 'POST':
+        if request.user.role == 'student':
+            return Response({'detail': 'Students cannot manage checklists.'}, status=403)
+
+        item = ChecklistItem.objects.create(
+            role=request.user.role,
+            label=request.data.get('label'),
+            description=request.data.get('description', ''),
+            order=request.data.get('order', 1)
+        )
+        return Response(ChecklistItemSerializer(item).data, status=201)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def staff_checklist_detail(request, pk):
+    """
+    Staff can delete their own checklist items.
+    """
+    if request.user.role == 'student':
+        return Response({'detail': 'Students cannot manage checklists.'}, status=403)
+
+    item = ChecklistItem.objects.filter(id=pk, role=request.user.role).first()
+    if not item:
+        return Response({'detail': 'Not found'}, status=404)
+    item.delete()
+    return Response(status=204)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def public_checklist(request):
+    """
+    Public endpoint for the Student Dashboard to fetch all active checklist items.
+    """
+    items = ChecklistItem.objects.filter(is_active=True).order_by('role', 'order')
+    return Response(ChecklistItemSerializer(items, many=True).data)

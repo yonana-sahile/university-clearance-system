@@ -15,4 +15,9 @@ urlpatterns = [
     path('staff/<int:form_id>/action', views.staff_action),
     path('admin/workflow', views.admin_workflow_steps),
     path('admin/workflow/<int:pk>', views.admin_workflow_step_detail),
+
+    # ✅ NEW: Dynamic Checklist Routes
+    path('staff/checklist', views.staff_checklist),
+    path('staff/checklist/<int:pk>', views.staff_checklist_detail),
+    path('public/checklist', views.public_checklist),
 ]
