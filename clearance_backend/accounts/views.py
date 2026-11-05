@@ -276,7 +276,7 @@ def admin_department_detail(request, pk):
 
 
 # ============================================================
-# ✅ NEW: GLOBAL SYSTEM SETTINGS (LOCK/UNLOCK)
+# ✅ GLOBAL SYSTEM SETTINGS (LOCK/UNLOCK)
 # ============================================================
 
 @api_view(['GET'])
@@ -312,3 +312,28 @@ def toggle_clearance_portal(request):
         'is_clearance_open': settings.is_clearance_open,
         'locked_message': settings.locked_message,
     })
+
+
+# ============================================================
+# ✅ NEW: DYNAMIC ROLES FOR LOGIN PAGE
+# ============================================================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def public_roles(request):
+    """
+    Returns a list of all unique roles currently active in the workflow.
+    The frontend login page uses this to build the dropdown dynamically.
+    """
+    from clearance_app.models import WorkflowStep
+
+    # Get unique roles from active workflow steps
+    roles = list(WorkflowStep.objects.filter(is_active=True).values_list('role_required', flat=True).distinct())
+
+    # Always ensure these essential roles are available
+    if 'student' not in roles:
+        roles.append('student')
+    if 'admin' not in roles:
+        roles.append('admin')
+
+    return Response(roles)
