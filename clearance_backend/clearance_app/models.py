@@ -39,6 +39,9 @@ class ClearanceForm(models.Model):
     semester = models.CharField(max_length=50, blank=True)
     reason = models.TextField(blank=True)
 
+    # ✅ NEW: Save the student's pre-clearance checklist
+    pre_clearance_checks = models.JSONField(default=dict, blank=True)
+
     # ✅ NEW DYNAMIC FIELDS (Replaced the 20+ hardcoded fields)
     overall_status = models.CharField(
         max_length=40, choices=FormStatus.choices,

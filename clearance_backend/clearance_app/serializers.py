@@ -28,7 +28,7 @@ class ClearanceFormSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClearanceForm
-        fields = '__all__'
+        fields = '__all__' # ✅ This automatically includes pre_clearance_checks
 
     def get_building(self, obj):
         if not obj.building:
