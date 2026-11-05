@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Tag, Button, Input, Typography, Row, Col, Statistic, message } from 'antd';
-import { SafetyCertificateOutlined, SearchOutlined } from '@ant-design/icons';
+import { Card, Table, Tag, Button, Input, Typography, Row, Col, Statistic, message, Modal, Space } from 'antd';
+import { SafetyCertificateOutlined, SearchOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { apiFetch } from '../../utils/api';
 import type { ClearanceForm } from '../../types';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 export default function RegistrarPage() {
   const [forms, setForms] = useState<ClearanceForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [approving, setApproving] = useState<number | null>(null);
+
+  // ✅ NEW: Confirmation Modal State
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [selectedForm, setSelectedForm] = useState<ClearanceForm | null>(null);
 
   useEffect(() => {
     loadData();
@@ -19,7 +23,6 @@ export default function RegistrarPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Backend automatically filters to only show forms at the Registrar step
       const data = await apiFetch('forms');
       setForms(Array.isArray(data) ? data : []);
     } catch (err: any) {
@@ -29,20 +32,24 @@ export default function RegistrarPage() {
     }
   };
 
-  const handleFinalClearance = async (record: ClearanceForm) => {
-    setApproving(record.id as number);
+  const handleFinalClearanceClick = (record: ClearanceForm) => {
+    setSelectedForm(record);
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleConfirmFinalClearance = async () => {
+    if (!selectedForm) return;
+    setApproving(selectedForm.id as number);
     try {
-      // ✅ FIXED: Changed endpoint to `staff/action/...`
-      await apiFetch(`staff/action/${record.id}`, {
+      await apiFetch(`staff/action/${selectedForm.id}`, {
         method: 'POST',
         body: JSON.stringify({
           action: 'approve',
           note: 'Final clearance verified across all campus offices. Official certificate issued.',
         }),
       });
-      message.success(
-        `Official Digital Clearance Certificate issued for ${record.full_name}!`
-      );
+      message.success(`Official Digital Clearance Certificate issued for ${selectedForm.full_name}!`);
+      setIsConfirmModalOpen(false);
       loadData();
     } catch (err: any) {
       message.error(err.message || 'Approval failed');
@@ -56,10 +63,7 @@ export default function RegistrarPage() {
     (f.id_number || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  // Since the backend only sends forms currently at the Registrar step, they are all "ready"
   const readyForRegistrarCount = forms.filter(f => f.overall_status !== 'rejected').length;
-
-  // Cleared forms are no longer in this queue, so this is 0 for the active view
   const clearedCount = forms.filter(f => f.overall_status === 'Cleared by Registrar').length;
 
   const columns = [
@@ -68,14 +72,11 @@ export default function RegistrarPage() {
     { title: 'Department', dataIndex: 'department_name', key: 'department_name' },
     {
       title: 'Current Stage',
-      dataIndex: 'overall_status', // ✅ Use dynamic overall_status
+      dataIndex: 'overall_status',
       key: 'overall_status',
       render: (st: string) => {
-        if (st === 'Cleared by Registrar')
-          return <Tag color="success">🎉 Cleared by Registrar</Tag>;
+        if (st === 'Cleared by Registrar') return <Tag color="success">🎉 Cleared by Registrar</Tag>;
         if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
-
-        // Since the backend sends it here, it's ready for the registrar
         return <Tag color="gold">⚡ Ready for Registrar Final Seal</Tag>;
       }
     },
@@ -89,19 +90,13 @@ export default function RegistrarPage() {
         if (record.overall_status === 'rejected') {
           return <Text type="secondary" style={{ fontSize: 12 }}>Rejected</Text>;
         }
-
-        // ✅ FIXED: Always show the button for forms sent by the backend
         return (
           <Button
             type="primary"
             size="small"
             icon={<SafetyCertificateOutlined />}
-            loading={approving === record.id}
-            onClick={() => handleFinalClearance(record)}
-            style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              border: 'none'
-            }}
+            onClick={() => handleFinalClearanceClick(record)}
+            style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', border: 'none' }}
           >
             Issue Final Clearance
           </Button>
@@ -113,41 +108,24 @@ export default function RegistrarPage() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 16px' }}>
       <div style={{ marginBottom: 24 }}>
-        <Title level={2} style={{ margin: 0, fontWeight: 800 }}>
-          University Registrar Office Portal
-        </Title>
-        <Text type="secondary">
-          Final clearance verification, completion rate metrics, and official
-          digital certificate issuance
-        </Text>
+        <Title level={2} style={{ margin: 0, fontWeight: 800 }}>University Registrar Office Portal</Title>
+        <Text type="secondary">Final clearance verification, completion rate metrics, and official digital certificate issuance</Text>
       </div>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={8}>
           <Card style={{ borderRadius: 16 }} styles={{ body: { textAlign: 'center' } }}>
-            <Statistic
-              title="Total Clearance Requests"
-              value={forms.length}
-              styles={{ content: { color: '#2563eb', fontWeight: 800 } }}
-            />
+            <Statistic title="Total Clearance Requests" value={forms.length} styles={{ content: { color: '#2563eb', fontWeight: 800 } }} />
           </Card>
         </Col>
         <Col xs={12} sm={8}>
           <Card style={{ borderRadius: 16 }} styles={{ body: { textAlign: 'center' } }}>
-            <Statistic
-              title="Ready for Registrar Seal"
-              value={readyForRegistrarCount}
-              styles={{ content: { color: '#f59e0b', fontWeight: 800 } }}
-            />
+            <Statistic title="Ready for Registrar Seal" value={readyForRegistrarCount} styles={{ content: { color: '#f59e0b', fontWeight: 800 } }} />
           </Card>
         </Col>
         <Col xs={12} sm={8}>
           <Card style={{ borderRadius: 16 }} styles={{ body: { textAlign: 'center' } }}>
-            <Statistic
-              title="Graduates Cleared (In Queue)"
-              value={clearedCount}
-              styles={{ content: { color: '#10b981', fontWeight: 800 } }}
-            />
+            <Statistic title="Graduates Cleared (In Queue)" value={clearedCount} styles={{ content: { color: '#10b981', fontWeight: 800 } }} />
           </Card>
         </Col>
       </Row>
@@ -166,11 +144,43 @@ export default function RegistrarPage() {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 8 }}
-          locale={{
-            emptyText: 'No students pending registrar clearance at this time.'
-          }}
+          locale={{ emptyText: 'No students pending registrar clearance at this time.' }}
         />
       </Card>
+
+      {/* ✅ NEW: CONFIRMATION MODAL */}
+      <Modal
+        title={<Space><SafetyCertificateOutlined style={{ color: '#10b981' }} /><span>Confirm Final Registrar Clearance</span></Space>}
+        open={isConfirmModalOpen}
+        onCancel={() => setIsConfirmModalOpen(false)}
+        onOk={handleConfirmFinalClearance}
+        okText="Issue Certificate"
+        okButtonProps={{ style: { background: '#10b981', border: 'none' }, loading: approving === selectedForm?.id }}
+      >
+        <Paragraph>
+          Are you sure you want to issue the final clearance certificate for <strong>{selectedForm?.full_name}</strong>?
+        </Paragraph>
+
+        {/* ✅ SHOW STUDENT DECLARATIONS FILTERED FOR REGISTRAR */}
+        {(selectedForm as any)?.pre_clearance_checks && Object.keys((selectedForm as any).pre_clearance_checks).filter(k => k.startsWith('reg_') && (selectedForm as any).pre_clearance_checks[k]).length > 0 ? (
+          <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #bbf7d0' }}>
+            <Text strong style={{ display: 'block', marginBottom: 8, color: '#166534' }}>
+              📋 Student Declares They Have Completed:
+            </Text>
+            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#15803d' }}>
+              {Object.keys((selectedForm as any).pre_clearance_checks)
+                .filter(k => k.startsWith('reg_') && (selectedForm as any).pre_clearance_checks[k])
+                .map((key) => (
+                  <li key={key}>✅ {key.replace('reg_', '').replace(/_/g, ' ').toUpperCase()}</li>
+                ))}
+            </ul>
+          </div>
+        ) : (
+          <div style={{ background: '#fffbeb', padding: 16, borderRadius: 10, marginTop: 16, border: '1px solid #fde68a' }}>
+            <Text strong style={{ color: '#b45309' }}>⚠️ Student did not make any Registrar declarations.</Text>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
