@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, Table, Tag, Button, Input, Modal, Typography, Space, Row, Col, Select, Checkbox, message, Tabs
 } from 'antd';
-import { CheckOutlined, SearchOutlined, ToolOutlined } from '@ant-design/icons';
+import { CheckOutlined, SearchOutlined, ToolOutlined, WarningOutlined } from '@ant-design/icons';
 import { apiFetch } from '../../utils/api';
 import type { ClearanceForm, Building } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
@@ -16,6 +16,8 @@ export default function DormitoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [approving, setApproving] = useState<number | null>(null);
+
+  // Inspection Modal State
   const [isInspectModalOpen, setIsInspectModalOpen] = useState(false);
   const [inspectForm, setInspectForm] = useState<ClearanceForm | null>(null);
   const [damageItems, setDamageItems] = useState<string[]>([]);
@@ -28,7 +30,6 @@ export default function DormitoryPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Backend automatically filters to only show forms at the Dormitory step
       const [formsData, buildingsData] = await Promise.all([
         apiFetch('forms'),
         apiFetch('buildings').catch(() => ({ buildings: [] })),
@@ -43,15 +44,15 @@ export default function DormitoryPage() {
     }
   };
 
+  // ✅ 1. Approves the room if everything is clean
   const handleApproveDorm = async (record: ClearanceForm) => {
     setApproving(record.id as number);
     try {
-      // ✅ FIXED: Changed endpoint to `staff/action/...`
       await apiFetch(`staff/action/${record.id}`, {
         method: 'POST',
         body: JSON.stringify({
           action: 'approve',
-          note: 'Room inspected. Key returned, zero room property damage.',
+          note: 'Room inspected. Key returned successfully. Zero room property damage.',
         }),
       });
       message.success(`Dormitory clearance approved for ${record.full_name}!`);
@@ -63,10 +64,37 @@ export default function DormitoryPage() {
     }
   };
 
-  const handleIssueDamageFine = () => {
-    // Backend endpoint for damage fines not yet implemented in dynamic workflow.
-    message.info('Room damage fine issuance requires backend support.');
-    setIsInspectModalOpen(false);
+  // ✅ 2. Issues a fine and rejects the form
+  const handleIssueDamageFine = async () => {
+    if (!inspectForm) return;
+
+    if (damageItems.length === 0) {
+      message.warning('Please select at least one damaged item.');
+      return;
+    }
+
+    setApproving(inspectForm.id as number);
+    try {
+      const noteText = `Dormitory Inspection Failed. Damaged/Missing Items: ${damageItems.join(', ')}. Total Fine: ${damageFine} ETB. Please clear your dues at the finance office and resubmit.`;
+
+      await apiFetch(`staff/action/${inspectForm.id}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'reject', // Rejecting forces the student to resubmit
+          note: noteText,
+        }),
+      });
+
+      message.success(`Damage fine of ${damageFine} ETB issued to ${inspectForm.full_name}. Form rejected for resubmission.`);
+      setIsInspectModalOpen(false);
+      setDamageItems([]);
+      setDamageFine(1500);
+      loadData();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to issue fine');
+    } finally {
+      setApproving(null);
+    }
   };
 
   const filtered = forms.filter(f => {
@@ -97,10 +125,10 @@ export default function DormitoryPage() {
     },
     {
       title: 'Dorm Clearance',
-      dataIndex: 'overall_status', // ✅ Use dynamic overall_status
+      dataIndex: 'overall_status',
       key: 'overall_status',
       render: (st: string) => {
-        if (st === 'rejected') return <Tag color="error">Rejected</Tag>;
+        if (st === 'rejected') return <Tag color="error">Rejected / Resubmit</Tag>;
         if (st === 'requires_payment') return <Tag color="warning">Pending Payment</Tag>;
         return <Tag color="processing">Ready for Inspection</Tag>;
       }
@@ -113,7 +141,6 @@ export default function DormitoryPage() {
           return <Text type="secondary" style={{ fontSize: 12 }}>Not at your stage</Text>;
         }
 
-        // ✅ FIXED: Always show the buttons for forms sent by the backend
         return (
           <Space>
             <Button
@@ -124,7 +151,7 @@ export default function DormitoryPage() {
               onClick={() => handleApproveDorm(record)}
               style={{ background: '#10b981', border: 'none' }}
             >
-              Clear Room
+              Clear Room (No Damage)
             </Button>
             <Button
               danger
@@ -132,10 +159,12 @@ export default function DormitoryPage() {
               icon={<ToolOutlined />}
               onClick={() => {
                 setInspectForm(record);
+                setDamageItems([]); // Reset form state
+                setDamageFine(1500);
                 setIsInspectModalOpen(true);
               }}
             >
-              Inspect Room Damage
+              Inspect Damage
             </Button>
           </Space>
         );
@@ -200,38 +229,49 @@ export default function DormitoryPage() {
         ]}
       />
 
-      {/* INSPECTION MODAL */}
+      {/* ✅ FUNCTIONAL INSPECTION MODAL */}
       <Modal
-        title={`Room Property Inspection: ${inspectForm?.full_name}`}
+        title={
+          <Space>
+            <WarningOutlined style={{ color: '#ef4444' }} />
+            <span>Room Inspection: {inspectForm?.full_name}</span>
+          </Space>
+        }
         open={isInspectModalOpen}
         onCancel={() => setIsInspectModalOpen(false)}
         onOk={handleIssueDamageFine}
-        okText="Issue Damage Fine"
-        okButtonProps={{ danger: true }}
+        okText="Issue Fine & Reject Form"
+        okButtonProps={{ danger: true, loading: approving === inspectForm?.id }}
       >
-        <Paragraph>Check any damaged or missing room items:</Paragraph>
+        <Paragraph type="secondary">
+          Check any damaged or missing room items. Submitting this will reject the student's clearance and require them to pay the fine before resubmitting.
+        </Paragraph>
+
         <Checkbox.Group
           onChange={(checked) => setDamageItems(checked as string[])}
+          value={damageItems}
           style={{ width: '100%' }}
         >
           <Row gutter={[8, 12]}>
-            <Col span={12}><Checkbox value="Room Key">Room Key</Checkbox></Col>
-            <Col span={12}><Checkbox value="Door Lock">Door / Lock</Checkbox></Col>
-            <Col span={12}><Checkbox value="Bed Frame">Bed Frame</Checkbox></Col>
-            <Col span={12}><Checkbox value="Mattress">Mattress</Checkbox></Col>
-            <Col span={12}><Checkbox value="Study Desk">Study Desk</Checkbox></Col>
-            <Col span={12}><Checkbox value="Locker">Locker / Cupboard</Checkbox></Col>
-            <Col span={12}><Checkbox value="Window Glass">Window Glass</Checkbox></Col>
-            <Col span={12}><Checkbox value="Plumbing Fixture">Plumbing / Tap</Checkbox></Col>
+            <Col span={12}><Checkbox value="Room Key">🔑 Room Key Not Returned</Checkbox></Col>
+            <Col span={12}><Checkbox value="Door Lock">🚪 Door / Lock Broken</Checkbox></Col>
+            <Col span={12}><Checkbox value="Bed Frame">🛏️ Bed Frame Broken</Checkbox></Col>
+            <Col span={12}><Checkbox value="Mattress">🛌 Mattress Damaged/Lost</Checkbox></Col>
+            <Col span={12}><Checkbox value="Study Desk">🪑 Study Desk Damaged</Checkbox></Col>
+            <Col span={12}><Checkbox value="Locker">🗄️ Locker / Cupboard Broken</Checkbox></Col>
+            <Col span={12}><Checkbox value="Window Glass">🪟 Window Glass Broken</Checkbox></Col>
+            <Col span={12}><Checkbox value="Plumbing Fixture">🚿 Plumbing / Tap Broken</Checkbox></Col>
           </Row>
         </Checkbox.Group>
 
-        <div style={{ marginTop: 20 }}>
+        <div style={{ marginTop: 24 }}>
           <Text strong>Calculated Fine Amount (ETB):</Text>
           <Input
+            type="number"
             value={damageFine}
             onChange={e => setDamageFine(Number(e.target.value))}
-            style={{ marginTop: 6, borderRadius: 8 }}
+            style={{ marginTop: 6, borderRadius: 8, fontSize: 18, fontWeight: 700, color: '#dc2626' }}
+            prefix="ETB"
           />
         </div>
       </Modal>
