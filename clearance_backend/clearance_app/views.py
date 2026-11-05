@@ -11,7 +11,7 @@ from .serializers import (
     AppointmentSerializer,
     WorkflowStepSerializer,
 )
-from accounts.models import SystemSetting  # ✅ NEW IMPORT: Global lock/unlock setting
+from accounts.models import SystemSetting  # ✅ Global lock/unlock setting
 
 
 # ============================================================
@@ -22,16 +22,21 @@ def get_next_workflow_step(form):
     Finds the next active step.
     If a step was deleted or disabled, it safely skips to the next valid one.
     """
-    last_approval = form.approvals.filter(status='approved').order_by('-step__order').first()
+    # ✅ FIXED: Ensure we only look at approvals where the step still exists.
+    # If a step was permanently deleted, we ignore it and look at the last valid step.
+    last_approval = form.approvals.filter(
+        status='approved',
+        step__isnull=False
+    ).order_by('-step__order').first()
 
     if last_approval and last_approval.step:
-        # Find the next active step after the last approved step
+        # Find the next active step after the last valid approved step
         return WorkflowStep.objects.filter(
             is_active=True,
             order__gt=last_approval.step.order
         ).order_by('order').first()
     else:
-        # If no approvals yet, start from the very first active step
+        # If no approvals yet (or all past steps were deleted), start from the first active step
         return WorkflowStep.objects.filter(is_active=True).order_by('order').first()
 
 
@@ -47,7 +52,7 @@ def student_dashboard(request):
     ).order_by('-id')
 
     # ✅ Return the dynamic workflow steps so the frontend can draw the timeline
-    workflow = WorkflowStep.objects.filter(is_active=True)
+    workflow = WorkflowStep.objects.filter(is_active=True).order_by('order')
 
     return Response({
         'forms': ClearanceFormSerializer(forms, many=True).data,
@@ -75,7 +80,7 @@ def submit_form(request):
     data = request.data
     user = request.user
 
-    # 🚨 NEW: Check if the portal is locked globally
+    # 🚨 Check if the portal is locked globally
     system_settings = SystemSetting.get_settings()
     if not system_settings.is_clearance_open:
         return Response(
@@ -102,7 +107,7 @@ def submit_form(request):
         semester=data.get('semester', ''),
         reason=data.get('reason', ''),
 
-        # ✅ NEW DYNAMIC FIELDS
+        # ✅ DYNAMIC FIELDS
         overall_status=FormStatus.IN_PROGRESS,
         current_step=first_step
     )
@@ -128,7 +133,7 @@ def sign_cost_sharing(request, form_id):
     guarantor_phone = request.data.get('guarantor_phone', '')
     guarantor_woreda = request.data.get('guarantor_woreda', '')
 
-    # Since we removed the hardcoded column, we save this as a generic approval/note
+    # Save as a generic approval/note
     cost_sharing_step = WorkflowStep.objects.filter(role_required='cooperationsharing').first()
 
     ClearanceApproval.objects.create(
@@ -220,7 +225,7 @@ def list_forms(request):
     elif role == 'admin':
         forms = ClearanceForm.objects.all().order_by('-id')
     else:
-        # ✅ DYNAMIC: Only show forms currently at this staff member's step
+        # ✅ DYNAMIC: Only show forms currently at this staff member's step (works with custom roles!)
         forms = ClearanceForm.objects.filter(
             current_step__role_required=role,
             overall_status=FormStatus.IN_PROGRESS
@@ -255,6 +260,7 @@ def staff_action(request, form_id):
         current_step = get_next_workflow_step(form)
         form.current_step = current_step
 
+    # ✅ Works with ANY custom role!
     if not current_step or (request.user.role != current_step.role_required and request.user.role != 'admin'):
         return Response({'detail': 'You are not authorized to approve this stage.'}, status=403)
 
@@ -338,8 +344,9 @@ def admin_workflow_step_detail(request, pk):
         return Response({'detail': 'Not found'}, status=404)
 
     if request.method == 'DELETE':
-        step.is_active = False  # Soft delete to protect active forms
-        step.save()
+        # ✅ FIXED: Hard delete. Removes it permanently from the database.
+        # Because ClearanceForm.current_step is SET_NULL, active students will safely skip it.
+        step.delete()
         return Response(status=204)
 
     if request.method == 'PATCH':
