@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import ClearanceForm, Dispute, Appointment, WorkflowStep, ClearanceApproval
+from .models import (
+    ClearanceForm, Dispute, Appointment, WorkflowStep,
+    ClearanceApproval, ChecklistItem
+)
 
 
 class WorkflowStepSerializer(serializers.ModelSerializer):
@@ -22,13 +25,13 @@ class ClearanceFormSerializer(serializers.ModelSerializer):
     student_id = serializers.IntegerField(source='student.id', read_only=True)
     building = serializers.SerializerMethodField()
 
-    # ✅ NEW: Nest the dynamic step and approvals history
+    # ✅ Nest the dynamic step and approvals history
     current_step = WorkflowStepSerializer(read_only=True)
     approvals = ClearanceApprovalSerializer(many=True, read_only=True)
 
     class Meta:
         model = ClearanceForm
-        fields = '__all__' # ✅ This automatically includes pre_clearance_checks
+        fields = '__all__'  # ✅ This automatically includes pre_clearance_checks
 
     def get_building(self, obj):
         if not obj.building:
@@ -55,3 +58,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
         model = Appointment
         fields = '__all__'
         read_only_fields = ['student', 'ref', 'token_number', 'created_at']
+
+class ChecklistItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChecklistItem
+        fields = '__all__'

@@ -39,7 +39,7 @@ class ClearanceForm(models.Model):
     semester = models.CharField(max_length=50, blank=True)
     reason = models.TextField(blank=True)
 
-    # ✅ NEW: Save the student's pre-clearance checklist
+    # ✅ Save the student's pre-clearance checklist
     pre_clearance_checks = models.JSONField(default=dict, blank=True)
 
     # ✅ NEW DYNAMIC FIELDS (Replaced the 20+ hardcoded fields)
@@ -138,3 +138,16 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"{self.ref} - {self.office_name}"
+
+class ChecklistItem(models.Model):
+    role = models.CharField(max_length=50)  # e.g., 'departmenthead', 'campuspolice'
+    label = models.CharField(max_length=200)  # e.g., 'Return Lab Equipment'
+    description = models.TextField(blank=True)  # Detailed description for the student
+    order = models.PositiveIntegerField(default=1)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"[{self.role}] {self.label}"
