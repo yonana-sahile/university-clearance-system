@@ -35,6 +35,8 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name', 'full_name',
             'role', 'id_number', 'phone', 'department_name', 'college_name',
             'building_id', 'building_name', 'date_joined', 'last_login',
+            # ✅ NEW FIELDS
+            'program_level', 'enrollment_type', 'current_year',
         ]
 
     def get_full_name(self, obj):
@@ -79,6 +81,10 @@ class RegisterSerializer(serializers.Serializer):
             id_number=valid.id_number,
             department=valid.department,
             college=valid.college,
+            # ✅ NEW: Copy academic info from ValidStudent to User
+            program_level=valid.program_level,
+            enrollment_type=valid.enrollment_type,
+            current_year=valid.current_year,
         )
         valid.is_registered = True
         valid.save(update_fields=['is_registered'])

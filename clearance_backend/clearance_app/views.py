@@ -19,10 +19,6 @@ from accounts.models import SystemSetting
 # HELPER FUNCTION: DYNAMIC NEXT STEP
 # ============================================================
 def get_next_workflow_step(form):
-    """
-    Finds the next active step.
-    If a step was deleted or disabled, it safely skips to the next valid one.
-    """
     last_approval = form.approvals.filter(
         status='approved',
         step__isnull=False
@@ -95,15 +91,15 @@ def submit_form(request):
         student_email=user.email or '',
         college=user.college.name if getattr(user, 'college', None) else '',
         department_name=user.department.name if getattr(user, 'department', None) else '',
-        program_level=data.get('program_level', ''),
-        enrollment_type=data.get('enrollment_type', ''),
-        year=data.get('year', ''),
+
+        # ✅ CRITICAL SECURITY FIX: Force from user profile
+        program_level=user.program_level or 'Undergraduate (B.Sc.)',
+        enrollment_type=user.enrollment_type or 'Regular',
+        year=user.current_year or '4th Year',
+
         semester=data.get('semester', ''),
         reason=data.get('reason', ''),
-
-        # ✅ Save the student's pre-clearance checklist declarations
         pre_clearance_checks=data.get('pre_clearance_checks', {}),
-
         overall_status=FormStatus.IN_PROGRESS,
         current_step=first_step
     )
@@ -116,7 +112,6 @@ def submit_form(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def sign_cost_sharing(request, form_id):
-    """Student signs the cost-sharing contract (Form CS-04)."""
     try:
         form = ClearanceForm.objects.get(
             id=form_id,
@@ -372,9 +367,6 @@ def public_track(request):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def staff_checklist(request):
-    """
-    Staff can view and add checklist items for their own role.
-    """
     if request.method == 'GET':
         items = ChecklistItem.objects.filter(role=request.user.role, is_active=True).order_by('order')
         return Response(ChecklistItemSerializer(items, many=True).data)
@@ -395,9 +387,6 @@ def staff_checklist(request):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def staff_checklist_detail(request, pk):
-    """
-    Staff can delete their own checklist items.
-    """
     if request.user.role == 'student':
         return Response({'detail': 'Students cannot manage checklists.'}, status=403)
 
@@ -411,8 +400,5 @@ def staff_checklist_detail(request, pk):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def public_checklist(request):
-    """
-    Public endpoint for the Student Dashboard to fetch all active checklist items.
-    """
     items = ChecklistItem.objects.filter(is_active=True).order_by('role', 'order')
     return Response(ChecklistItemSerializer(items, many=True).data)

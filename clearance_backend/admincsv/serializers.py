@@ -12,6 +12,8 @@ class ValidStudentSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'first_name', 'last_name', 'full_name', 'id_number',
             'email', 'college', 'department', 'year_of_admission',
+            # ✅ NEW FIELDS
+            'program_level', 'enrollment_type', 'current_year',
             'status', 'is_registered', 'registered_at',
         ]
 
