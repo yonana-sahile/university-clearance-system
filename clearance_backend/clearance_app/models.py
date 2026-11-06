@@ -151,3 +151,20 @@ class ChecklistItem(models.Model):
 
     def __str__(self):
         return f"[{self.role}] {self.label}"
+class PropertyExitPass(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('pending', 'Pending Dorm Review'),
+        ('approved', 'Approved & Signed'),
+        ('rejected', 'Rejected'),
+    ]
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='exit_passes')
+    items = models.JSONField(default=list, blank=True) # [{"item": "Laptop", "quantity": 1, "brand": "MacBook"}]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    dorm_note = models.TextField(blank=True)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='signed_exit_passes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Exit Pass #{self.id} - {self.student.full_name()} ({self.status})"

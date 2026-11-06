@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     ClearanceForm, Dispute, Appointment, WorkflowStep,
-    ClearanceApproval, ChecklistItem
+    ClearanceApproval, ChecklistItem, PropertyExitPass
 )
 
 
@@ -62,4 +62,12 @@ class AppointmentSerializer(serializers.ModelSerializer):
 class ChecklistItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChecklistItem
+        fields = '__all__'
+class PropertyExitPassSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.full_name', read_only=True)
+    student_id_num = serializers.CharField(source='student.id_number', read_only=True)
+    approved_by_name = serializers.CharField(source='approved_by.full_name', read_only=True)
+
+    class Meta:
+        model = PropertyExitPass
         fields = '__all__'

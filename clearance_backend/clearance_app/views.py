@@ -6,11 +6,11 @@ from django.utils import timezone
 
 from .models import (
     ClearanceForm, FormStatus, Dispute, Appointment,
-    WorkflowStep, ClearanceApproval, ChecklistItem
+    WorkflowStep, ClearanceApproval, ChecklistItem,PropertyExitPass
 )
 from .serializers import (
     ClearanceFormSerializer, DisputeSerializer, AppointmentSerializer,
-    WorkflowStepSerializer, ChecklistItemSerializer
+    WorkflowStepSerializer, ChecklistItemSerializer,PropertyExitPassSerializer
 )
 from accounts.models import SystemSetting
 
@@ -402,3 +402,63 @@ def staff_checklist_detail(request, pk):
 def public_checklist(request):
     items = ChecklistItem.objects.filter(is_active=True).order_by('role', 'order')
     return Response(ChecklistItemSerializer(items, many=True).data)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def student_exit_pass(request):
+    if request.user.role != 'student':
+        return Response({'detail': 'Only students can request exit passes.'}, status=403)
+
+    exit_pass, created = PropertyExitPass.objects.get_or_create(student=request.user)
+
+    if request.method == 'GET':
+        return Response(PropertyExitPassSerializer(exit_pass).data)
+
+    # POST: Submit the list of items
+    items = request.data.get('items', [])
+    if not items:
+        return Response({'detail': 'You must add at least one item.'}, status=400)
+
+    exit_pass.items = items
+    exit_pass.status = 'pending'
+    exit_pass.save()
+
+    return Response({'message': 'Exit pass submitted for Dormitory validation.',
+                     'pass': PropertyExitPassSerializer(exit_pass).data})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dorm_exit_passes(request):
+    if request.user.role not in ['dormitory', 'admin']:
+        return Response({'detail': 'Only Dormitory staff can view exit passes.'}, status=403)
+
+    passes = PropertyExitPass.objects.filter(status='pending').order_by('-created_at')
+    return Response(PropertyExitPassSerializer(passes, many=True).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def dorm_validate_exit_pass(request, pk):
+    if request.user.role not in ['dormitory', 'admin']:
+        return Response({'detail': 'Only Dormitory staff can validate exit passes.'}, status=403)
+
+    exit_pass = PropertyExitPass.objects.filter(id=pk).first()
+    if not exit_pass:
+        return Response({'detail': 'Exit pass not found.'}, status=404)
+
+    action = request.data.get('action')
+    note = request.data.get('note', '')
+
+    if action == 'approve':
+        exit_pass.status = 'approved'
+        exit_pass.approved_by = request.user
+        exit_pass.dorm_note = note
+    else:
+        exit_pass.status = 'rejected'
+        exit_pass.dorm_note = note
+
+    exit_pass.save()
+    return Response(
+        {'message': f'Exit pass {action}d successfully.', 'pass': PropertyExitPassSerializer(exit_pass).data})
