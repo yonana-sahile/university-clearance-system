@@ -84,7 +84,6 @@ export default function WelcomePage() {
     }
   };
 
-  // ✅ NEW HELPER: Format the new overall_status for public display
   const getPublicStatusTag = (status: string) => {
     if (status === 'Cleared by Registrar') return <Tag color="success">🎉 Fully Cleared</Tag>;
     if (status === 'rejected') return <Tag color="error">Action Required</Tag>;
@@ -97,7 +96,7 @@ export default function WelcomePage() {
       style={{
         minHeight: 'calc(100vh - 120px)',
         background: 'transparent',
-        color: 'inherit',
+        color: 'var(--text-main)',
         padding: '36px 16px 60px',
         display: 'flex',
         flexDirection: 'column',
@@ -109,9 +108,9 @@ export default function WelcomePage() {
         style={{
           width: '100%',
           maxWidth: 1000,
-          background: 'rgba(255, 255, 255, 0.85)',
+          background: 'var(--surface-card)', // ✅ CHANGED
           backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(30, 58, 138, 0.15)',
+          border: '1px solid var(--surface-border)', // ✅ CHANGED
           borderRadius: 40,
           padding: '10px 24px',
           marginBottom: 28,
@@ -123,7 +122,7 @@ export default function WelcomePage() {
           style={{
             fontSize: 13,
             fontWeight: 700,
-            color: '#1e3a8a',
+            color: 'var(--text-main)', // ✅ CHANGED
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -143,8 +142,8 @@ export default function WelcomePage() {
           width: '100%',
           maxWidth: 1000,
           borderRadius: 28,
-          background: '#ffffff',
-          borderColor: '#e2e8f0',
+          background: 'var(--surface-card)', // ✅ CHANGED
+          borderColor: 'var(--surface-border)', // ✅ CHANGED
           boxShadow:
             '0 20px 45px -10px rgba(15, 23, 42, 0.08), 0 0 1px 1px rgba(15, 23, 42, 0.03)',
           textAlign: 'center',
@@ -185,7 +184,7 @@ export default function WelcomePage() {
                 marginTop: 6,
                 fontSize: 11,
                 fontWeight: 700,
-                color: '#64748b',
+                color: 'var(--text-secondary)', // ✅ CHANGED
               }}
             >
               University Seal
@@ -218,7 +217,7 @@ export default function WelcomePage() {
         <Title
           level={1}
           style={{
-            color: '#0f172a',
+            color: 'var(--text-main)', // ✅ CHANGED
             fontWeight: 900,
             marginBottom: 8,
             fontSize: 36,
@@ -227,13 +226,13 @@ export default function WelcomePage() {
         >
           Mekdela Amba University
         </Title>
-        <Text style={{ color: '#1d4ed8', fontSize: 18, fontWeight: 700 }}>
+        <Text style={{ color: '#3b82f6', fontSize: 18, fontWeight: 700 }}>
           Digital Academic Clearance System (UCS)
         </Text>
 
         <Paragraph
           style={{
-            color: '#475569',
+            color: 'var(--text-secondary)', // ✅ CHANGED
             fontSize: 15,
             maxWidth: 720,
             margin: '20px auto 32px',
@@ -321,9 +320,9 @@ export default function WelcomePage() {
                   height: 52,
                   borderRadius: 14,
                   padding: '0 28px',
-                  borderColor: '#cbd5e1',
-                  color: '#334155',
-                  background: '#f8fafc',
+                  borderColor: 'var(--surface-border)', // ✅ CHANGED
+                  color: 'var(--text-main)', // ✅ CHANGED
+                  background: 'var(--canvas-bg)', // ✅ CHANGED
                   fontWeight: 600,
                 }}
               >
@@ -336,10 +335,10 @@ export default function WelcomePage() {
         {/* LIVE UNIVERSITY STATISTICS METRICS */}
         <div
           style={{
-            background: '#f8fafc',
+            background: 'var(--canvas-bg)', // ✅ CHANGED
             borderRadius: 20,
             padding: '24px 16px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--surface-border)', // ✅ CHANGED
             marginBottom: 36,
           }}
         >
@@ -347,46 +346,46 @@ export default function WelcomePage() {
             <Col xs={12} sm={6}>
               <Statistic
                 title={
-                  <span style={{ color: '#64748b', fontSize: 12, fontWeight: 700 }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }}>
                     GRADUATING STUDENTS
                   </span>
                 }
                 value="5,000+"
-                styles={{ content: { color: '#1e3a8a', fontWeight: 900, fontSize: 24 } }}
+                styles={{ content: { color: '#3b82f6', fontWeight: 900, fontSize: 24 } }}
               />
             </Col>
             <Col xs={12} sm={6}>
               <Statistic
                 title={
-                  <span style={{ color: '#64748b', fontSize: 12, fontWeight: 700 }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }}>
                     CAMPUS OFFICES
                   </span>
                 }
                 value="11"
                 suffix="Integrated"
-                styles={{ content: { color: '#047857', fontWeight: 900, fontSize: 24 } }}
+                styles={{ content: { color: '#10b981', fontWeight: 900, fontSize: 24 } }}
               />
             </Col>
             <Col xs={12} sm={6}>
               <Statistic
                 title={
-                  <span style={{ color: '#64748b', fontSize: 12, fontWeight: 700 }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }}>
                     PAPERLESS RATE
                   </span>
                 }
                 value="99.4%"
-                styles={{ content: { color: '#6d28d9', fontWeight: 900, fontSize: 24 } }}
+                styles={{ content: { color: '#8b5cf6', fontWeight: 900, fontSize: 24 } }}
               />
             </Col>
             <Col xs={12} sm={6}>
               <Statistic
                 title={
-                  <span style={{ color: '#64748b', fontSize: 12, fontWeight: 700 }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }}>
                     AVG CLEARANCE SPEED
                   </span>
                 }
                 value="< 24 Hrs"
-                styles={{ content: { color: '#b45309', fontWeight: 900, fontSize: 24 } }}
+                styles={{ content: { color: '#f59e0b', fontWeight: 900, fontSize: 24 } }}
               />
             </Col>
           </Row>
@@ -395,9 +394,9 @@ export default function WelcomePage() {
         {/* FEATURE CARD 1: PUBLIC INSTANT STATUS TRACKER */}
         <Card
           style={{
-            background: '#ffffff',
+            background: 'var(--surface-card)', // ✅ CHANGED
             borderRadius: 20,
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--surface-border)', // ✅ CHANGED
             boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)',
             marginBottom: 36,
             textAlign: 'left',
@@ -412,14 +411,14 @@ export default function WelcomePage() {
               marginBottom: 12,
             }}
           >
-            <SearchOutlined style={{ fontSize: 22, color: '#1d4ed8' }} />
-            <Title level={4} style={{ margin: 0, color: '#0f172a', fontWeight: 800 }}>
+            <SearchOutlined style={{ fontSize: 22, color: '#3b82f6' }} />
+            <Title level={4} style={{ margin: 0, color: 'var(--text-main)', fontWeight: 800 }}>
               Quick Student Clearance Status Tracker
             </Title>
           </div>
           <Text
             type="secondary"
-            style={{ color: '#334155', fontSize: 13, display: 'block', marginBottom: 16 }}
+            style={{ color: 'var(--text-secondary)', fontSize: 13, display: 'block', marginBottom: 16 }}
           >
             Type your Student ID Number (e.g. <strong>MAU1234</strong>) to check your real-time clearance progress without signing in.
           </Text>
@@ -433,9 +432,9 @@ export default function WelcomePage() {
               onPressEnter={handleTrack}
               style={{
                 borderRadius: '12px 0 0 12px',
-                background: '#ffffff',
-                color: '#0f172a',
-                borderColor: '#94a3b8',
+                background: 'var(--canvas-bg)', // ✅ CHANGED
+                color: 'var(--text-main)', // ✅ CHANGED
+                borderColor: 'var(--surface-border)', // ✅ CHANGED
               }}
             />
             <Button
@@ -456,7 +455,7 @@ export default function WelcomePage() {
           {trackResult && trackResult !== 'not_found' && (
             <div
               style={{
-                background: '#ffffff',
+                background: 'var(--canvas-bg)', // ✅ CHANGED
                 border: '1px solid #86efac',
                 borderRadius: 14,
                 padding: 16,
@@ -471,15 +470,14 @@ export default function WelcomePage() {
                   marginBottom: 8,
                 }}
               >
-                <Text strong style={{ color: '#0f172a', fontSize: 16 }}>
+                <Text strong style={{ color: 'var(--text-main)', fontSize: 16 }}>
                   {trackResult.full_name}
                 </Text>
-                {/* ✅ FIXED: Use the new dynamic status tag helper */}
                 {getPublicStatusTag(trackResult.status)}
               </div>
-              <Text style={{ color: '#475569', fontSize: 13, display: 'block' }}>
+              <Text style={{ color: 'var(--text-secondary)', fontSize: 13, display: 'block' }}>
                 ID:{' '}
-                <strong style={{ color: '#1d4ed8' }}>{trackResult.id_number}</strong>{' '}
+                <strong style={{ color: '#3b82f6' }}>{trackResult.id_number}</strong>{' '}
                 | Department: {trackResult.department_name}
               </Text>
               <div style={{ marginTop: 12 }}>
@@ -503,7 +501,7 @@ export default function WelcomePage() {
               description="No active clearance form matches this ID yet. Please log in to submit your official clearance application form."
               style={{
                 borderRadius: 12,
-                background: '#ffffff',
+                background: 'var(--canvas-bg)', // ✅ CHANGED
                 border: '1px solid #bfdbfe',
               }}
             />
@@ -520,8 +518,8 @@ export default function WelcomePage() {
               marginBottom: 16,
             }}
           >
-            <ApartmentOutlined style={{ fontSize: 22, color: '#047857' }} />
-            <Title level={4} style={{ margin: 0, color: '#0f172a', fontWeight: 800 }}>
+            <ApartmentOutlined style={{ fontSize: 22, color: '#10b981' }} />
+            <Title level={4} style={{ margin: 0, color: 'var(--text-main)', fontWeight: 800 }}>
               The 11 Integrated University Clearance Departments
             </Title>
           </div>
@@ -532,8 +530,8 @@ export default function WelcomePage() {
                 <Card
                   size="small"
                   style={{
-                    background: '#ffffff',
-                    borderColor: '#e2e8f0',
+                    background: 'var(--surface-card)', // ✅ CHANGED
+                    borderColor: 'var(--surface-border)', // ✅ CHANGED
                     borderRadius: 14,
                     height: '100%',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
@@ -544,14 +542,14 @@ export default function WelcomePage() {
                   <Text
                     strong
                     style={{
-                      color: '#1d4ed8',
+                      color: '#3b82f6', // Keep the blue color, or change to var(--text-main) if you want it white in dark mode
                       fontSize: 13,
                       display: 'block',
                     }}
                   >
                     {dept.title}
                   </Text>
-                  <Text style={{ color: '#64748b', fontSize: 11 }}>{dept.desc}</Text>
+                  <Text style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{dept.desc}</Text>
                 </Card>
               </Col>
             ))}
@@ -561,10 +559,10 @@ export default function WelcomePage() {
         {/* FAQ SECTION */}
         <div style={{
           textAlign: 'left',
-          background: 'linear-gradient(to bottom right, #f0fdf4 0%, #f8fafc 50%, #eff6ff 100%)',
+          background: 'var(--surface-card)', // ✅ CHANGED from the gradient to solid surface
           padding: '32px',
           borderRadius: '24px',
-          border: '1px solid #bfdbfe',
+          border: '1px solid var(--surface-border)', // ✅ CHANGED
           boxShadow: '0 10px 30px -10px rgba(37, 99, 235, 0.1)'
         }}>
           <div
@@ -584,10 +582,10 @@ export default function WelcomePage() {
               <QuestionCircleOutlined />
             </div>
             <div>
-              <Title level={3} style={{ margin: 0, color: '#1e3a8a', fontWeight: 900 }}>
+              <Title level={3} style={{ margin: 0, color: 'var(--text-main)', fontWeight: 900 }}>
                 Frequently Asked Questions
               </Title>
-              <Text style={{ color: '#475569', fontSize: 14 }}>
+              <Text style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
                 Quick answers to help you navigate your clearance journey.
               </Text>
             </div>
@@ -598,8 +596,8 @@ export default function WelcomePage() {
             expandIconPosition="end"
             expandIcon={({ isActive }) => (
               <div style={{
-                background: isActive ? '#1e3a8a' : '#f1f5f9',
-                color: isActive ? '#ffffff' : '#64748b',
+                background: isActive ? '#1e3a8a' : 'var(--canvas-bg)', // ✅ CHANGED
+                color: isActive ? '#ffffff' : 'var(--text-secondary)', // ✅ CHANGED
                 borderRadius: '50%', width: 28, height: 28,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.3s ease'
@@ -610,17 +608,17 @@ export default function WelcomePage() {
             items={[
               {
                 key: '1',
-                label: <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>📝 How do I apply for digital clearance at Mekdela Amba University?</span>,
+                label: <span style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 15 }}>📝 How do I apply for digital clearance at Mekdela Amba University?</span>,
                 children: (
-                  <p style={{ color: '#475569', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
+                  <p style={{ color: 'var(--text-secondary)', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
                     Log in to your Student Account, navigate to <strong>'Apply Clearance'</strong>, fill in your department and ID details, and click Submit. Your clearance request will automatically broadcast to all campus offices simultaneously!
                   </p>
                 ),
                 style: {
                   marginBottom: 16,
-                  background: '#ffffff',
+                  background: 'var(--canvas-bg)', // ✅ CHANGED
                   borderRadius: 16,
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--surface-border)', // ✅ CHANGED
                   padding: '16px 24px',
                   boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
                   transition: 'all 0.3s ease'
@@ -628,17 +626,17 @@ export default function WelcomePage() {
               },
               {
                 key: '2',
-                label: <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>💳 How can I pay library or cafeteria fines online?</span>,
+                label: <span style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 15 }}>💳 How can I pay library or cafeteria fines online?</span>,
                 children: (
-                  <p style={{ color: '#475569', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
+                  <p style={{ color: 'var(--text-secondary)', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
                     Go to the <strong>'Payments'</strong> page in your dashboard, select Telebirr Mobile Money or CBE Birr, send payment to the MAU Official Merchant account, and submit your transaction reference number for instant digital clearance.
                   </p>
                 ),
                 style: {
                   marginBottom: 16,
-                  background: '#ffffff',
+                  background: 'var(--canvas-bg)', // ✅ CHANGED
                   borderRadius: 16,
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--surface-border)', // ✅ CHANGED
                   padding: '16px 24px',
                   boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
                   transition: 'all 0.3s ease'
@@ -646,17 +644,17 @@ export default function WelcomePage() {
               },
               {
                 key: '3',
-                label: <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>🎓 When do I get my official digital clearance certificate?</span>,
+                label: <span style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: 15 }}>🎓 When do I get my official digital clearance certificate?</span>,
                 children: (
-                  <p style={{ color: '#475569', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
+                  <p style={{ color: 'var(--text-secondary)', margin: '8px 0 16px 0', lineHeight: 1.6, fontSize: 14 }}>
                     Once all preliminary departments approve your record, the University Registrar grants final seal approval. A downloadable PDF certificate complete with QR verification code will immediately generate in your dashboard!
                   </p>
                 ),
                 style: {
                   marginBottom: 0,
-                  background: '#ffffff',
+                  background: 'var(--canvas-bg)', // ✅ CHANGED
                   borderRadius: 16,
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--surface-border)', // ✅ CHANGED
                   padding: '16px 24px',
                   boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
                   transition: 'all 0.3s ease'
