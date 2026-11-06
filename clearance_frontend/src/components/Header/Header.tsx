@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // ✅ Added useEffect
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Button,
@@ -52,6 +52,9 @@ export default function Header() {
   const [adminAuthError, setAdminAuthError] = useState("");
   const [adminAuthenticating, setAdminAuthenticating] = useState(false);
 
+  // ✅ NEW: Real notification state (removed hardcoded dummy data)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
@@ -60,72 +63,29 @@ export default function Header() {
 
   const user = getSession();
 
-  // ✅ Real admin login — calls the Django backend
-  const handleAdminAuthSubmit = async () => {
-    const enteredUser = adminUsernameInput.trim();
-    if (!enteredUser || !adminPasswordInput) {
-      setAdminAuthError("Please enter both username and password.");
-      return;
-    }
-    setAdminAuthError("");
-    setAdminAuthenticating(true);
+  // ✅ NEW: Fetch notifications from the backend
+  const fetchNotifications = async () => {
+    if (!user) return;
     try {
-      const data = await apiFetch('/login', {
-        method: 'POST',
-        body: JSON.stringify({
-          username: enteredUser,
-          password: adminPasswordInput,
-        }),
-      });
-
-      const role = data?.user?.role;
-      if (role !== 'admin') {
-        setAdminAuthError(`This account is not an administrator (role: ${role}).`);
-        setAdminAuthenticating(false);
-        return;
+      const data = await apiFetch('student/notifications/');
+      if (Array.isArray(data)) {
+        setNotifications(data);
       }
-
-      setSession(data.user);
-      setAdminAuthOpen(false);
-      setAdminUsernameInput("");
-      setAdminPasswordInput("");
-      setAdminAuthError("");
-      navigate('/admin');
-      setTimeout(() => window.location.reload(), 50);
-    } catch (e: any) {
-      setAdminAuthError(e.message || 'Invalid admin credentials.');
-    } finally {
-      setAdminAuthenticating(false);
+    } catch (err) {
+      // Fail silently (e.g., if user is not a student or endpoint is not hit yet)
+      console.error("Failed to fetch notifications", err);
     }
   };
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: 1,
-      title: "Library Clearance Approved",
-      message: "Mulugeta Yilma (Main Library) approved your textbook clearance.",
-      type: "success",
-      time: "10 mins ago",
-      read: false,
-    },
-    {
-      id: 2,
-      title: "Payment Receipt Verified",
-      message: "Telebirr 350 ETB payment for cafeteria dues has been verified.",
-      type: "success",
-      time: "1 hour ago",
-      read: false,
-    },
-    {
-      id: 3,
-      title: "System Notice",
-      message:
-        "Registrar digital seals are now cryptographically signed and downloadable.",
-      type: "info",
-      time: "3 hours ago",
-      read: true,
-    },
-  ]);
+  // ✅ NEW: Poll every 60 seconds
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 60000);
+      return () => clearInterval(interval);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -142,8 +102,15 @@ export default function Header() {
 
   const handleLinkClick = () => setMobileOpen(false);
 
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  // ✅ NEW: Call backend to mark as read
+  const handleMarkAllRead = async () => {
+    try {
+      await apiFetch('student/notifications/', { method: 'POST' });
+      // Update UI immediately
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      console.error("Failed to mark all as read", err);
+    }
   };
 
   const handleOpenSettings = () => {
@@ -215,7 +182,6 @@ export default function Header() {
     );
   };
 
-  // ✅ NEW: Check if the user's role is one of the known defaults
   const KNOWN_ROLES = [
     'student', 'admin', 'departmenthead', 'librarian', 'cafeteria',
     'dormitory', 'psychology', 'sportmaster', 'campuspolice',
@@ -450,7 +416,7 @@ export default function Header() {
             />
           )}
 
-          {/* ✅ NEW: DYNAMIC FALLBACK FOR CUSTOM ROLES (e.g. Supermarket) */}
+          {/* DYNAMIC FALLBACK FOR CUSTOM ROLES */}
           {isCustomRole && (
             <NavLinkItem
               to={`/${user.role}`}
@@ -570,6 +536,7 @@ export default function Header() {
             </Button>
           </Dropdown>
 
+          {/* ✅ NOTIFICATION BELL WITH DYNAMIC BADGE */}
           <Tooltip title="Clearance Notifications">
             <Badge count={unreadCount} size="small" offset={[-2, 2]}>
               <Button
@@ -734,7 +701,7 @@ export default function Header() {
           {adminAuthError && (
             <Alert
               type="error"
-              title={adminAuthError}
+              message={adminAuthError} // ✅ FIXED: Changed from 'title' to 'message' for Antd
               showIcon
               style={{ marginBottom: 12, borderRadius: 8 }}
             />
