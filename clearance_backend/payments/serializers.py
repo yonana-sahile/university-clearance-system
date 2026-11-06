@@ -27,4 +27,4 @@ class PaymentRecordSerializer(serializers.ModelSerializer):
 class DueRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = DueRecord
-        fields = '__all__'ss
+        fields = '__all__'
