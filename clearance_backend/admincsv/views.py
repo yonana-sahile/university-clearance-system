@@ -26,9 +26,13 @@ def valid_students_view(request):
                     'first_name': item.get('first_name', ''),
                     'last_name': item.get('last_name', ''),
                     'email': item.get('email', ''),
-                    'college': college,          # ✅ Save the FK
-                    'department': department,    # ✅ Save the FK
+                    'college': college,
+                    'department': department,
                     'year_of_admission': item.get('year_of_admission', ''),
+                    # ✅ FIXED: Save the academic fields
+                    'program_level': item.get('program_level', ''),
+                    'enrollment_type': item.get('enrollment_type', ''),
+                    'current_year': item.get('current_year', ''),
                     'status': item.get('status', 'active'),
                 }
             )
@@ -62,12 +66,11 @@ def csv_statistics(request):
 
 
 # ============================================================
-# ✅ NEW: ADMIN STUDENT DETAIL (Toggle Status & Delete)
+# ✅ ADMIN STUDENT DETAIL (Toggle Status & Delete)
 # ============================================================
 @api_view(['PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def valid_student_detail(request, pk):
-    # Ensure only admins can do this
     if request.user.role != 'admin':
         return Response({'detail': 'Only admin can modify student records.'}, status=403)
 
