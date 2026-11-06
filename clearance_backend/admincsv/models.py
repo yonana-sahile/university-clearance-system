@@ -16,6 +16,12 @@ class ValidStudent(models.Model):
     college = models.ForeignKey(College, on_delete=models.SET_NULL, null=True, blank=True)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
     year_of_admission = models.CharField(max_length=10, blank=True)
+
+    # ✅ NEW FIELDS FOR LOCKING ACADEMIC INFO
+    program_level = models.CharField(max_length=100, blank=True)
+    enrollment_type = models.CharField(max_length=100, blank=True)
+    current_year = models.CharField(max_length=50, blank=True)
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     is_registered = models.BooleanField(default=False)
     registered_at = models.DateTimeField(null=True, blank=True)

@@ -53,6 +53,11 @@ class User(AbstractUser):
     building = models.ForeignKey(Building, null=True, blank=True, on_delete=models.SET_NULL)
     profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
 
+    # ✅ NEW FIELDS FOR LOCKING ACADEMIC INFO
+    program_level = models.CharField(max_length=100, blank=True)
+    enrollment_type = models.CharField(max_length=100, blank=True)
+    current_year = models.CharField(max_length=50, blank=True)
+
     # ✅ FIELDS FOR PASSWORD RESET
     reset_otp = models.CharField(max_length=6, blank=True, null=True)
     reset_otp_expiry = models.DateTimeField(blank=True, null=True)
@@ -62,7 +67,7 @@ class User(AbstractUser):
 
 
 # ============================================================
-# ✅ NEW: GLOBAL SYSTEM SETTINGS (LOCK/UNLOCK PORTAL)
+# ✅ GLOBAL SYSTEM SETTINGS (LOCK/UNLOCK PORTAL)
 # ============================================================
 class SystemSetting(models.Model):
     """
