@@ -38,7 +38,7 @@ const OFFICES: Office[] = [
     phone: '+251 58 111 2011',
     email: 'depthead.eng@mau.edu.et',
     requirements: 'Senior project submission, grade reports clearance, laboratory gear return',
-    lat: 11.5936, lng: 37.3869
+    lat: 10.985390405193206, lng: 39.2638088707218
   },
   {
     id: 'librarian',
@@ -49,7 +49,7 @@ const OFFICES: Office[] = [
     phone: '+251 58 111 2012',
     email: 'library@mau.edu.et',
     requirements: 'Return all borrowed books, settle overdue fines via Telebirr or CBE Birr',
-    lat: 11.5942, lng: 37.3875
+    lat: 10.987089453980092, lng: 39.262882820886034
   },
   {
     id: 'cafeteria',
@@ -60,18 +60,62 @@ const OFFICES: Office[] = [
     phone: '+251 58 111 2013',
     email: 'cafeteria@mau.edu.et',
     requirements: 'Hand in monthly dining coupon booklet and meal ID badge',
-    lat: 11.5930, lng: 37.3880
+    lat: 10.988058412759827, lng: 39.262367836784854
   },
   {
-    id: 'dormitory',
-    name: 'Dormitory & Residence Service',
-    building: 'Proctor Office Block 12',
-    hours: 'Mon - Fri: 8:00 AM - 5:30 PM',
-    officer: 'Almaz Tadesse',
+    id: 'dormitory_a',
+    name: 'Dormitory Block A',
+    building: 'Residence Block A',
+    hours: '24/7',
+    officer: 'Block Proctor',
     phone: '+251 58 111 2014',
     email: 'dormitory@mau.edu.et',
     requirements: 'Room inspection clearance, return room keys and mattress',
-    lat: 11.5925, lng: 37.3860
+    lat: 10.986247321046395, lng: 39.26120192938775 // ✅ UPDATED
+  },
+  {
+    id: 'dormitory_b',
+    name: 'Dormitory Block B',
+    building: 'Residence Block B',
+    hours: '24/7',
+    officer: 'Block Proctor',
+    phone: '+251 58 111 2014',
+    email: 'dormitory@mau.edu.et',
+    requirements: 'Room inspection clearance, return room keys and mattress',
+    lat: 10.98563358426923, lng: 39.261284502190186 // ✅ UPDATED
+  },
+  {
+    id: 'dormitory_c',
+    name: 'Dormitory Block C',
+    building: 'Residence Block C',
+    hours: '24/7',
+    officer: 'Block Proctor',
+    phone: '+251 58 111 2014',
+    email: 'dormitory@mau.edu.et',
+    requirements: 'Room inspection clearance, return room keys and mattress',
+    lat: 10.985002476252415, lng: 39.26138476916457 // ✅ UPDATED
+  },
+  {
+    id: 'dormitory_d',
+    name: 'Dormitory Block D',
+    building: 'Residence Block D',
+    hours: '24/7',
+    officer: 'Block Proctor',
+    phone: '+251 58 111 2014',
+    email: 'dormitory@mau.edu.et',
+    requirements: 'Room inspection clearance, return room keys and mattress',
+    lat: 10.98464349677841, lng: 39.261396565279206 // ✅ UPDATED
+  },
+  {
+    id: 'dormitory_e',
+    name: 'Dormitory Block E',
+    building: 'Residence Block E',
+    hours: '24/7',
+    officer: 'Block Proctor',
+    phone: '+251 58 111 2014',
+    email: 'dormitory@mau.edu.et',
+    requirements: 'Room inspection clearance, return room keys and mattress',
+    lat: 10.985639374244787, lng: 39.260594429484115 // ✅ UPDATED
   },
   {
     id: 'psychology',
@@ -82,7 +126,7 @@ const OFFICES: Office[] = [
     phone: '+251 58 111 2015',
     email: 'counseling@mau.edu.et',
     requirements: 'Counseling exit feedback form',
-    lat: 11.5945, lng: 37.3855
+    lat: 10.985390405193206, lng: 39.2638088707218
   },
   {
     id: 'sportmaster',
@@ -93,7 +137,7 @@ const OFFICES: Office[] = [
     phone: '+251 58 111 2016',
     email: 'sports@mau.edu.et',
     requirements: 'Return university jerseys, sports equipment, and gym locker key',
-    lat: 11.5920, lng: 37.3890
+    lat: 10.985390405193206, lng: 39.2638088707218
   },
   {
     id: 'campuspolice',
@@ -104,7 +148,7 @@ const OFFICES: Office[] = [
     phone: '+251 58 111 2017',
     email: 'security@mau.edu.et',
     requirements: 'Clearance of campus conduct and parking/vehicle permits',
-    lat: 11.5950, lng: 37.3870
+    lat: 10.984707186694326, lng: 39.26200406516722
   },
   {
     id: 'cooperationsharing',
@@ -115,7 +159,7 @@ const OFFICES: Office[] = [
     phone: '+251 58 111 2018',
     email: 'costsharing@mau.edu.et',
     requirements: 'Signed Ministry of Education cost-sharing agreement contract',
-    lat: 11.5940, lng: 37.3862
+    lat: 11.5940, lng: 37.3862 // ⚠️ STILL OLD COORDINATE - Waiting for your data
   },
   {
     id: 'dopcordinator',
@@ -126,7 +170,7 @@ const OFFICES: Office[] = [
     phone: '+251 58 111 2019',
     email: 'dop@mau.edu.et',
     requirements: 'Curriculum course credit verification and thesis audit',
-    lat: 11.5938, lng: 37.3865
+    lat: 10.984261356839378, lng: 39.262387438923724
   },
   {
     id: 'studentaffairs',
@@ -137,7 +181,7 @@ const OFFICES: Office[] = [
     phone: '+251 58 111 2020',
     email: 'studentaffairs@mau.edu.et',
     requirements: 'Student union and campus club conduct clearance',
-    lat: 11.5932, lng: 37.3872
+    lat: 10.984261356839378, lng: 39.262387438923724
   },
   {
     id: 'registrar',
@@ -148,7 +192,7 @@ const OFFICES: Office[] = [
     phone: '+251 58 111 2000',
     email: 'registrar@mau.edu.et',
     requirements: 'Final official digital clearance seal & degree parchment processing',
-    lat: 11.5948, lng: 37.3868
+    lat: 10.984261356839378, lng: 39.262387438923724
   }
 ];
 
@@ -308,7 +352,7 @@ export const OfficeDirectoryModal: React.FC<OfficeDirectoryModalProps> = ({ open
                     </Text>
                   </div>
                   <Tag color="blue" style={{ borderRadius: 8, fontWeight: 700, padding: '4px 12px' }}>
-                    {selectedOffice.id.toUpperCase()}
+                    {selectedOffice.id.split('_')[0].toUpperCase()}
                   </Tag>
                 </div>
 
