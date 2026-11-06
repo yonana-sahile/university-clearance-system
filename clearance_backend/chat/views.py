@@ -1,89 +1,71 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from .models import ValidStudent
-from .serializers import ValidStudentSerializer
-from accounts.models import College, Department
+from django.utils import timezone
 
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def valid_students_view(request):
-    if request.method == 'POST':
-        items = request.data.get('students', [])
-        for item in items:
-            # ✅ Look up the College and Department by name
-            college_name = item.get('college', '').strip()
-            department_name = item.get('department', '').strip()
-
-            college = College.objects.filter(name__iexact=college_name).first() if college_name else None
-            department = Department.objects.filter(name__iexact=department_name).first() if department_name else None
-
-            ValidStudent.objects.update_or_create(
-                id_number=item['id_number'],
-                defaults={
-                    'first_name': item.get('first_name', ''),
-                    'last_name': item.get('last_name', ''),
-                    'email': item.get('email', ''),
-                    'college': college,
-                    'department': department,
-                    'year_of_admission': item.get('year_of_admission', ''),
-                    # ✅ NEW: Save the academic info
-                    'program_level': item.get('program_level', ''),
-                    'enrollment_type': item.get('enrollment_type', ''),
-                    'current_year': item.get('current_year', ''),
-                    'status': item.get('status', 'active'),
-                }
-            )
-        return Response({'message': 'CSV imported.', 'count': len(items)})
-
-    students = ValidStudent.objects.all()
-    return Response({
-        'students': ValidStudentSerializer(students, many=True).data,
-        'total_count': students.count(),
-        'total_records': students.count(),
-        'active_records': students.filter(status='active').count(),
-        'registered_records': students.filter(is_registered=True).count(),
-        'registration_rate': round(
-            students.filter(is_registered=True).count() / max(students.count(), 1) * 100
-        ),
-    })
+from .models import ChatRoom, ChatMessage
+from .serializers import ChatRoomSerializer, ChatMessageSerializer
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def csv_statistics(request):
-    students = ValidStudent.objects.all()
+def rooms(request):
+    from accounts.models import User
+
+    if request.user.role == 'student':
+        qs = ChatRoom.objects.filter(student=request.user)
+
+        # Auto-create one room per staff role if none exist yet
+        if not qs.exists():
+            staff_roles = [
+                ('departmenthead', 'Department Head'),
+                ('librarian', 'Library'),
+                ('cafeteria', 'Cafeteria'),
+                ('dormitory', 'Dormitory'),
+                ('registrar', 'Registrar Office'),
+            ]
+            for role, label in staff_roles:
+                staff_user = User.objects.filter(role=role).first()
+                ChatRoom.objects.create(
+                    name=f"{label} Support",
+                    student=request.user,
+                    student_number=request.user.id_number or '',
+                    student_name=request.user.full_name(),
+                    staff_role=role,
+                    staff_name=staff_user.full_name() if staff_user else label,
+                    staff_user=staff_user,
+                )
+            qs = ChatRoom.objects.filter(student=request.user)
+    else:
+        qs = ChatRoom.objects.filter(staff_role=request.user.role)
+
+    return Response(ChatRoomSerializer(qs, many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def messages(request, room_id):
+    qs = ChatMessage.objects.filter(room_id=room_id)
     return Response({
-        'total_records': students.count(),
-        'active_records': students.filter(status='active').count(),
-        'registered_records': students.filter(is_registered=True).count(),
-        'registration_rate': round(
-            students.filter(is_registered=True).count() / max(students.count(), 1) * 100
-        ),
+        'messages': ChatMessageSerializer(
+            qs, many=True, context={'request': request}
+        ).data
     })
 
 
-# ============================================================
-# ✅ ADMIN STUDENT DETAIL (Toggle Status & Delete)
-# ============================================================
-@api_view(['PATCH', 'DELETE'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def valid_student_detail(request, pk):
-    if request.user.role != 'admin':
-        return Response({'detail': 'Only admin can modify student records.'}, status=403)
+def send_message(request):
+    room_id = request.data.get('room_id')
+    content = request.data.get('content', '')
+    if not room_id:
+        return Response({'detail': 'room_id required'}, status=400)
 
-    student = get_object_or_404(ValidStudent, id=pk)
+    room, _ = ChatRoom.objects.get_or_create(id=room_id)
 
-    if request.method == 'PATCH':
-        new_status = request.data.get('status')
-        if new_status in ['active', 'inactive', 'graduated', 'suspended']:
-            student.status = new_status
-            student.save()
-            return Response({'message': 'Status updated successfully.', 'status': student.status})
-        return Response({'detail': 'Invalid status provided.'}, status=400)
+    msg = ChatMessage.objects.create(room=room, sender=request.user, content=content)
+    room.last_message = content
+    room.last_message_time = timezone.now()
+    room.save()
 
-    if request.method == 'DELETE':
-        student.delete()
-        return Response({'message': 'Student deleted successfully.'}, status=204)
+    return Response(ChatMessageSerializer(msg, context={'request': request}).data)
