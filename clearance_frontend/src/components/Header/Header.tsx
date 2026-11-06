@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; // ✅ Added useEffect
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Button,
@@ -52,7 +52,7 @@ export default function Header() {
   const [adminAuthError, setAdminAuthError] = useState("");
   const [adminAuthenticating, setAdminAuthenticating] = useState(false);
 
-  // ✅ NEW: Real notification state (removed hardcoded dummy data)
+  // ✅ Real notification state
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const { theme, setTheme } = useTheme();
@@ -63,7 +63,46 @@ export default function Header() {
 
   const user = getSession();
 
-  // ✅ NEW: Fetch notifications from the backend
+  // ✅ FIXED: Restored the Admin Login function that was accidentally deleted
+  const handleAdminAuthSubmit = async () => {
+    const enteredUser = adminUsernameInput.trim();
+    if (!enteredUser || !adminPasswordInput) {
+      setAdminAuthError("Please enter both username and password.");
+      return;
+    }
+    setAdminAuthError("");
+    setAdminAuthenticating(true);
+    try {
+      const data = await apiFetch('/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: enteredUser,
+          password: adminPasswordInput,
+        }),
+      });
+
+      const role = data?.user?.role;
+      if (role !== 'admin') {
+        setAdminAuthError(`This account is not an administrator (role: ${role}).`);
+        setAdminAuthenticating(false);
+        return;
+      }
+
+      setSession(data.user);
+      setAdminAuthOpen(false);
+      setAdminUsernameInput("");
+      setAdminPasswordInput("");
+      setAdminAuthError("");
+      navigate('/admin');
+      setTimeout(() => window.location.reload(), 50);
+    } catch (e: any) {
+      setAdminAuthError(e.message || 'Invalid admin credentials.');
+    } finally {
+      setAdminAuthenticating(false);
+    }
+  };
+
+  // ✅ Fetch notifications from the backend
   const fetchNotifications = async () => {
     if (!user) return;
     try {
@@ -72,12 +111,11 @@ export default function Header() {
         setNotifications(data);
       }
     } catch (err) {
-      // Fail silently (e.g., if user is not a student or endpoint is not hit yet)
       console.error("Failed to fetch notifications", err);
     }
   };
 
-  // ✅ NEW: Poll every 60 seconds
+  // ✅ Poll every 60 seconds
   useEffect(() => {
     if (user) {
       fetchNotifications();
@@ -102,11 +140,10 @@ export default function Header() {
 
   const handleLinkClick = () => setMobileOpen(false);
 
-  // ✅ NEW: Call backend to mark as read
+  // ✅ Call backend to mark as read
   const handleMarkAllRead = async () => {
     try {
       await apiFetch('student/notifications/', { method: 'POST' });
-      // Update UI immediately
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch (err) {
       console.error("Failed to mark all as read", err);
@@ -701,7 +738,7 @@ export default function Header() {
           {adminAuthError && (
             <Alert
               type="error"
-              message={adminAuthError} // ✅ FIXED: Changed from 'title' to 'message' for Antd
+              message={adminAuthError}
               showIcon
               style={{ marginBottom: 12, borderRadius: 8 }}
             />
