@@ -1,5 +1,8 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+// ✅ 1. IMPORT CONFIGPROVIDER AND THEME
+import { ConfigProvider, theme as antdTheme } from 'antd';
+
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
 import ChatButton from './components/Chat/ChatButton';
@@ -73,75 +76,93 @@ export function App() {
     }
   }, [theme]);
 
+  const isDark = theme === 'dark';
+
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
-      <LanguageProvider>
-        <ErrorBoundary>
-          <BrowserRouter>
-            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-              <Header />
-              <main className="app-main-content" style={{ flex: 1 }}>
-                <Routes>
-                  {/* Public Pages */}
-                  <Route path="/" element={<WelcomePage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/intro-slides" element={<IntroSlides />} />
-                  <Route path="/maintenance" element={<MaintenancePage />} />
-                  <Route path="/verify-certificate" element={<VerifyCertificatePage />} />
+      {/* ✅ 2. WRAP YOUR APP WITH CONFIGPROVIDER */}
+      <ConfigProvider
+        theme={{
+          algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+          token: {
+            colorPrimary: '#10b981',
+            // ✅ MATCH YOUR CSS VARIABLES (--canvas-bg, --surface-card, --surface-border)
+            colorBgBase: isDark ? '#0b0f19' : '#f8fafc',
+            colorBgContainer: isDark ? '#111827' : '#ffffff',
+            colorBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+            colorText: isDark ? '#f8fafc' : '#0f172a',
+            colorTextSecondary: isDark ? '#94a3b8' : '#475569',
+          },
+        }}
+      >
+        <LanguageProvider>
+          <ErrorBoundary>
+            <BrowserRouter>
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                <Header />
+                <main className="app-main-content" style={{ flex: 1 }}>
+                  <Routes>
+                    {/* Public Pages */}
+                    <Route path="/" element={<WelcomePage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/intro-slides" element={<IntroSlides />} />
+                    <Route path="/maintenance" element={<MaintenancePage />} />
+                    <Route path="/verify-certificate" element={<VerifyCertificatePage />} />
 
-                  {/* Authentication Routes */}
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/admin-login" element={<AdminLogin />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/verify-otp" element={<VerifyOTP />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
+                    {/* Authentication Routes */}
+                    <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/admin-login" element={<AdminLogin />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/verify-otp" element={<VerifyOTP />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
-                  {/* User Profile */}
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/change-profile" element={<ChangeProfile />} />
+                    {/* User Profile */}
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/change-profile" element={<ChangeProfile />} />
 
-                  {/* Developer Settings */}
-                  <Route path="/settings/api-keys" element={<APIKeysPage />} />
-                  <Route path="/developer-api" element={<DeveloperApiPortal />} />
+                    {/* Developer Settings */}
+                    <Route path="/settings/api-keys" element={<APIKeysPage />} />
+                    <Route path="/developer-api" element={<DeveloperApiPortal />} />
 
-                  {/* Portals & Dashboards */}
-                  <Route path="/student" element={<StudentDashboard />} />
-                  <Route path="/clearance-form" element={
-                    <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 16px' }}>
-                      <ClearanceFormSubmission />
-                    </div>
-                  } />
-                  <Route path="/payment" element={<StudentPaymentPage />} />
+                    {/* Portals & Dashboards */}
+                    <Route path="/student" element={<StudentDashboard />} />
+                    <Route path="/clearance-form" element={
+                      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 16px' }}>
+                        <ClearanceFormSubmission />
+                      </div>
+                    } />
+                    <Route path="/payment" element={<StudentPaymentPage />} />
 
-                  {/* ✅ Hardcoded Staff Portals (these have custom logic like fines) */}
-                  <Route path="/departmenthead" element={<DepartmentHeadPage />} />
-                  <Route path="/librarian" element={<LibrarianPage />} />
-                  <Route path="/cafeteria" element={<CafeteriaPage />} />
-                  <Route path="/dormitory" element={<DormitoryPage />} />
-                  <Route path="/psychology" element={<PsychologyPage />} />
-                  <Route path="/sportmaster" element={<SportMasterPage />} />
-                  <Route path="/campuspolice" element={<CampusPolicePage />} />
-                  <Route path="/cooperationsharing" element={<CooperationSharingPage />} />
-                  <Route path="/dopcordinator" element={<DOPCoordinatorPage />} />
-                  <Route path="/studentaffairs" element={<StudentAffairsPage />} />
-                  <Route path="/registrar" element={<RegistrarPage />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
+                    {/* ✅ Hardcoded Staff Portals (these have custom logic like fines) */}
+                    <Route path="/departmenthead" element={<DepartmentHeadPage />} />
+                    <Route path="/librarian" element={<LibrarianPage />} />
+                    <Route path="/cafeteria" element={<CafeteriaPage />} />
+                    <Route path="/dormitory" element={<DormitoryPage />} />
+                    <Route path="/psychology" element={<PsychologyPage />} />
+                    <Route path="/sportmaster" element={<SportMasterPage />} />
+                    <Route path="/campuspolice" element={<CampusPolicePage />} />
+                    <Route path="/cooperationsharing" element={<CooperationSharingPage />} />
+                    <Route path="/dopcordinator" element={<DOPCoordinatorPage />} />
+                    <Route path="/studentaffairs" element={<StudentAffairsPage />} />
+                    <Route path="/registrar" element={<RegistrarPage />} />
+                    <Route path="/admin" element={<AdminDashboard />} />
 
-                  {/* ✅ NEW: Dynamic Route for any custom role (e.g. /supermarket, /security) */}
-                  <Route path="/:staffRole" element={<GenericStaffPage />} />
+                    {/* ✅ NEW: Dynamic Route for any custom role (e.g. /supermarket, /security) */}
+                    <Route path="/:staffRole" element={<GenericStaffPage />} />
 
-                  {/* Fallback */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </main>
-              <Footer />
-              <ChatButton />
-            </div>
-          </BrowserRouter>
-        </ErrorBoundary>
-      </LanguageProvider>
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </main>
+                <Footer />
+                <ChatButton />
+              </div>
+            </BrowserRouter>
+          </ErrorBoundary>
+        </LanguageProvider>
+      </ConfigProvider>
     </ThemeContext.Provider>
   );
 }
