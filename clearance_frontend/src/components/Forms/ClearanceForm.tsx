@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Select, Typography, Alert, Row, Col, Space, message } from 'antd';
+import { Form, Input, Button, Card, Typography, Alert, Row, Col, Space, message } from 'antd';
 import { SendOutlined, FileTextOutlined, LockOutlined } from '@ant-design/icons';
 import { apiFetch, getSession } from '../../utils/api';
 
@@ -7,7 +7,7 @@ const { Title, Text } = Typography;
 
 interface Props {
   onSubmitted?: () => void;
-  preClearanceChecks?: Record<string, boolean>; // ✅ NEW: Accept the checks from the dashboard
+  preClearanceChecks?: Record<string, boolean>;
 }
 
 export default function ClearanceFormSubmission({ onSubmitted, preClearanceChecks }: Props) {
@@ -34,12 +34,13 @@ export default function ClearanceFormSubmission({ onSubmitted, preClearanceCheck
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // We still send these, but the backend will override them with the user's profile data for security
           program_level: values.program_level,
           enrollment_type: values.enrollment_type,
           year: values.year,
           semester: values.semester,
           reason: values.reason,
-          pre_clearance_checks: preClearanceChecks // ✅ NEW: Send the checks to the backend
+          pre_clearance_checks: preClearanceChecks
         })
       });
 
@@ -104,7 +105,7 @@ export default function ClearanceFormSubmission({ onSubmitted, preClearanceCheck
     >
       <Alert
         title="Important Submission Notice"
-        description="Your name, ID, college, and department are locked to your official university record. Ensure all your senior thesis papers, library books, dormitory keys, and cafeteria tickets are accounted for before applying."
+        description="Your name, ID, college, department, and academic level are locked to your official university record. Please ensure all clearance requirements are fulfilled."
         type="info"
         showIcon
         style={{ marginBottom: 24, borderRadius: 10 }}
@@ -119,9 +120,10 @@ export default function ClearanceFormSubmission({ onSubmitted, preClearanceCheck
           id_number: user?.id_number || '---',
           college: user?.college_name || '---',
           department_name: user?.department_name || '---',
-          program_level: 'Undergraduate (B.Sc.)',
-          enrollment_type: 'Regular',
-          year: '4th Year',
+          // ✅ NEW: Pull these directly from the user's locked profile
+          program_level: (user as any)?.program_level || 'Undergraduate (B.Sc.)',
+          enrollment_type: (user as any)?.enrollment_type || 'Regular',
+          year: (user as any)?.current_year || '4th Year',
           semester: '2nd Semester',
           reason: 'Graduation Clearance & Degree Completion'
         }}
@@ -155,43 +157,20 @@ export default function ClearanceFormSubmission({ onSubmitted, preClearanceCheck
         <Row gutter={16}>
           <Col xs={24} sm={8}>
             <Form.Item name="program_level" label="Program Level" rules={[{ required: true }]}>
-              <Select
-                size="large"
-                options={[
-                  { label: 'Undergraduate (B.Sc./B.A.)', value: 'Undergraduate (B.Sc.)' },
-                  { label: 'Postgraduate (M.Sc./M.A.)', value: 'Postgraduate' },
-                  { label: 'Doctorate (Ph.D.)', value: 'Doctorate' }
-                ]}
-                style={{ borderRadius: 10 }}
-              />
+              {/* ✅ CHANGED TO READONLY INPUT */}
+              <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
             </Form.Item>
           </Col>
           <Col xs={24} sm={8}>
             <Form.Item name="enrollment_type" label="Enrollment Mode" rules={[{ required: true }]}>
-              <Select
-                size="large"
-                options={[
-                  { label: 'Regular', value: 'Regular' },
-                  { label: 'Extension / Evening', value: 'Extension' },
-                  { label: 'Summer Program', value: 'Summer' }
-                ]}
-                style={{ borderRadius: 10 }}
-              />
+              {/* ✅ CHANGED TO READONLY INPUT */}
+              <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
             </Form.Item>
           </Col>
           <Col xs={24} sm={8}>
             <Form.Item name="year" label="Academic Year" rules={[{ required: true }]}>
-              <Select
-                size="large"
-                options={[
-                  { label: '1st Year', value: '1st Year' },
-                  { label: '2nd Year', value: '2nd Year' },
-                  { label: '3rd Year', value: '3rd Year' },
-                  { label: '4th Year', value: '4th Year' },
-                  { label: '5th Year', value: '5th Year' }
-                ]}
-                style={{ borderRadius: 10 }}
-              />
+              {/* ✅ CHANGED TO READONLY INPUT */}
+              <Input size="large" readOnly style={{ borderRadius: 10, backgroundColor: '#f8fafc', color: '#0f172a' }} />
             </Form.Item>
           </Col>
         </Row>
