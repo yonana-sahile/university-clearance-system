@@ -1,8 +1,15 @@
 import React from 'react';
-import { Drawer, List, Typography, Badge, Tag, Button, Empty } from 'antd';
-import { BellOutlined, CheckCircleOutlined, InfoCircleOutlined, ExclamationCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+// ✅ FIXED: Moved 'Space' up here, removed unused 'Tag'
+import { Drawer, List, Typography, Badge, Button, Empty, Space } from 'antd';
+import {
+  BellOutlined,
+  CheckCircleOutlined,
+  InfoCircleOutlined,
+  ExclamationCircleOutlined,
+  ClockCircleOutlined
+} from '@ant-design/icons';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 export interface NotificationItem {
   id: string | number;
@@ -72,8 +79,12 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
                 borderRadius: 12,
                 marginBottom: 8,
                 background: item.read ? '#f8fafc' : '#f0f9ff',
+                // ✅ FIXED: Added error color to border
                 borderLeft: `4px solid ${
-                  item.type === 'success' ? '#16a34a' : item.type === 'warning' ? '#d97706' : '#2563eb'
+                  item.type === 'success' ? '#16a34a'
+                  : item.type === 'warning' ? '#d97706'
+                  : item.type === 'error' ? '#dc2626'
+                  : '#2563eb'
                 }`,
                 transition: 'all 0.2s'
               }}
@@ -103,4 +114,3 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
 };
 
 export default NotificationDrawer;
-import { Space } from 'antd';
