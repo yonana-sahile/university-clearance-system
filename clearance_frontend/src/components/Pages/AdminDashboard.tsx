@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, Table, Tag, Button, Input, Upload, Typography, Space, Row, Col,
   Statistic, Modal, Form, message, Popconfirm, Switch, Select, Tabs,
-  Tooltip, Empty, Divider, Alert, AutoComplete // ✅ NEW: AutoComplete added
+  Tooltip, Empty, Divider, Alert, AutoComplete
 } from 'antd';
 import {
   UploadOutlined, DownloadOutlined, PlusOutlined, DeleteOutlined,
@@ -224,7 +224,8 @@ export default function AdminDashboard() {
   };
 
   const downloadCSVTemplate = () => {
-    const csvContent = "id_number,first_name,last_name,college,department,year_of_admission\nAAA1234,Yonas,Sahile,College of Computing & Informatics,Software Engineering,2022\nSTU005,Mamitu,Tadese,College of Engineering & Technology,Civil Engineering,2021";
+    // ✅ NEW: Added program_level, enrollment_type, current_year to template
+    const csvContent = "id_number,first_name,last_name,college,department,year_of_admission,program_level,enrollment_type,current_year\nAAA1234,Yonas,Sahile,College of Computing & Informatics,Software Engineering,2022,Undergraduate (B.Sc.),Regular,4th Year\nSTU005,Mamitu,Tadese,College of Engineering & Technology,Civil Engineering,2021,Undergraduate (B.Sc.),Regular,3rd Year";
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -235,8 +236,12 @@ export default function AdminDashboard() {
   };
 
   const exportStudentsCSV = () => {
-    const headers = ['ID Number', 'First Name', 'Last Name', 'College', 'Department', 'Admission Year', 'Status', 'Registered'];
-    const rows = students.map(s => [s.id_number, s.first_name, s.last_name, s.college, s.department, s.year_of_admission, s.status, s.is_registered ? 'Yes' : 'No']);
+    const headers = ['ID Number', 'First Name', 'Last Name', 'College', 'Department', 'Admission Year', 'Program Level', 'Enrollment Mode', 'Current Year', 'Status', 'Registered'];
+    const rows = students.map(s => [
+      s.id_number, s.first_name, s.last_name, s.college, s.department, s.year_of_admission,
+      (s as any).program_level || '', (s as any).enrollment_type || '', (s as any).current_year || '',
+      s.status, s.is_registered ? 'Yes' : 'No'
+    ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -262,7 +267,12 @@ export default function AdminDashboard() {
             newEntries.push({
               id_number: cols[0], first_name: cols[1], last_name: cols[2],
               college: cols[3], department: cols[4],
-              year_of_admission: cols[5] || '2022', status: 'active',
+              year_of_admission: cols[5] || '2022',
+              // ✅ NEW: Parse the new academic fields
+              program_level: cols[6] || 'Undergraduate (B.Sc.)',
+              enrollment_type: cols[7] || 'Regular',
+              current_year: cols[8] || '4th Year',
+              status: 'active',
             });
           }
         }
@@ -284,6 +294,10 @@ export default function AdminDashboard() {
         last_name: values.last_name, college: values.college,
         department: values.department,
         year_of_admission: values.year_of_admission,
+        // ✅ NEW: Add academic info to payload
+        program_level: values.program_level,
+        enrollment_type: values.enrollment_type,
+        current_year: values.current_year,
         status: 'active',
       };
       await apiFetch('admin/valid-students', { method: 'POST', body: JSON.stringify({ students: [newStudent] }) });
@@ -328,7 +342,19 @@ export default function AdminDashboard() {
     { title: 'Full Name', dataIndex: 'full_name', key: 'full_name', render: (n: string) => <Text strong>{n}</Text> },
     { title: 'College', dataIndex: 'college', key: 'college', render: (c: string) => <Text style={{ fontSize: 12, color: THEME.textMuted }}>{c}</Text> },
     { title: 'Department', dataIndex: 'department', key: 'department' },
-    { title: 'Year / Level', dataIndex: 'year_of_admission', key: 'year_of_admission' },
+    // ✅ NEW: Group academic info into one column to save space
+    {
+      title: 'Academic Info',
+      key: 'academic_info',
+      render: (_: any, record: ValidStudentCSV) => (
+        <div>
+          <Text style={{ fontSize: 12, fontWeight: 600 }}>{(record as any).current_year || '---'}</Text>
+          <div style={{ fontSize: 11, color: THEME.textMuted }}>
+            {(record as any).program_level || '---'} • {(record as any).enrollment_type || '---'}
+          </div>
+        </div>
+      )
+    },
     {
       title: 'Status', dataIndex: 'status', key: 'status',
       render: (st: string) => st === 'active'
@@ -571,7 +597,7 @@ export default function AdminDashboard() {
           open={isAddModalOpen}
           onCancel={() => setIsAddModalOpen(false)}
           footer={null}
-          width={560}
+          width={620} // Slightly wider to fit the new fields
           style={{ borderRadius: 16 }}
         >
           <Form form={addForm} layout="vertical" onFinish={handleAddManualStudent} style={{ marginTop: 16 }}>
@@ -591,36 +617,88 @@ export default function AdminDashboard() {
               </Col>
             </Row>
 
-            {/* ✅ FIXED: College is now a Dropdown to prevent typos */}
-            <Form.Item name="college" label="College" rules={[{ required: true }]}>
-              <Select
-                size="large"
-                style={{ borderRadius: 10 }}
-                placeholder="Select a college"
-                options={colleges.map(c => ({ label: c.name, value: c.name }))}
-                showSearch
-              />
-            </Form.Item>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item name="college" label="College" rules={[{ required: true }]}>
+                  <Select
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                    placeholder="Select a college"
+                    options={colleges.map(c => ({ label: c.name, value: c.name }))}
+                    showSearch
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name="department" label="Department" rules={[{ required: true }]}>
+                  <Select
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                    placeholder="Select a department"
+                    options={departments.map(d => ({ label: d.name, value: d.name }))}
+                    showSearch
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
-            {/* ✅ FIXED: Department is now a Dropdown to prevent typos */}
-            <Form.Item name="department" label="Department" rules={[{ required: true }]}>
-              <Select
-                size="large"
-                style={{ borderRadius: 10 }}
-                placeholder="Select a department"
-                options={departments.map(d => ({ label: d.name, value: d.name }))}
-                showSearch
-              />
-            </Form.Item>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item name="year_of_admission" label="Admission Year" rules={[{ required: true }]}>
+                  <Input placeholder="e.g. 2024" size="large" style={{ borderRadius: 10 }} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name="program_level" label="Program Level" rules={[{ required: true }]}>
+                  <Select
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                    placeholder="Select Program Level"
+                    options={[
+                      { label: 'Undergraduate (B.Sc./B.A.)', value: 'Undergraduate (B.Sc.)' },
+                      { label: 'Postgraduate (M.Sc./M.A.)', value: 'Postgraduate' },
+                      { label: 'Doctorate (Ph.D.)', value: 'Doctorate' }
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
-            {/* ✅ NEW: Year of Admission Input */}
-            <Form.Item
-              name="year_of_admission"
-              label="Year of Admission / Academic Level"
-              rules={[{ required: true, message: 'Please enter the academic year or level' }]}
-            >
-              <Input placeholder="e.g. 2024, 7th Year, 8th Year" size="large" style={{ borderRadius: 10 }} />
-            </Form.Item>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item name="enrollment_type" label="Enrollment Mode" rules={[{ required: true }]}>
+                  <Select
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                    placeholder="Select Enrollment Mode"
+                    options={[
+                      { label: 'Regular', value: 'Regular' },
+                      { label: 'Extension / Evening', value: 'Extension' },
+                      { label: 'Summer Program', value: 'Summer' }
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name="current_year" label="Current Academic Year" rules={[{ required: true }]}>
+                  <Select
+                    size="large"
+                    style={{ borderRadius: 10 }}
+                    placeholder="Select Current Year"
+                    options={[
+                      { label: '1st Year', value: '1st Year' },
+                      { label: '2nd Year', value: '2nd Year' },
+                      { label: '3rd Year', value: '3rd Year' },
+                      { label: '4th Year', value: '4th Year' },
+                      { label: '5th Year', value: '5th Year' },
+                      { label: '6th Year', value: '6th Year' },
+                      { label: '7th Year', value: '7th Year' },
+                      { label: '8th Year', value: '8th Year' },
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
             <Button
               type="primary" htmlType="submit" block size="large"
@@ -664,7 +742,6 @@ export default function AdminDashboard() {
               <Input.Password size="large" style={{ borderRadius: 10 }} />
             </Form.Item>
 
-            {/* ✅ CHANGED to AutoComplete so you can type custom roles */}
             <Form.Item name="role" label="Role" rules={[{ required: true }]}>
               <AutoComplete
                 placeholder="Select or type custom role (e.g. supermarket)"
@@ -841,7 +918,6 @@ export default function AdminDashboard() {
                         <Input placeholder="Step Name (e.g. Supermarket)" size="large" style={{ borderRadius: 10 }} />
                       </Form.Item>
 
-                      {/* ✅ CHANGED to AutoComplete so you can type custom roles */}
                       <Form.Item name="role_required" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, minWidth: 180 }}>
                         <AutoComplete
                           placeholder="Role (e.g. supermarket)"
