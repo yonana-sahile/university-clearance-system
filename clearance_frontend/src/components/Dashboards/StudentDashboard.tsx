@@ -9,7 +9,8 @@ import {
   SafetyCertificateOutlined, UserOutlined, WarningOutlined, QrcodeOutlined,
   CompassOutlined, CheckSquareOutlined, HistoryOutlined, PhoneOutlined,
   ShareAltOutlined, InfoCircleOutlined, TrophyOutlined, ThunderboltOutlined,
-  FileDoneOutlined, SendOutlined, LockOutlined, PlusOutlined, MinusCircleOutlined
+  FileDoneOutlined, SendOutlined, LockOutlined, PlusOutlined, MinusCircleOutlined,
+  BellOutlined,   // ✅ NEW: for the notification bell
 } from '@ant-design/icons';
 import confetti from 'canvas-confetti';
 import { QRCodeSVG } from 'qrcode.react';
@@ -132,16 +133,19 @@ export default function StudentDashboard() {
   const [isDossierOpen, setIsDossierOpen] = useState(false);
   const [selectedChatRoom, setSelectedChatRoom] = useState<any>(null);
 
-  // ✅ NEW: Property Exit Pass State
+  // ✅ Property Exit Pass State
   const [exitPass, setExitPass] = useState<any>(null);
   const [isExitPassModalOpen, setIsExitPassModalOpen] = useState(false);
   const [exitPassForm] = Form.useForm();
+
+  // ✅ NEW: Notification polling state (optional — requires backend endpoint)
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   // Global Lock State
   const [portalLocked, setPortalLocked] = useState(false);
   const [portalLockedMessage, setPortalLockedMessage] = useState('');
 
-  // ✅ NEW: Pre-Clearance Checklist State
+  // ✅ Pre-Clearance Checklist State
   const [preClearanceChecks, setPreClearanceChecks] = useState<Record<string, boolean>>({});
 
   const user = getSession();
@@ -158,18 +162,30 @@ export default function StudentDashboard() {
     try {
       const data = await apiFetch('student/exit-pass');
       setExitPass(data);
-      if (data && data.items) {
-        exitPassForm.setFieldsValue({ items: data.items });
-      }
+      // NOTE: We intentionally do NOT prefill the form here — the modal's
+      // open helper does that so we never leak stale data between attempts.
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // ✅ NEW: Silent poll for notifications — safe even if endpoint doesn't exist
+  const pollNotifications = async () => {
+    try {
+      const data = await apiFetch('student/notifications');
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch {
+      /* Endpoint may not exist yet — fail silently */
     }
   };
 
   useEffect(() => {
     loadStudentForm();
     loadPortalStatus();
-    loadExitPass(); // ✅ Load Exit Pass on mount
+    loadExitPass();
+    pollNotifications();
+    const timer = setInterval(pollNotifications, 60_000);
+    return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -188,14 +204,48 @@ export default function StudentDashboard() {
     }
   };
 
+  // ✅ NEW: Open helper — prefills rejected items so student can fix, not duplicate
+  const openExitPassModal = () => {
+    if (exitPass && exitPass.status === 'rejected' && Array.isArray(exitPass.items)) {
+      // Resubmit path: prefill from the rejected pass
+      exitPassForm.setFieldsValue({
+        items: exitPass.items.map((i: any) => ({
+          item: i.item,
+          quantity: i.quantity,
+          description: i.description,
+        })),
+      });
+    } else {
+      // Fresh path: one empty row
+      exitPassForm.resetFields();
+      exitPassForm.setFieldsValue({ items: [{}] });
+    }
+    setIsExitPassModalOpen(true);
+  };
+
+  // ✅ FIXED: PATCH if resubmitting a rejected pass, POST for brand new
   const handleSubmitExitPass = async (values: any) => {
     try {
-      await apiFetch('student/exit-pass', {
-        method: 'POST',
-        body: JSON.stringify({ items: values.items }),
+      const isResubmit = !!exitPass && exitPass.status === 'rejected';
+      const url = isResubmit ? `student/exit-pass/${exitPass.id}` : 'student/exit-pass';
+      const method = isResubmit ? 'PATCH' : 'POST';
+
+      await apiFetch(url, {
+        method,
+        body: JSON.stringify({
+          items: values.items,
+          // Only sent on resubmit — backend must also force this server-side
+          ...(isResubmit ? { status: 'pending', dorm_note: '' } : {}),
+        }),
       });
-      message.success('Property list submitted to Dormitory for validation.');
+
+      message.success(
+        isResubmit
+          ? 'Property list resubmitted for Dormitory review.'
+          : 'Property list submitted to Dormitory for validation.'
+      );
       setIsExitPassModalOpen(false);
+      exitPassForm.resetFields();
       loadExitPass();
     } catch (err: any) {
       message.error(err.message || 'Failed to submit exit pass.');
@@ -247,7 +297,7 @@ export default function StudentDashboard() {
   // ✅ CALCULATE CHECKLIST PROGRESS
   const activeChecklistRoles = workflow.map(w => w.role_required);
   const requiredChecklistItems = activeChecklistRoles.flatMap(role => {
-    if (role === 'dormitory' && !user?.building_id) return []; // Skip if no dorm
+    if (role === 'dormitory' && !user?.building_id) return [];
     return PRE_CLEARANCE_DATA[role]?.items || [];
   });
 
@@ -260,6 +310,8 @@ export default function StudentDashboard() {
     setPreClearanceChecks(prev => ({ ...prev, [id]: checked }));
   };
 
+  const unreadCount = notifications.filter((n: any) => !n.read).length;
+
   // Status Badge Helper
   const getStatusBadge = (status?: string) => {
     switch (status) {
@@ -269,6 +321,24 @@ export default function StudentDashboard() {
       default: return <Tag color="processing" style={{ fontSize: 13, padding: '5px 14px', borderRadius: 20, fontWeight: 700 }}>⏳ Sequential Review In Progress ({approvedCount}/{totalSteps} Cleared)</Tag>;
     }
   };
+
+  // ✅ Exit pass status → theme mapping (avoids nested ternaries inside JSX)
+  const ep = exitPass;
+  const epCardBg = !ep ? '#fff'
+    : ep.status === 'approved' ? '#f0fdf4'
+    : ep.status === 'pending' ? '#fffbeb'
+    : ep.status === 'rejected' ? '#fef2f2'
+    : '#f8fafc';
+  const epCardBorder = !ep ? '#e2e8f0'
+    : ep.status === 'approved' ? '#bbf7d0'
+    : ep.status === 'pending' ? '#fde68a'
+    : ep.status === 'rejected' ? '#fecaca'
+    : '#e2e8f0';
+  const epStatusColor = !ep ? '#475569'
+    : ep.status === 'approved' ? '#166534'
+    : ep.status === 'pending' ? '#b45309'
+    : ep.status === 'rejected' ? '#991b1b'
+    : '#475569';
 
   return (
     <div style={{ maxWidth: 1300, margin: '0 auto', padding: '24px 16px 60px' }}>
@@ -308,6 +378,9 @@ export default function StudentDashboard() {
           </Col>
           <Col xs={24} md={9} style={{ textAlign: 'right' }}>
             <Space wrap size={10} style={{ justifyContent: 'flex-end' }}>
+              <Badge count={unreadCount} size="small" offset={[-4, 4]}>
+                <Button icon={<BellOutlined />} onClick={pollNotifications} style={{ borderRadius: 12, background: 'rgba(255, 255, 255, 0.1)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.2)', fontWeight: 600 }} />
+              </Badge>
               <Button icon={<ReloadOutlined />} onClick={loadStudentForm} loading={loading} style={{ borderRadius: 12, background: 'rgba(255, 255, 255, 0.1)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.2)', fontWeight: 600 }}>Refresh</Button>
               <Button icon={<QrcodeOutlined />} onClick={() => setIsQRModalOpen(true)} style={{ borderRadius: 12, background: 'rgba(255, 255, 255, 0.1)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.2)', fontWeight: 600 }}>QR Pass</Button>
               <Button icon={<PrinterOutlined />} onClick={() => setIsSlipModalOpen(true)} style={{ borderRadius: 12, background: 'rgba(255, 255, 255, 0.1)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.2)', fontWeight: 600 }}>Clearance Slip</Button>
@@ -492,7 +565,7 @@ export default function StudentDashboard() {
             children: <OfficeQueueBookingSection user={user} form={form} />
           },
           {
-            // ✅ NEW: PROPERTY EXIT PASS TAB
+            // ✅ PROPERTY EXIT PASS TAB — rejection alert + resubmit
             key: 'exitpass',
             label: <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}><FileDoneOutlined style={{ color: '#f59e0b' }} /> Property Exit Pass</span>,
             children: (
@@ -503,23 +576,69 @@ export default function StudentDashboard() {
                     <Text type="secondary">Declare items you are taking out of the university to get Gate clearance.</Text>
                   </div>
                   {(!exitPass || exitPass.status === 'draft' || exitPass.status === 'rejected') && (
-                    <Button type="primary" size="large" onClick={() => setIsExitPassModalOpen(true)} style={{ borderRadius: 10, background: '#f59e0b', border: 'none', fontWeight: 700 }}>
-                      Register Property
+                    <Button
+                      type="primary"
+                      size="large"
+                      onClick={openExitPassModal}
+                      style={{ borderRadius: 10, background: '#f59e0b', border: 'none', fontWeight: 700 }}
+                    >
+                      {exitPass && exitPass.status === 'rejected' ? 'Edit & Resubmit' : 'Register Property'}
                     </Button>
                   )}
                 </div>
 
+                {/* ✅ REJECTION ALERT — always visible at top of tab */}
+                {exitPass && exitPass.status === 'rejected' && (
+                  <Alert
+                    message="Property List Rejected by Dormitory"
+                    description={`Reason: ${exitPass.dorm_note || 'No reason provided. Contact the Dormitory office.'}`}
+                    type="error"
+                    showIcon
+                    style={{ marginBottom: 20, borderRadius: 10 }}
+                  />
+                )}
+
                 {exitPass && (
-                  <Card style={{ background: exitPass.status === 'approved' ? '#f0fdf4' : exitPass.status === 'pending' ? '#fffbeb' : '#fef2f2', border: `1px solid ${exitPass.status === 'approved' ? '#bbf7d0' : exitPass.status === 'pending' ? '#fde68a' : '#fecaca'}` }}>
+                  <Card
+                    style={{
+                      background: epCardBg,
+                      border: `1px solid ${epCardBorder}`,
+                      borderRadius: 14,
+                    }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
-                        <Title level={5}>Status: {exitPass.status.toUpperCase()}</Title>
-                        {exitPass.status === 'approved' && <Text type="success">Validated by {exitPass.approved_by_name}</Text>}
-                        {exitPass.status === 'pending' && <Text type="warning">Waiting for Dormitory Manager physical check.</Text>}
-                        {exitPass.dorm_note && <Paragraph style={{ marginTop: 8, fontStyle: 'italic' }}>Note: {exitPass.dorm_note}</Paragraph>}
+                        <Title level={5} style={{ margin: 0 }}>
+                          Status:{' '}
+                          <span style={{ color: epStatusColor }}>
+                            {(exitPass.status || 'draft').toUpperCase()}
+                          </span>
+                        </Title>
+                        {exitPass.status === 'approved' && (
+                          <Text type="success">
+                            Validated by {exitPass.approved_by_name || 'Dormitory Manager'}
+                          </Text>
+                        )}
+                        {exitPass.status === 'pending' && (
+                          <Text type="warning">Waiting for Dormitory Manager physical check.</Text>
+                        )}
+                        {exitPass.status === 'rejected' && (
+                          <Text type="danger">Fix the items below and resubmit for review.</Text>
+                        )}
+                        {/* Hide the raw dorm_note when rejected — the red Alert above already shows it */}
+                        {exitPass.dorm_note && exitPass.status !== 'rejected' && (
+                          <Paragraph style={{ marginTop: 8, marginBottom: 0, fontStyle: 'italic', color: '#475569' }}>
+                            Dorm Note: {exitPass.dorm_note}
+                          </Paragraph>
+                        )}
                       </div>
                       {exitPass.status === 'approved' && (
-                        <Button type="primary" onClick={() => window.print()} icon={<PrinterOutlined />} style={{ background: '#10b981', border: 'none' }}>
+                        <Button
+                          type="primary"
+                          onClick={() => window.print()}
+                          icon={<PrinterOutlined />}
+                          style={{ background: '#10b981', border: 'none' }}
+                        >
                           Print Exit Pass
                         </Button>
                       )}
@@ -527,9 +646,12 @@ export default function StudentDashboard() {
 
                     <Divider />
                     <Title level={5}>Registered Items:</Title>
-                    <ul style={{ paddingLeft: 20 }}>
-                      {exitPass.items.map((itm: any, idx: number) => (
-                        <li key={idx}><Text strong>{itm.quantity}x</Text> {itm.item} ({itm.description})</li>
+                    <ul style={{ paddingLeft: 20, margin: 0 }}>
+                      {(exitPass.items || []).map((itm: any, idx: number) => (
+                        <li key={idx} style={{ marginBottom: 6 }}>
+                          <Text strong>{itm.quantity}x</Text> {itm.item}{' '}
+                          <span style={{ color: '#64748b' }}>({itm.description})</span>
+                        </li>
                       ))}
                     </ul>
                   </Card>
@@ -563,15 +685,27 @@ export default function StudentDashboard() {
       <ClearanceCertificateModal open={isCertificateOpen} onClose={() => setIsCertificateOpen(false)} form={form} />
       <ExitSurveyModal open={isExitSurveyOpen} onClose={() => setIsExitSurveyOpen(false)} onCompleted={() => { message.success('Exit survey recorded!'); setIsExitSurveyOpen(false); }} />
 
-      {/* ✅ NEW: EXIT PASS REGISTRATION MODAL */}
+      {/* ✅ EXIT PASS REGISTRATION / RESUBMISSION MODAL */}
       <Modal
-        title="Register Property for Exit"
+        title={exitPass && exitPass.status === 'rejected' ? 'Fix & Resubmit Property List' : 'Register Property for Exit'}
         open={isExitPassModalOpen}
-        onCancel={() => setIsExitPassModalOpen(false)}
+        onCancel={() => {
+          setIsExitPassModalOpen(false);
+          exitPassForm.resetFields();
+        }}
         footer={null}
         width={600}
       >
-        <Form form={exitPassForm} layout="vertical" onFinish={handleSubmitExitPass}>
+        {exitPass && exitPass.status === 'rejected' && (
+          <Alert
+            message="Rejection Reason"
+            description={exitPass.dorm_note || 'Contact the Dormitory office for details.'}
+            type="error"
+            showIcon
+            style={{ marginBottom: 16, borderRadius: 8 }}
+          />
+        )}
+        <Form form={exitPassForm} layout="vertical" onFinish={handleSubmitExitPass} initialValues={{ items: [{}] }}>
           <Form.List name="items">
             {(fields, { add, remove }) => (
               <>
@@ -598,7 +732,7 @@ export default function StudentDashboard() {
             )}
           </Form.List>
           <Button type="primary" htmlType="submit" block size="large" style={{ background: '#f59e0b', border: 'none', marginTop: 16 }}>
-            Submit to Dormitory
+            {exitPass && exitPass.status === 'rejected' ? 'Resubmit to Dormitory' : 'Submit to Dormitory'}
           </Button>
         </Form>
       </Modal>
