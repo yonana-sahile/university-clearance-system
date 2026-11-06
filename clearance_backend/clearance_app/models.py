@@ -139,6 +139,7 @@ class Appointment(models.Model):
     def __str__(self):
         return f"{self.ref} - {self.office_name}"
 
+
 class ChecklistItem(models.Model):
     role = models.CharField(max_length=50)  # e.g., 'departmenthead', 'campuspolice'
     label = models.CharField(max_length=200)  # e.g., 'Return Lab Equipment'
@@ -151,6 +152,8 @@ class ChecklistItem(models.Model):
 
     def __str__(self):
         return f"[{self.role}] {self.label}"
+
+
 class PropertyExitPass(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
@@ -159,12 +162,36 @@ class PropertyExitPass(models.Model):
         ('rejected', 'Rejected'),
     ]
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='exit_passes')
-    items = models.JSONField(default=list, blank=True) # [{"item": "Laptop", "quantity": 1, "brand": "MacBook"}]
+    items = models.JSONField(default=list, blank=True)  # [{"item": "Laptop", "quantity": 1, "brand": "MacBook"}]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     dorm_note = models.TextField(blank=True)
-    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='signed_exit_passes')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                    related_name='signed_exit_passes')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Exit Pass #{self.id} - {self.student.full_name()} ({self.status})"
+
+
+# ✅ NEW: NOTIFICATION MODEL
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('info', 'Info'),
+        ('success', 'Success'),
+        ('warning', 'Warning'),
+        ('error', 'Error'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='info')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification for {self.user.username} - {self.title}"
