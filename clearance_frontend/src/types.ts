@@ -238,3 +238,20 @@ export interface Department {
   college: number;
   name: string;
 }
+export interface PropertyItem {
+  item: string;
+  quantity: number;
+  description: string;
+}
+
+export interface PropertyExitPass {
+  id: number;
+  student: number;
+  student_name: string;
+  student_id_num: string;
+  items: PropertyItem[];
+  status: 'draft' | 'pending' | 'approved' | 'rejected';
+  dorm_note: string;
+  approved_by_name?: string;
+  updated_at: string;
+}

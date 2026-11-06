@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card, Row, Col, Typography, Tag, Button, Progress, Steps, Alert, Modal, Tabs,
-  Table, Badge, Space, message, Spin, Tooltip, Input, Checkbox, Divider, Statistic, Avatar, Collapse
+  Table, Badge, Space, message, Spin, Tooltip, Input, Checkbox, Divider, Statistic, Avatar, Collapse, Form
 } from 'antd';
 import {
   CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, DownloadOutlined,
@@ -9,7 +9,7 @@ import {
   SafetyCertificateOutlined, UserOutlined, WarningOutlined, QrcodeOutlined,
   CompassOutlined, CheckSquareOutlined, HistoryOutlined, PhoneOutlined,
   ShareAltOutlined, InfoCircleOutlined, TrophyOutlined, ThunderboltOutlined,
-  FileDoneOutlined, SendOutlined, LockOutlined
+  FileDoneOutlined, SendOutlined, LockOutlined, PlusOutlined, MinusCircleOutlined
 } from '@ant-design/icons';
 import confetti from 'canvas-confetti';
 import { QRCodeSVG } from 'qrcode.react';
@@ -132,6 +132,11 @@ export default function StudentDashboard() {
   const [isDossierOpen, setIsDossierOpen] = useState(false);
   const [selectedChatRoom, setSelectedChatRoom] = useState<any>(null);
 
+  // ✅ NEW: Property Exit Pass State
+  const [exitPass, setExitPass] = useState<any>(null);
+  const [isExitPassModalOpen, setIsExitPassModalOpen] = useState(false);
+  const [exitPassForm] = Form.useForm();
+
   // Global Lock State
   const [portalLocked, setPortalLocked] = useState(false);
   const [portalLockedMessage, setPortalLockedMessage] = useState('');
@@ -149,9 +154,22 @@ export default function StudentDashboard() {
     } catch { /* silent */ }
   };
 
+  const loadExitPass = async () => {
+    try {
+      const data = await apiFetch('student/exit-pass');
+      setExitPass(data);
+      if (data && data.items) {
+        exitPassForm.setFieldsValue({ items: data.items });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     loadStudentForm();
     loadPortalStatus();
+    loadExitPass(); // ✅ Load Exit Pass on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -167,6 +185,20 @@ export default function StudentDashboard() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmitExitPass = async (values: any) => {
+    try {
+      await apiFetch('student/exit-pass', {
+        method: 'POST',
+        body: JSON.stringify({ items: values.items }),
+      });
+      message.success('Property list submitted to Dormitory for validation.');
+      setIsExitPassModalOpen(false);
+      loadExitPass();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to submit exit pass.');
     }
   };
 
@@ -460,6 +492,52 @@ export default function StudentDashboard() {
             children: <OfficeQueueBookingSection user={user} form={form} />
           },
           {
+            // ✅ NEW: PROPERTY EXIT PASS TAB
+            key: 'exitpass',
+            label: <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}><FileDoneOutlined style={{ color: '#f59e0b' }} /> Property Exit Pass</span>,
+            children: (
+              <Card style={{ borderRadius: 20, border: '1px solid #e2e8f0' }} styles={{ body: { padding: 28 } }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div>
+                    <Title level={4} style={{ margin: 0 }}>Property Exit Pass</Title>
+                    <Text type="secondary">Declare items you are taking out of the university to get Gate clearance.</Text>
+                  </div>
+                  {(!exitPass || exitPass.status === 'draft' || exitPass.status === 'rejected') && (
+                    <Button type="primary" size="large" onClick={() => setIsExitPassModalOpen(true)} style={{ borderRadius: 10, background: '#f59e0b', border: 'none', fontWeight: 700 }}>
+                      Register Property
+                    </Button>
+                  )}
+                </div>
+
+                {exitPass && (
+                  <Card style={{ background: exitPass.status === 'approved' ? '#f0fdf4' : exitPass.status === 'pending' ? '#fffbeb' : '#fef2f2', border: `1px solid ${exitPass.status === 'approved' ? '#bbf7d0' : exitPass.status === 'pending' ? '#fde68a' : '#fecaca'}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <Title level={5}>Status: {exitPass.status.toUpperCase()}</Title>
+                        {exitPass.status === 'approved' && <Text type="success">Validated by {exitPass.approved_by_name}</Text>}
+                        {exitPass.status === 'pending' && <Text type="warning">Waiting for Dormitory Manager physical check.</Text>}
+                        {exitPass.dorm_note && <Paragraph style={{ marginTop: 8, fontStyle: 'italic' }}>Note: {exitPass.dorm_note}</Paragraph>}
+                      </div>
+                      {exitPass.status === 'approved' && (
+                        <Button type="primary" onClick={() => window.print()} icon={<PrinterOutlined />} style={{ background: '#10b981', border: 'none' }}>
+                          Print Exit Pass
+                        </Button>
+                      )}
+                    </div>
+
+                    <Divider />
+                    <Title level={5}>Registered Items:</Title>
+                    <ul style={{ paddingLeft: 20 }}>
+                      {exitPass.items.map((itm: any, idx: number) => (
+                        <li key={idx}><Text strong>{itm.quantity}x</Text> {itm.item} ({itm.description})</li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+              </Card>
+            )
+          },
+          {
             key: 'chat',
             label: <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}><MessageOutlined style={{ color: '#06b6d4' }} /> Support Chat</span>,
             children: (
@@ -484,6 +562,46 @@ export default function StudentDashboard() {
       <GraduationDossierModal open={isDossierOpen} onClose={() => setIsDossierOpen(false)} form={form} user={user} stages={stages} />
       <ClearanceCertificateModal open={isCertificateOpen} onClose={() => setIsCertificateOpen(false)} form={form} />
       <ExitSurveyModal open={isExitSurveyOpen} onClose={() => setIsExitSurveyOpen(false)} onCompleted={() => { message.success('Exit survey recorded!'); setIsExitSurveyOpen(false); }} />
+
+      {/* ✅ NEW: EXIT PASS REGISTRATION MODAL */}
+      <Modal
+        title="Register Property for Exit"
+        open={isExitPassModalOpen}
+        onCancel={() => setIsExitPassModalOpen(false)}
+        footer={null}
+        width={600}
+      >
+        <Form form={exitPassForm} layout="vertical" onFinish={handleSubmitExitPass}>
+          <Form.List name="items">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                    <Form.Item {...restField} name={[name, 'item']} rules={[{ required: true, message: 'Missing item name' }]}>
+                      <Input placeholder="Item (e.g. Laptop)" />
+                    </Form.Item>
+                    <Form.Item {...restField} name={[name, 'quantity']} rules={[{ required: true, message: 'Missing qty' }]}>
+                      <Input type="number" placeholder="Qty" style={{ width: 70 }} />
+                    </Form.Item>
+                    <Form.Item {...restField} name={[name, 'description']} rules={[{ required: true, message: 'Missing description' }]}>
+                      <Input placeholder="Description (e.g. MacBook Pro)" />
+                    </Form.Item>
+                    <MinusCircleOutlined onClick={() => remove(name)} style={{ color: '#ef4444' }} />
+                  </Space>
+                ))}
+                <Form.Item>
+                  <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                    Add Another Item
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
+          <Button type="primary" htmlType="submit" block size="large" style={{ background: '#f59e0b', border: 'none', marginTop: 16 }}>
+            Submit to Dormitory
+          </Button>
+        </Form>
+      </Modal>
 
       <Modal title="Student Quick Verification QR Pass" open={isQRModalOpen} onCancel={() => setIsQRModalOpen(false)} footer={[<Button key="close" type="primary" onClick={() => setIsQRModalOpen(false)}>Close</Button>]} centered>
         <div style={{ textAlign: 'center', padding: '20px 10px' }}>
