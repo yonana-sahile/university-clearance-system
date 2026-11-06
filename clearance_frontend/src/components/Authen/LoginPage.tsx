@@ -221,7 +221,8 @@ export default function LoginPage() {
         {/* RIGHT PANEL */}
         <div className="mau-login-form-panel">
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 20 }}>
-             <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>2026/2027 A.Y.</span>
+             {/* ✅ CHANGED: Uses the dark mode text variable */}
+             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>2026/2027 A.Y.</span>
           </div>
 
           {pageLoading ? (
@@ -289,11 +290,12 @@ export default function LoginPage() {
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-                  <Link to="/forgot-password" style={{ fontSize: 13, color: '#2563eb' }}>
+                  {/* ✅ CHANGED: Brighter blue for links so they pop in dark mode */}
+                  <Link to="/forgot-password" style={{ fontSize: 13, color: '#3b82f6' }}>
                     Forgot password?
                   </Link>
                   {isStudent && (
-                    <Link to="/register" style={{ fontSize: 13, color: '#2563eb', fontWeight: 600 }}>
+                    <Link to="/register" style={{ fontSize: 13, color: '#3b82f6', fontWeight: 600 }}>
                       New student? Register here
                     </Link>
                   )}
