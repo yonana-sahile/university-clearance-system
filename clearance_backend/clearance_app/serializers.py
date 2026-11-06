@@ -1,7 +1,9 @@
 from rest_framework import serializers
+from django.utils.timesince import timesince
 from .models import (
     ClearanceForm, Dispute, Appointment, WorkflowStep,
-    ClearanceApproval, ChecklistItem, PropertyExitPass
+    ClearanceApproval, ChecklistItem, PropertyExitPass,
+    Notification  # ✅ NEW: Imported Notification model
 )
 
 
@@ -59,10 +61,13 @@ class AppointmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['student', 'ref', 'token_number', 'created_at']
 
+
 class ChecklistItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChecklistItem
         fields = '__all__'
+
+
 class PropertyExitPassSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source='student.full_name', read_only=True)
     student_id_num = serializers.CharField(source='student.id_number', read_only=True)
@@ -71,3 +76,16 @@ class PropertyExitPassSerializer(serializers.ModelSerializer):
     class Meta:
         model = PropertyExitPass
         fields = '__all__'
+
+
+# ✅ NEW: Notification Serializer
+class NotificationSerializer(serializers.ModelSerializer):
+    time = serializers.SerializerMethodField()
+    read = serializers.BooleanField(source='is_read') # Maps 'is_read' to 'read' for the frontend
+
+    class Meta:
+        model = Notification
+        fields = ['id', 'title', 'message', 'type', 'time', 'read']
+
+    def get_time(self, obj):
+        return f"{timesince(obj.created_at)} ago"
