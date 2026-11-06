@@ -6,11 +6,13 @@ from django.utils import timezone
 
 from .models import (
     ClearanceForm, FormStatus, Dispute, Appointment,
-    WorkflowStep, ClearanceApproval, ChecklistItem,PropertyExitPass
+    WorkflowStep, ClearanceApproval, ChecklistItem, PropertyExitPass,
+    Notification  # ✅ NEW
 )
 from .serializers import (
     ClearanceFormSerializer, DisputeSerializer, AppointmentSerializer,
-    WorkflowStepSerializer, ChecklistItemSerializer,PropertyExitPassSerializer
+    WorkflowStepSerializer, ChecklistItemSerializer, PropertyExitPassSerializer,
+    NotificationSerializer  # ✅ NEW
 )
 from accounts.models import SystemSetting
 
@@ -49,11 +51,6 @@ def student_dashboard(request):
     return Response({
         'forms': ClearanceFormSerializer(forms, many=True).data,
         'workflow': WorkflowStepSerializer(workflow, many=True).data,
-        'notifications': [{
-            'id': 1,
-            'message': 'Welcome to Online Clearance System! Track your stage approvals in real-time.',
-            'created_at': timezone.now().isoformat(),
-        }],
     })
 
 
@@ -361,7 +358,7 @@ def public_track(request):
 
 
 # ============================================================
-# ✅ NEW: DYNAMIC PRE-CLEARANCE CHECKLIST ENDPOINTS
+# ✅ DYNAMIC PRE-CLEARANCE CHECKLIST ENDPOINTS
 # ============================================================
 
 @api_view(['GET', 'POST'])
@@ -404,6 +401,10 @@ def public_checklist(request):
     return Response(ChecklistItemSerializer(items, many=True).data)
 
 
+# ============================================================
+# ✅ PROPERTY EXIT PASS ENDPOINTS
+# ============================================================
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def student_exit_pass(request):
@@ -422,9 +423,34 @@ def student_exit_pass(request):
 
     exit_pass.items = items
     exit_pass.status = 'pending'
+    exit_pass.dorm_note = ''  # Clear any previous rejection notes
     exit_pass.save()
 
     return Response({'message': 'Exit pass submitted for Dormitory validation.',
+                     'pass': PropertyExitPassSerializer(exit_pass).data})
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def student_exit_pass_detail(request, pk):
+    # ✅ NEW: Handles resubmission from the frontend
+    if request.user.role != 'student':
+        return Response({'detail': 'Only students can request exit passes.'}, status=403)
+
+    exit_pass = PropertyExitPass.objects.filter(id=pk, student=request.user).first()
+    if not exit_pass:
+        return Response({'detail': 'Exit pass not found.'}, status=404)
+
+    items = request.data.get('items', [])
+    if not items:
+        return Response({'detail': 'You must add at least one item.'}, status=400)
+
+    exit_pass.items = items
+    exit_pass.status = 'pending'
+    exit_pass.dorm_note = ''  # Clear the rejection reason
+    exit_pass.save()
+
+    return Response({'message': 'Property list resubmitted for review.',
                      'pass': PropertyExitPassSerializer(exit_pass).data})
 
 
@@ -455,10 +481,47 @@ def dorm_validate_exit_pass(request, pk):
         exit_pass.status = 'approved'
         exit_pass.approved_by = request.user
         exit_pass.dorm_note = note
+
+        # ✅ Send success notification
+        Notification.objects.create(
+            user=exit_pass.student,
+            title="Property Exit Pass Approved ✅",
+            message="Your property list has been validated. You can now print your Exit Pass.",
+            type="success"
+        )
     else:
         exit_pass.status = 'rejected'
         exit_pass.dorm_note = note
 
+        # ✅ Send rejection notification
+        Notification.objects.create(
+            user=exit_pass.student,
+            title="Property Exit Pass Rejected ❌",
+            message=f"The Dorm Manager rejected your property list. Reason: {note}",
+            type="error"
+        )
+
     exit_pass.save()
+
+    # Fixed the "{action}d" typo
+    success_msg = "approved" if action == "approve" else "rejected"
     return Response(
-        {'message': f'Exit pass {action}d successfully.', 'pass': PropertyExitPassSerializer(exit_pass).data})
+        {'message': f'Exit pass {success_msg} successfully.', 'pass': PropertyExitPassSerializer(exit_pass).data})
+
+
+# ============================================================
+# ✅ NOTIFICATIONS ENDPOINT
+# ============================================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def student_notifications(request):
+    if request.method == 'GET':
+        # Get the 20 most recent notifications for the logged-in user
+        notifs = Notification.objects.filter(user=request.user)[:20]
+        return Response(NotificationSerializer(notifs, many=True).data)
+
+    if request.method == 'POST':
+        # Mark all as read
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({"status": "marked as read"})

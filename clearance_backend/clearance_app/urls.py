@@ -17,7 +17,10 @@ urlpatterns = [
     path('admin/workflow/<int:pk>', views.admin_workflow_step_detail),
     path('staff/checklist', views.staff_checklist),
     path('staff/checklist/<int:pk>', views.staff_checklist_detail),
-    path('public/checklist', views.public_checklist),path('student/exit-pass', views.student_exit_pass),
+    path('public/checklist', views.public_checklist),
+    path('student/exit-pass', views.student_exit_pass),
+    path('student/exit-pass/<int:pk>', views.student_exit_pass_detail),  # ✅ NEW: For Resubmission
     path('dorm/exit-passes', views.dorm_exit_passes),
     path('dorm/exit-passes/<int:pk>/validate', views.dorm_validate_exit_pass),
+    path('student/notifications', views.student_notifications),
 ]
