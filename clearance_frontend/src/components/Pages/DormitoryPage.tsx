@@ -2,9 +2,17 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, Table, Tag, Button, Input, Modal, Typography, Space, Row, Col, Select, Checkbox, message, Tabs
 } from 'antd';
-import { CheckOutlined, SearchOutlined, ToolOutlined, WarningOutlined, FileDoneOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import {
+  CheckOutlined,
+  SearchOutlined,
+  ToolOutlined,
+  WarningOutlined,
+  FileDoneOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,   // ✅ NEW: needed for Reject button icon
+} from '@ant-design/icons';
 import { apiFetch } from '../../utils/api';
-import type { ClearanceForm, Building, PropertyExitPass } from '../../types'; // ✅ Added PropertyExitPass
+import type { ClearanceForm, Building, PropertyExitPass } from '../../types';
 import StaffPaymentVerification from '../Payments/StaffPaymentVerification';
 import StaffChecklistManager from '../Staff/StaffChecklistManager';
 
@@ -16,12 +24,13 @@ export default function DormitoryPage() {
   const [selectedBuilding, setSelectedBuilding] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [approving, setApproving] = useState<number | null>(null);
+  const [approving, setApproving] = useState<number | null>(null);          // room inspection
+  const [validatingPassId, setValidatingPassId] = useState<number | null>(null); // ✅ NEW: isolated state for exit passes
 
-  // ✅ NEW: State to hold dynamic checklist items for this staff member
+  // ✅ Dynamic checklist items for this staff member
   const [staffChecklist, setStaffChecklist] = useState<any[]>([]);
 
-  // ✅ NEW: Property Exit Pass State
+  // ✅ Property Exit Pass state
   const [exitPasses, setExitPasses] = useState<PropertyExitPass[]>([]);
   const [selectedPass, setSelectedPass] = useState<PropertyExitPass | null>(null);
   const [isPassModalOpen, setIsPassModalOpen] = useState(false);
@@ -35,7 +44,7 @@ export default function DormitoryPage() {
   useEffect(() => {
     loadData();
     loadStaffChecklist();
-    loadExitPasses(); // ✅ Load Exit Passes
+    loadExitPasses();
   }, []);
 
   const loadData = async () => {
@@ -64,7 +73,6 @@ export default function DormitoryPage() {
     }
   };
 
-  // ✅ NEW: Load Exit Passes
   const loadExitPasses = async () => {
     try {
       const data = await apiFetch('dorm/exit-passes');
@@ -125,23 +133,41 @@ export default function DormitoryPage() {
     }
   };
 
-  // ✅ NEW: Validate Property Exit Pass
+  // ✅ Validate Property Exit Pass — reject now requires a reason
   const handleValidatePass = async (action: 'approve' | 'reject') => {
     if (!selectedPass) return;
-    setApproving(selectedPass.id);
+
+    // ✅ Force the manager to type a reason when rejecting
+    if (action === 'reject' && !passNote.trim()) {
+      message.warning('You must provide a reason for rejection so the student can fix it.');
+      return;
+    }
+
+    setValidatingPassId(selectedPass.id);
     try {
       await apiFetch(`dorm/exit-passes/${selectedPass.id}/validate`, {
         method: 'POST',
         body: JSON.stringify({ action, note: passNote }),
       });
-      message.success(`Property pass ${action}d successfully.`);
+      // ✅ Fixed toast (was "rejectd")
+      message.success(
+        `Property pass ${action === 'approve' ? 'approved' : 'rejected'} successfully.`
+      );
       setIsPassModalOpen(false);
+      setPassNote('');
       loadExitPasses();
     } catch (err: any) {
       message.error(err.message || 'Validation failed');
     } finally {
-      setApproving(null);
+      setValidatingPassId(null);
     }
+  };
+
+  // ✅ Centralized open — always clears any stale note from a previous student
+  const openPassModal = (pass: PropertyExitPass) => {
+    setSelectedPass(pass);
+    setPassNote('');
+    setIsPassModalOpen(true);
   };
 
   const filtered = forms.filter(f => {
@@ -219,7 +245,6 @@ export default function DormitoryPage() {
     }
   ];
 
-  // ✅ Helper to render student declarations dynamically
   const renderStudentDeclarations = (form: ClearanceForm | null) => {
     if (!form) return null;
     const checks = (form as any)?.pre_clearance_checks || {};
@@ -296,7 +321,6 @@ export default function DormitoryPage() {
             )
           },
           {
-            // ✅ NEW: PROPERTY EXIT VALIDATIONS TAB
             key: 'exitpasses',
             label: '🚪 Property Exit Validations',
             children: (
@@ -307,13 +331,30 @@ export default function DormitoryPage() {
                   pagination={{ pageSize: 8 }}
                   locale={{ emptyText: 'No pending property validations.' }}
                   columns={[
-                    { title: 'Student', key: 'student', render: (_: any, r: any) => <Text strong>{r.student_name} ({r.student_id_num})</Text> },
-                    { title: 'Items Count', key: 'items', render: (_: any, r: any) => <Tag color="blue">{r.items.length} Items</Tag> },
+                    {
+                      title: 'Student',
+                      key: 'student',
+                      render: (_: any, r: any) => (
+                        <Text strong>{r.student_name} ({r.student_id_num})</Text>
+                      )
+                    },
+                    {
+                      title: 'Items Count',
+                      key: 'items',
+                      render: (_: any, r: any) => (
+                        <Tag color="blue">{r.items?.length ?? 0} Items</Tag>
+                      )
+                    },
                     {
                       title: 'Action',
                       key: 'action',
                       render: (_: any, r: any) => (
-                        <Button type="primary" size="small" onClick={() => { setSelectedPass(r); setIsPassModalOpen(true); setPassNote(''); }} style={{ background: '#10b981', border: 'none' }}>
+                        <Button
+                          type="primary"
+                          size="small"
+                          onClick={() => openPassModal(r)}
+                          style={{ background: '#10b981', border: 'none' }}
+                        >
                           Inspect & Validate
                         </Button>
                       )
@@ -331,7 +372,7 @@ export default function DormitoryPage() {
         ]}
       />
 
-      {/* ✅ ROOM INSPECTION MODAL (Existing) */}
+      {/* ROOM INSPECTION MODAL */}
       <Modal
         title={
           <Space>
@@ -380,18 +421,30 @@ export default function DormitoryPage() {
         </div>
       </Modal>
 
-      {/* ✅ NEW: PROPERTY VALIDATION MODAL */}
+      {/* ✅ PROPERTY VALIDATION MODAL */}
       <Modal
         title={`Property Validation: ${selectedPass?.student_name}`}
         open={isPassModalOpen}
-        onCancel={() => setIsPassModalOpen(false)}
+        onCancel={() => {
+          setIsPassModalOpen(false);
+          setPassNote('');
+        }}
         footer={null}
         width={600}
       >
-        <Paragraph type="secondary">Physically verify the student has these exact items.</Paragraph>
+        <Paragraph type="secondary">
+          Physically verify the student has these exact items. If items are missing or suspicious, reject with a reason.
+        </Paragraph>
 
-        <ul style={{ background: '#f8fafc', padding: '16px 32px', borderRadius: 8, border: '1px solid #e2e8f0', maxHeight: 300, overflowY: 'auto' }}>
-          {selectedPass?.items.map((itm: any, idx: number) => (
+        <ul style={{
+          background: '#f8fafc',
+          padding: '16px 32px',
+          borderRadius: 8,
+          border: '1px solid #e2e8f0',
+          maxHeight: 300,
+          overflowY: 'auto'
+        }}>
+          {selectedPass?.items?.map((itm: any, idx: number) => (
             <li key={idx} style={{ marginBottom: 8 }}>
               <Text strong>{itm.quantity}x</Text> {itm.item} - <Text type="secondary">{itm.description}</Text>
             </li>
@@ -399,19 +452,42 @@ export default function DormitoryPage() {
         </ul>
 
         <div style={{ marginTop: 16 }}>
-          <Text strong>Validation Note (Optional):</Text>
-          <Input.TextArea rows={2} value={passNote} onChange={e => setPassNote(e.target.value)} placeholder="e.g. All items verified. Good luck!" style={{ marginTop: 6, borderRadius: 8 }} />
+          <Text strong>
+            Validation Note / Rejection Reason{' '}
+            <span style={{ color: 'red' }}>* required for rejection</span>:
+          </Text>
+          <Input.TextArea
+            rows={3}
+            value={passNote}
+            onChange={e => setPassNote(e.target.value)}
+            placeholder="e.g. All items verified. OR 'Missing 1x Dell Laptop. Please update list.'"
+            style={{ marginTop: 6, borderRadius: 8 }}
+          />
         </div>
 
         <Space style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-          <Button danger onClick={() => handleValidatePass('reject')} loading={approving === selectedPass?.id}>Reject List</Button>
-          <Button type="primary" icon={<CheckCircleOutlined />} onClick={() => handleValidatePass('approve')} loading={approving === selectedPass?.id} style={{ background: '#10b981', border: 'none' }}>
+          <Button
+            danger
+            icon={<CloseCircleOutlined />}
+            onClick={() => handleValidatePass('reject')}
+            loading={validatingPassId === selectedPass?.id}
+            style={{ borderRadius: 8, fontWeight: 600 }}
+          >
+            Reject List
+          </Button>
+          <Button
+            type="primary"
+            icon={<CheckCircleOutlined />}
+            onClick={() => handleValidatePass('approve')}
+            loading={validatingPassId === selectedPass?.id}
+            style={{ background: '#10b981', border: 'none', borderRadius: 8, fontWeight: 600 }}
+          >
             Validate & Sign Exit Pass
           </Button>
         </Space>
       </Modal>
 
-      {/* ✅ NEW: STAFF CHECKLIST MANAGER */}
+      {/* STAFF CHECKLIST MANAGER */}
       <StaffChecklistManager />
     </div>
   );
