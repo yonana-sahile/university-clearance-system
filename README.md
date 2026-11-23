@@ -3,6 +3,7 @@
 
 
 
+
 <img src="mau_logo.png" alt="Mekdela Amba University Logo" width="130" />
 
 # 🎓 University Clearance System
